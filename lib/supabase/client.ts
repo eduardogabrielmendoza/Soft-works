@@ -2,11 +2,15 @@ import { createBrowserClient as createSupabaseBrowserClient } from '@supabase/ss
 
 export { createSupabaseBrowserClient as createBrowserClient }
 
+// Valores por defecto para el build (serán sobrescritos por las variables reales en runtime)
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
+
 export function createClient() {
   // Cliente sin tipado estricto hasta que el schema exista
   return createSupabaseBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
   ) as any
 }
 
