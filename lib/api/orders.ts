@@ -61,16 +61,25 @@ export async function createOrder(orderData: CreateOrderData): Promise<Pedido | 
     .eq('id', user.id)
     .single()
 
-  // Obtener el último numero_pedido para generar uno nuevo
-  const { data: lastOrder } = await supabase
-    .from('pedidos')
-    .select('numero_pedido')
-    .order('numero_pedido', { ascending: false })
-    .limit(1)
-    .single()
+  // Generar número de pedido profesional: SW-0001582-HC
+  const generateOrderNumber = async (): Promise<string> => {
+    // Obtener el conteo total de pedidos para el número secuencial
+    const { count } = await supabase
+      .from('pedidos')
+      .select('*', { count: 'exact', head: true })
+    
+    const sequentialNumber = ((count || 0) + 1).toString().padStart(7, '0')
+    
+    // Generar sufijo aleatorio de 2 letras
+    const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ' // Sin I, O para evitar confusión
+    const suffix = letters.charAt(Math.floor(Math.random() * letters.length)) + 
+                   letters.charAt(Math.floor(Math.random() * letters.length))
+    
+    return `SW-${sequentialNumber}-${suffix}`
+  }
   
-  const nextNumeroPedido = (lastOrder?.numero_pedido || 0) + 1
-  console.log('Next numero_pedido:', nextNumeroPedido)
+  const numeroPedido = await generateOrderNumber()
+  console.log('Generated numero_pedido:', numeroPedido)
 
   // Crear orden
   const orderPayload = {
@@ -85,7 +94,7 @@ export async function createOrder(orderData: CreateOrderData): Promise<Pedido | 
     total: orderData.total,
     notas_cliente: orderData.notas_cliente || null,
     estado: 'pendiente_pago',
-    numero_pedido: nextNumeroPedido
+    numero_pedido: numeroPedido
   }
   
   console.log('Creating order with payload:', JSON.stringify(orderPayload, null, 2))
