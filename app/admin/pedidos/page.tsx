@@ -153,7 +153,6 @@ function AdminPedidosContent() {
       enviado: Truck,
       entregado: CheckCircle,
       cancelado: XCircle,
-      archivado: Archive,
     };
     const Icon = icons[status] || Package;
     return <Icon className="w-4 h-4" />;
