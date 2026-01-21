@@ -6,20 +6,23 @@ export { createSupabaseBrowserClient as createBrowserClient }
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
 
+// Cliente singleton - debe ser reutilizado
+let browserClient: ReturnType<typeof createSupabaseBrowserClient> | null = null
+
 export function createClient() {
-  // Cliente sin tipado estricto hasta que el schema exista
   return createSupabaseBrowserClient(
     SUPABASE_URL,
     SUPABASE_ANON_KEY
   ) as any
 }
 
-// Cliente singleton para uso en componentes
-let client: ReturnType<typeof createClient> | null = null
-
 export function getSupabaseClient() {
-  if (!client) {
-    client = createClient()
+  if (typeof window === 'undefined') {
+    return createClient()
   }
-  return client
+  
+  if (!browserClient) {
+    browserClient = createClient()
+  }
+  return browserClient
 }
