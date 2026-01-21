@@ -61,27 +61,48 @@ export async function createOrder(orderData: CreateOrderData): Promise<Pedido | 
     .eq('id', user.id)
     .single()
 
+  // Obtener el último numero_pedido para generar uno nuevo
+  const { data: lastOrder } = await supabase
+    .from('pedidos')
+    .select('numero_pedido')
+    .order('numero_pedido', { ascending: false })
+    .limit(1)
+    .single()
+  
+  const nextNumeroPedido = (lastOrder?.numero_pedido || 0) + 1
+  console.log('Next numero_pedido:', nextNumeroPedido)
+
   // Crear orden
+  const orderPayload = {
+    usuario_id: user.id,
+    cliente_email: profile?.email || user.email || '',
+    cliente_nombre: profile ? `${profile.nombre || ''} ${profile.apellido || ''}`.trim() : '',
+    cliente_telefono: profile?.telefono || null,
+    direccion_envio: orderData.direccion_envio,
+    subtotal: orderData.subtotal,
+    costo_envio: orderData.costo_envio,
+    monto_descuento: 0,
+    total: orderData.total,
+    notas_cliente: orderData.notas_cliente || null,
+    estado: 'pendiente_pago',
+    numero_pedido: nextNumeroPedido
+  }
+  
+  console.log('Creating order with payload:', JSON.stringify(orderPayload, null, 2))
+  console.log('User ID:', user.id)
+  
   const { data: order, error: orderError } = await supabase
     .from('pedidos')
-    .insert({
-      usuario_id: user.id,
-      cliente_email: profile?.email || user.email || '',
-      cliente_nombre: profile ? `${profile.nombre || ''} ${profile.apellido || ''}`.trim() : '',
-      cliente_telefono: profile?.telefono || null,
-      direccion_envio: orderData.direccion_envio,
-      subtotal: orderData.subtotal,
-      costo_envio: orderData.costo_envio,
-      monto_descuento: 0,
-      total: orderData.total,
-      notas_cliente: orderData.notas_cliente || null,
-      estado: 'pendiente_pago'
-    })
+    .insert(orderPayload)
     .select()
     .single()
 
   if (orderError) {
     console.error('Error creating order:', orderError)
+    console.error('Error code:', orderError.code)
+    console.error('Error message:', orderError.message)
+    console.error('Error details:', orderError.details)
+    console.error('Error hint:', orderError.hint)
     return null
   }
 

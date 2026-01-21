@@ -370,3 +370,77 @@ export async function sendPaymentRejectedEmail(params: {
 
   return sendEmail({ to, subject, html });
 }
+
+// Función para enviar email de bienvenida al registrarse
+export async function sendWelcomeEmail(params: {
+  to: string;
+  customerName: string;
+}) {
+  const { to, customerName } = params;
+  
+  const subject = `Bienvenido a Softworks, ${customerName}`;
+  
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f0;">
+      <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+        <!-- Header -->
+        <div style="background-color: #000000; padding: 30px; text-align: center;">
+          <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600; letter-spacing: 2px;">SOFTWORKS</h1>
+        </div>
+        
+        <!-- Content -->
+        <div style="padding: 40px 30px;">
+          <h2 style="color: #000000; font-size: 24px; font-weight: 600; margin: 0 0 20px 0;">
+            Bienvenido, ${customerName}
+          </h2>
+          
+          <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+            Gracias por crear tu cuenta en Softworks. Estamos encantados de tenerte con nosotros.
+          </p>
+          
+          <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+            Ahora podes explorar nuestra coleccion de productos artesanales de cuero de la mas alta calidad.
+          </p>
+          
+          <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin: 25px 0;">
+            <p style="color: #333333; font-size: 14px; margin: 0 0 10px 0; font-weight: 600;">
+              Con tu cuenta podes:
+            </p>
+            <ul style="color: #666666; font-size: 14px; line-height: 1.8; margin: 0; padding-left: 20px;">
+              <li>Guardar tus productos favoritos</li>
+              <li>Ver el historial de tus pedidos</li>
+              <li>Realizar compras mas rapido</li>
+              <li>Recibir ofertas exclusivas</li>
+            </ul>
+          </div>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/colecciones" 
+               style="display: inline-block; background-color: #000000; color: #ffffff; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px;">
+              Explorar Colecciones
+            </a>
+          </div>
+        </div>
+        
+        <!-- Footer -->
+        <div style="background-color: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e5e5e5;">
+          <p style="color: #666666; font-size: 14px; margin: 0 0 10px 0;">
+            Tenes preguntas? Estamos para ayudarte.
+          </p>
+          <p style="color: #999999; font-size: 12px; margin: 0;">
+            © ${new Date().getFullYear()} Softworks. Todos los derechos reservados.
+          </p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  return sendEmail({ to, subject, html });
+}

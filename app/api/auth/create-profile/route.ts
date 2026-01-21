@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { sendWelcomeEmail } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
   try {
@@ -45,6 +46,19 @@ export async function POST(request: NextRequest) {
         { error: error.message },
         { status: 500 }
       )
+    }
+
+    // Enviar email de bienvenida
+    try {
+      const customerName = firstName ? `${firstName}${lastName ? ' ' + lastName : ''}` : 'Cliente';
+      await sendWelcomeEmail({
+        to: email,
+        customerName,
+      });
+      console.log('Welcome email sent to:', email);
+    } catch (emailError) {
+      console.error('Error sending welcome email:', emailError);
+      // No fallamos la operación por el email
     }
 
     return NextResponse.json({ data })
