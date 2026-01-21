@@ -418,50 +418,91 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
 
         {/* Shipping Info */}
         {order.envio && (order.estado === 'enviado' || order.estado === 'entregado') && (
-          <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 mb-8">
-            <h2 className="text-lg font-medium text-purple-800 mb-4 flex items-center gap-2">
-              <Truck className="w-5 h-5" />
+          <div className={`rounded-lg p-6 mb-8 border ${
+            order.estado === 'entregado' 
+              ? 'bg-gray-100 border-gray-300' 
+              : 'bg-purple-50 border-purple-200'
+          }`}>
+            <h2 className={`text-lg font-medium mb-4 flex items-center gap-2 ${
+              order.estado === 'entregado' ? 'text-gray-600' : 'text-purple-800'
+            }`}>
+              {order.estado === 'entregado' ? (
+                <CheckCircle className="w-5 h-5" />
+              ) : (
+                <Truck className="w-5 h-5" />
+              )}
               {order.estado === 'entregado' ? 'Pedido Entregado' : 'Tu Pedido Está en Camino'}
             </h2>
             
-            <div className="bg-white rounded-lg p-4 mb-4">
-              <div className="space-y-3">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">Transportista</p>
-                  <p className="font-medium text-gray-900">
-                    {order.envio.nombre_transportista || order.envio.transportista}
+            {order.estado === 'entregado' ? (
+              // Diseño para pedido entregado - todo en gris
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="text-center py-4">
+                  <CheckCircle className="w-12 h-12 mx-auto text-gray-400 mb-3" />
+                  <p className="text-gray-500 font-medium">
+                    Tu pedido fue entregado exitosamente
+                  </p>
+                  <p className="text-sm text-gray-400 mt-1">
+                    Gracias por tu compra en Softworks
                   </p>
                 </div>
                 
-                {order.envio.numero_seguimiento && (
-                  <div>
-                    <p className="text-sm text-gray-600 mb-1">Número de Seguimiento</p>
-                    <p className="font-mono text-gray-900">{order.envio.numero_seguimiento}</p>
+                <div className="space-y-2 mt-4 pt-4 border-t border-gray-200">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Transportista:</span>
+                    <span className="text-gray-500">{order.envio.nombre_transportista || order.envio.transportista}</span>
                   </div>
-                )}
-                
-                {order.envio.entrega_estimada_min && (
-                  <div>
-                    <p className="text-sm text-gray-600 mb-1">Entrega Estimada</p>
-                    <p className="font-medium text-gray-900">
-                      {formatDate(order.envio.entrega_estimada_min)}
-                      {order.envio.entrega_estimada_max && ` - ${formatDate(order.envio.entrega_estimada_max)}`}
-                    </p>
-                  </div>
-                )}
+                  {order.envio.numero_seguimiento && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400">N° Seguimiento:</span>
+                      <span className="font-mono text-gray-500">{order.envio.numero_seguimiento}</span>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            ) : (
+              // Diseño para pedido en camino
+              <>
+                <div className="bg-white rounded-lg p-4 mb-4">
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-sm text-gray-600 mb-1">Transportista</p>
+                      <p className="font-medium text-gray-900">
+                        {order.envio.nombre_transportista || order.envio.transportista}
+                      </p>
+                    </div>
+                    
+                    {order.envio.numero_seguimiento && (
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">Número de Seguimiento</p>
+                        <p className="font-mono text-gray-900">{order.envio.numero_seguimiento}</p>
+                      </div>
+                    )}
+                    
+                    {order.envio.entrega_estimada_min && (
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">Entrega Estimada</p>
+                        <p className="font-medium text-gray-900">
+                          {formatDate(order.envio.entrega_estimada_min)}
+                          {order.envio.entrega_estimada_max && ` - ${formatDate(order.envio.entrega_estimada_max)}`}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
 
-            {order.envio.url_seguimiento && order.envio.numero_seguimiento && (
-              <a
-                href={order.envio.url_seguimiento}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full py-3 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors flex items-center justify-center gap-2 font-medium"
-              >
-                <Truck className="w-5 h-5" />
-                Rastrear mi Pedido
-              </a>
+                {order.envio.url_seguimiento && order.envio.numero_seguimiento && (
+                  <a
+                    href={order.envio.url_seguimiento}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-3 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors flex items-center justify-center gap-2 font-medium"
+                  >
+                    <Truck className="w-5 h-5" />
+                    Rastrear mi Pedido
+                  </a>
+                )}
+              </>
             )}
           </div>
         )}
