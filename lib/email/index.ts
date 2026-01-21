@@ -1,15 +1,17 @@
 // ============================================================
-// SERVICIO DE EMAIL - DESACTIVADO TEMPORALMENTE
-// TODO: Implementar SendGrid
+// SERVICIO DE EMAIL CON SENDGRID
 // ============================================================
 
-// Solo inicializar Resend si hay API key configurada
-const resend = process.env.RESEND_API_KEY 
-  ? new (require('resend').Resend)(process.env.RESEND_API_KEY)
-  : null;
+import sgMail from '@sendgrid/mail';
 
-// Email del remitente (debe ser verificado en Resend)
-const FROM_EMAIL = process.env.EMAIL_FROM || 'Softworks <onboarding@resend.dev>';
+// Configurar SendGrid con la API key
+if (process.env.SENDGRID_API_KEY) {
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+}
+
+// Email del remitente (debe estar verificado en SendGrid)
+const FROM_EMAIL = process.env.EMAIL_FROM || 'softworksargentina@gmail.com';
+const FROM_NAME = process.env.EMAIL_FROM_NAME || 'Softworks';
 
 export interface EmailData {
   to: string;
@@ -19,25 +21,33 @@ export interface EmailData {
 }
 
 export async function sendEmail(data: EmailData) {
-  // Si no hay cliente de email configurado, solo loguear
-  if (!resend) {
-    console.log('[Email desactivado] No se envió email a:', data.to);
+  // Si no hay API key configurada, solo loguear
+  if (!process.env.SENDGRID_API_KEY) {
+    console.log('[Email desactivado] No hay SENDGRID_API_KEY configurada');
+    console.log('[Email desactivado] Destinatario:', data.to);
     return { success: true, data: null };
   }
   
   try {
-    const result = await resend.emails.send({
-      from: FROM_EMAIL,
+    const msg = {
       to: data.to,
+      from: {
+        email: FROM_EMAIL,
+        name: FROM_NAME,
+      },
       subject: data.subject,
       html: data.html,
-      text: data.text,
-    });
+      text: data.text || data.subject,
+    };
 
-    console.log('Email sent successfully:', result);
+    const result = await sgMail.send(msg);
+    console.log('Email sent successfully to:', data.to);
     return { success: true, data: result };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error sending email:', error);
+    if (error.response) {
+      console.error('SendGrid error body:', error.response.body);
+    }
     return { success: false, error };
   }
 }

@@ -69,9 +69,26 @@ export async function sendOrderEmail(
   type: EmailType,
   data: PaymentApprovedData | PaymentRejectedData | OrderShippedData | OrderDeliveredData
 ): Promise<{ success: boolean; error?: string }> {
-  // Emails desactivados temporalmente - no hacer nada
-  console.log(`[Email desactivado] Tipo: ${type}, Para: ${data.email}`);
-  return { success: true };
+  try {
+    const response = await fetch('/api/email/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ type, data }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Error al enviar email');
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('[Email Error]', error);
+    // No fallar si el email no se envía, solo loguear
+    return { success: true, error: error instanceof Error ? error.message : 'Error desconocido' };
+  }
 }
 
 // Helper para obtener nombre del transportista para mostrar
