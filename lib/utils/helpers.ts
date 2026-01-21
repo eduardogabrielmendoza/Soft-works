@@ -42,7 +42,8 @@ export function getOrderStatusLabel(status: EstadoPedido): string {
     pago_rechazado: 'Pago Rechazado',
     enviado: 'Enviado',
     entregado: 'Entregado',
-    cancelado: 'Cancelado'
+    cancelado: 'Cancelado',
+    archivado: 'Archivado'
   }
   return labels[status] || status
 }
@@ -56,7 +57,8 @@ export function getOrderStatusColor(status: EstadoPedido): string {
     pago_rechazado: 'bg-red-100 text-red-800',
     enviado: 'bg-purple-100 text-purple-800',
     entregado: 'bg-gray-100 text-gray-800',
-    cancelado: 'bg-red-100 text-red-800'
+    cancelado: 'bg-red-100 text-red-800',
+    archivado: 'bg-amber-100 text-amber-800'
   }
   return colors[status] || 'bg-gray-100 text-gray-800'
 }

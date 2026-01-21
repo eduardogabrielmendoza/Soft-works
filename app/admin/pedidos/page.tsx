@@ -14,7 +14,9 @@ import {
   XCircle,
   Truck,
   AlertCircle,
-  Eye
+  Eye,
+  Archive,
+  Trash2
 } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -31,6 +33,7 @@ const ORDER_STATUSES = [
   { value: 'enviado', label: 'Enviado' },
   { value: 'entregado', label: 'Entregado' },
   { value: 'cancelado', label: 'Cancelado' },
+  { value: 'archivado', label: 'Archivado' },
 ];
 
 function AdminPedidosContent() {
@@ -44,6 +47,8 @@ function AdminPedidosContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null);
   const ordersPerPage = 15;
 
   useEffect(() => {
@@ -112,6 +117,57 @@ function AdminPedidosContent() {
     loadOrders();
   };
 
+  const handleArchiveOrder = async (orderId: string) => {
+    setActionLoading(orderId);
+    const supabase = getSupabaseClient();
+    
+    try {
+      const { error } = await supabase
+        .from('pedidos')
+        .update({ estado: 'archivado' })
+        .eq('id', orderId);
+
+      if (error) throw error;
+      
+      // Recargar pedidos
+      loadOrders();
+    } catch (error) {
+      console.error('Error archivando pedido:', error);
+      alert('Error al archivar el pedido');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDeleteOrder = async (orderId: string) => {
+    setActionLoading(orderId);
+    const supabase = getSupabaseClient();
+    
+    try {
+      // Primero eliminar los items del pedido
+      await supabase
+        .from('pedido_items')
+        .delete()
+        .eq('pedido_id', orderId);
+
+      // Luego eliminar el pedido
+      const { error } = await supabase
+        .from('pedidos')
+        .delete()
+        .eq('id', orderId);
+
+      if (error) throw error;
+      
+      setShowDeleteModal(null);
+      loadOrders();
+    } catch (error) {
+      console.error('Error eliminando pedido:', error);
+      alert('Error al eliminar el pedido');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const getStatusIcon = (status: string) => {
     const icons: Record<string, any> = {
       pendiente_pago: Clock,
@@ -121,6 +177,7 @@ function AdminPedidosContent() {
       enviado: Truck,
       entregado: CheckCircle,
       cancelado: XCircle,
+      archivado: Archive,
     };
     const Icon = icons[status] || Package;
     return <Icon className="w-4 h-4" />;
@@ -241,14 +298,38 @@ function AdminPedidosContent() {
                         <td className="px-4 py-3 text-sm text-gray-500">
                           {formatDateTime(order.fecha_creacion)}
                         </td>
-                        <td className="px-4 py-3 text-center">
-                          <Link
-                            href={`/admin/pedidos/${order.id}`}
-                            className="inline-flex items-center gap-1 px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-100 transition-colors"
-                          >
-                            <Eye className="w-4 h-4" />
-                            Ver
-                          </Link>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-center gap-1">
+                            <Link
+                              href={`/admin/pedidos/${order.id}`}
+                              className="p-2 text-gray-600 hover:text-foreground hover:bg-gray-100 rounded-md transition-colors"
+                              title="Ver pedido"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Link>
+                            {order.estado !== 'archivado' && (
+                              <button
+                                onClick={() => handleArchiveOrder(order.id)}
+                                disabled={actionLoading === order.id}
+                                className="p-2 text-gray-600 hover:text-amber-600 hover:bg-amber-50 rounded-md transition-colors disabled:opacity-50"
+                                title="Archivar pedido"
+                              >
+                                {actionLoading === order.id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <Archive className="w-4 h-4" />
+                                )}
+                              </button>
+                            )}
+                            <button
+                              onClick={() => setShowDeleteModal(order.id)}
+                              disabled={actionLoading === order.id}
+                              className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors disabled:opacity-50"
+                              title="Eliminar pedido"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -284,6 +365,55 @@ function AdminPedidosContent() {
           </div>
         </motion.div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-lg max-w-md w-full p-6"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-red-600" />
+              </div>
+              <h3 className="text-lg font-medium">Eliminar Pedido</h3>
+            </div>
+            
+            <p className="text-gray-600 mb-6">
+              ¿Estás seguro de que querés eliminar este pedido? Esta acción no se puede deshacer y se eliminarán todos los datos asociados.
+            </p>
+            
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowDeleteModal(null)}
+                disabled={actionLoading !== null}
+                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => handleDeleteOrder(showDeleteModal)}
+                disabled={actionLoading !== null}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+              >
+                {actionLoading === showDeleteModal ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Eliminando...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    Eliminar
+                  </>
+                )}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

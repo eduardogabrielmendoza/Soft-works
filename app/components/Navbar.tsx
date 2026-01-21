@@ -43,10 +43,6 @@ export default function Navbar() {
 
   const accountButton = getAccountButtonConfig();
 
-  const handleAccountClick = () => {
-    window.location.href = accountButton.href;
-  };
-
   const navLinks = [
     { href: '/colecciones', label: 'Colecciones' },
     { href: '/nosotros', label: 'Nosotros' },
@@ -105,12 +101,12 @@ export default function Navbar() {
               >
                 Buscar
               </button>
-              <button
-                onClick={handleAccountClick}
+              <Link
+                href={accountButton.href}
                 className="text-sm font-medium text-gray-700 hover:text-black transition-colors uppercase tracking-wide"
               >
                 {accountButton.label}
-              </button>
+              </Link>
               <button
                 onClick={() => setShowCartModal(true)}
                 className="text-sm font-medium text-gray-700 hover:text-black transition-colors uppercase tracking-wide relative"
@@ -174,15 +170,13 @@ export default function Navbar() {
                     {link.label}
                   </Link>
                 ))}
-                <button
-                  onClick={() => {
-                    setIsOpen(false);
-                    handleAccountClick();
-                  }}
-                  className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-2 uppercase tracking-wide border-t border-gray-300 pt-4 w-full text-left"
+                <Link
+                  href={accountButton.href}
+                  onClick={() => setIsOpen(false)}
+                  className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-2 uppercase tracking-wide border-t border-gray-300 pt-4"
                 >
                   {accountButton.label}
-                </button>
+                </Link>
               </div>
             </motion.div>
           </motion.div>
