@@ -15,7 +15,6 @@ import {
   Truck,
   AlertCircle,
   Eye,
-  Archive,
   Trash2
 } from 'lucide-react';
 import Link from 'next/link';
@@ -33,7 +32,6 @@ const ORDER_STATUSES = [
   { value: 'enviado', label: 'Enviado' },
   { value: 'entregado', label: 'Entregado' },
   { value: 'cancelado', label: 'Cancelado' },
-  { value: 'archivado', label: 'Archivado' },
 ];
 
 function AdminPedidosContent() {
@@ -115,28 +113,6 @@ function AdminPedidosContent() {
     e.preventDefault();
     setCurrentPage(1);
     loadOrders();
-  };
-
-  const handleArchiveOrder = async (orderId: string) => {
-    setActionLoading(orderId);
-    const supabase = getSupabaseClient();
-    
-    try {
-      const { error } = await supabase
-        .from('pedidos')
-        .update({ estado: 'archivado' })
-        .eq('id', orderId);
-
-      if (error) throw error;
-      
-      // Recargar pedidos
-      loadOrders();
-    } catch (error) {
-      console.error('Error archivando pedido:', error);
-      alert('Error al archivar el pedido');
-    } finally {
-      setActionLoading(null);
-    }
   };
 
   const handleDeleteOrder = async (orderId: string) => {
@@ -307,20 +283,6 @@ function AdminPedidosContent() {
                             >
                               <Eye className="w-4 h-4" />
                             </Link>
-                            {order.estado !== 'archivado' && (
-                              <button
-                                onClick={() => handleArchiveOrder(order.id)}
-                                disabled={actionLoading === order.id}
-                                className="p-2 text-gray-600 hover:text-amber-600 hover:bg-amber-50 rounded-md transition-colors disabled:opacity-50"
-                                title="Archivar pedido"
-                              >
-                                {actionLoading === order.id ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <Archive className="w-4 h-4" />
-                                )}
-                              </button>
-                            )}
                             <button
                               onClick={() => setShowDeleteModal(order.id)}
                               disabled={actionLoading === order.id}

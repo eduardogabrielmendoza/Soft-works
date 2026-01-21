@@ -96,15 +96,6 @@ export default function PerfilPage() {
             <MapPin className="w-4 h-4" />
             Direcciones
           </Link>
-          {profile?.rol === 'admin' && (
-            <Link
-              href="/admin"
-              className="flex items-center gap-2 px-4 py-2 border border-foreground text-foreground rounded-md hover:bg-foreground hover:text-white transition-colors"
-            >
-              <LayoutDashboard className="w-4 h-4" />
-              Panel Admin
-            </Link>
-          )}
           <button
             onClick={handleSignOut}
             className="flex items-center gap-2 px-4 py-2 border border-red-300 text-red-600 rounded-md hover:bg-red-50 transition-colors ml-auto"
