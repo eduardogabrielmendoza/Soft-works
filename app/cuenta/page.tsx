@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/lib/hooks/useAuth';
 
-export default function CuentaPage() {
+function CuentaContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect') || '/cuenta/perfil';
@@ -285,5 +285,17 @@ export default function CuentaPage() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+export default function CuentaPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-foreground" />
+      </div>
+    }>
+      <CuentaContent />
+    </Suspense>
   );
 }
