@@ -54,10 +54,14 @@ export default function AdminVerificacionesPage() {
   }, [authLoading, isAdmin, router]);
 
   useEffect(() => {
-    if (isAdmin) {
-      loadVerifications();
+    if (!authLoading) {
+      if (isAdmin) {
+        loadVerifications();
+      } else {
+        setIsLoading(false);
+      }
     }
-  }, [isAdmin]);
+  }, [isAdmin, authLoading]);
 
   const loadVerifications = async () => {
     setIsLoading(true);

@@ -68,10 +68,14 @@ export default function AdminPedidoDetailPage({ params }: { params: Promise<{ id
   }, [authLoading, isAdmin, router]);
 
   useEffect(() => {
-    if (isAdmin) {
-      loadOrder();
+    if (!authLoading) {
+      if (isAdmin) {
+        loadOrder();
+      } else {
+        setIsLoading(false);
+      }
     }
-  }, [isAdmin, id]);
+  }, [isAdmin, authLoading, id]);
 
   const loadOrder = async () => {
     setIsLoading(true);

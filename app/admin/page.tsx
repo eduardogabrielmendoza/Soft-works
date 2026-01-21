@@ -43,10 +43,14 @@ export default function AdminDashboardPage() {
 
   // Cargar datos cuando el usuario sea admin
   useEffect(() => {
-    if (isAdmin) {
-      loadDashboardData();
+    if (!authLoading) {
+      if (isAdmin) {
+        loadDashboardData();
+      } else {
+        setIsLoading(false);
+      }
     }
-  }, [isAdmin]);
+  }, [isAdmin, authLoading]);
 
   const loadDashboardData = async () => {
     setIsLoading(true);

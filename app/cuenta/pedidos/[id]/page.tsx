@@ -34,11 +34,15 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user) {
-      loadOrder();
-      loadBankAccounts();
+    if (!authLoading) {
+      if (user) {
+        loadOrder();
+        loadBankAccounts();
+      } else {
+        setIsLoading(false);
+      }
     }
-  }, [user, id]);
+  }, [user, authLoading, id]);
 
   const loadOrder = async () => {
     setIsLoading(true);

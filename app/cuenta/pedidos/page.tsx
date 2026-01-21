@@ -18,10 +18,14 @@ export default function PedidosPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
-      loadOrders();
+    if (!authLoading) {
+      if (user) {
+        loadOrders();
+      } else {
+        setIsLoading(false);
+      }
     }
-  }, [user]);
+  }, [user, authLoading]);
 
   const loadOrders = async () => {
     if (!user) return;

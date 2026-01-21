@@ -56,10 +56,14 @@ function AdminPedidosContent() {
   }, [authLoading, isAdmin, router]);
 
   useEffect(() => {
-    if (isAdmin) {
-      loadOrders();
+    if (!authLoading) {
+      if (isAdmin) {
+        loadOrders();
+      } else {
+        setIsLoading(false);
+      }
     }
-  }, [isAdmin, statusFilter, currentPage, searchQuery]);
+  }, [isAdmin, authLoading, statusFilter, currentPage, searchQuery]);
 
   const loadOrders = async () => {
     setIsLoading(true);

@@ -59,10 +59,14 @@ export default function EditarProductoPage({ params }: { params: Promise<{ id: s
   }, [params]);
 
   useEffect(() => {
-    if (productId) {
-      loadProduct();
+    if (!authLoading) {
+      if (productId && isAdmin) {
+        loadProduct();
+      } else if (!isAdmin) {
+        setIsLoading(false);
+      }
     }
-  }, [productId]);
+  }, [productId, isAdmin, authLoading]);
 
   const loadProduct = async () => {
     if (!productId) return;

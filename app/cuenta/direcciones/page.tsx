@@ -31,10 +31,14 @@ export default function DireccionesPage() {
   });
 
   useEffect(() => {
-    if (user) {
-      loadAddresses();
+    if (!authLoading) {
+      if (user) {
+        loadAddresses();
+      } else {
+        setIsLoading(false);
+      }
     }
-  }, [user]);
+  }, [user, authLoading]);
 
   const loadAddresses = async () => {
     if (!user) return;
