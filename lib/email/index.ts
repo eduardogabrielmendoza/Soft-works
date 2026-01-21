@@ -62,7 +62,7 @@ export async function sendPaymentApprovedEmail(params: {
 }) {
   const { to, customerName, orderNumber, orderId, total } = params;
   
-  const subject = `✅ ¡Tu pago ha sido aprobado! - Pedido #${orderNumber}`;
+  const subject = `Tu pago ha sido aprobado - Pedido #${orderNumber}`;
   
   const html = `
     <!DOCTYPE html>
@@ -80,14 +80,8 @@ export async function sendPaymentApprovedEmail(params: {
         
         <!-- Content -->
         <div style="padding: 40px 30px;">
-          <div style="text-align: center; margin-bottom: 30px;">
-            <div style="width: 60px; height: 60px; background-color: #22c55e; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;">
-              <span style="color: white; font-size: 30px;">✓</span>
-            </div>
-          </div>
-          
           <h2 style="color: #000000; font-size: 22px; margin: 0 0 20px 0; text-align: center;">
-            ¡Pago Aprobado!
+            Pago Aprobado
           </h2>
           
           <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
@@ -146,11 +140,11 @@ export async function sendOrderShippedEmail(params: {
 }) {
   const { to, customerName, orderNumber, orderId, trackingNumber, trackingUrl, carrier } = params;
   
-  const subject = `📦 ¡Tu pedido está en camino! - Pedido #${orderNumber}`;
+  const subject = `Tu pedido está en camino - Pedido #${orderNumber}`;
   
   const trackingSection = trackingNumber ? `
     <div style="background-color: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 20px; margin: 30px 0;">
-      <h3 style="color: #0369a1; font-size: 16px; margin: 0 0 15px 0;">📍 Información de seguimiento:</h3>
+      <h3 style="color: #0369a1; font-size: 16px; margin: 0 0 15px 0;">Información de seguimiento:</h3>
       ${carrier ? `<p style="color: #666666; font-size: 14px; margin: 5px 0;"><strong>Transportista:</strong> ${carrier}</p>` : ''}
       <p style="color: #666666; font-size: 14px; margin: 5px 0;"><strong>Número de seguimiento:</strong> ${trackingNumber}</p>
       ${trackingUrl ? `
@@ -158,7 +152,7 @@ export async function sendOrderShippedEmail(params: {
           <a href="${trackingUrl}" 
              style="display: inline-block; background-color: #0369a1; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px;"
              target="_blank">
-            🔍 Rastrear Envío
+            Rastrear Envío
           </a>
         </div>
       ` : ''}
@@ -181,14 +175,8 @@ export async function sendOrderShippedEmail(params: {
         
         <!-- Content -->
         <div style="padding: 40px 30px;">
-          <div style="text-align: center; margin-bottom: 30px;">
-            <div style="width: 60px; height: 60px; background-color: #3b82f6; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;">
-              <span style="color: white; font-size: 30px;">📦</span>
-            </div>
-          </div>
-          
           <h2 style="color: #000000; font-size: 22px; margin: 0 0 20px 0; text-align: center;">
-            ¡Tu pedido está en camino!
+            Tu pedido está en camino
           </h2>
           
           <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
@@ -239,7 +227,7 @@ export async function sendOrderDeliveredEmail(params: {
 }) {
   const { to, customerName, orderNumber, orderId } = params;
   
-  const subject = `🎉 ¡Tu pedido ha sido entregado! - Pedido #${orderNumber}`;
+  const subject = `Tu pedido ha sido entregado - Pedido #${orderNumber}`;
   
   const html = `
     <!DOCTYPE html>
@@ -257,14 +245,8 @@ export async function sendOrderDeliveredEmail(params: {
         
         <!-- Content -->
         <div style="padding: 40px 30px;">
-          <div style="text-align: center; margin-bottom: 30px;">
-            <div style="width: 60px; height: 60px; background-color: #22c55e; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;">
-              <span style="color: white; font-size: 30px;">🎉</span>
-            </div>
-          </div>
-          
           <h2 style="color: #000000; font-size: 22px; margin: 0 0 20px 0; text-align: center;">
-            ¡Pedido Entregado!
+            Pedido Entregado
           </h2>
           
           <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
@@ -277,7 +259,7 @@ export async function sendOrderDeliveredEmail(params: {
           
           <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin: 30px 0; text-align: center;">
             <p style="color: #166534; font-size: 16px; margin: 0 0 10px 0; font-weight: 600;">
-              ¡Gracias por tu compra! 💚
+              Gracias por tu compra
             </p>
             <p style="color: #166534; font-size: 14px; margin: 0;">
               Tu opinión es muy importante para nosotros.
@@ -323,7 +305,7 @@ export async function sendPaymentRejectedEmail(params: {
 }) {
   const { to, customerName, orderNumber, orderId, reason } = params;
   
-  const subject = `⚠️ Problema con tu pago - Pedido #${orderNumber}`;
+  const subject = `Problema con tu pago - Pedido #${orderNumber}`;
   
   const html = `
     <!DOCTYPE html>
@@ -341,12 +323,6 @@ export async function sendPaymentRejectedEmail(params: {
         
         <!-- Content -->
         <div style="padding: 40px 30px;">
-          <div style="text-align: center; margin-bottom: 30px;">
-            <div style="width: 60px; height: 60px; background-color: #ef4444; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;">
-              <span style="color: white; font-size: 30px;">⚠️</span>
-            </div>
-          </div>
-          
           <h2 style="color: #000000; font-size: 22px; margin: 0 0 20px 0; text-align: center;">
             Problema con tu pago
           </h2>
