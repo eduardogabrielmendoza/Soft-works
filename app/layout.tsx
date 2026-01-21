@@ -5,6 +5,7 @@ import { Providers } from "./providers";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import BrandSection from "./components/BrandSection";
+import CookieBanner from "./components/CookieBanner";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -32,6 +33,7 @@ export default function RootLayout({
           </main>
           <BrandSection />
           <Footer />
+          <CookieBanner />
         </Providers>
       </body>
     </html>

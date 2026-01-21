@@ -67,11 +67,11 @@ function AdminPedidosContent() {
         .from('pedidos')
         .select('id, numero_pedido, estado, total, fecha_creacion, cliente_nombre, cliente_email, direccion_envio', { count: 'exact' });
 
-      if (statusFilter) {
+      if (statusFilter && statusFilter.trim() !== '') {
         query = query.eq('estado', statusFilter);
       }
 
-      if (searchQuery) {
+      if (searchQuery && searchQuery.trim() !== '') {
         query = query.or(`numero_pedido.ilike.%${searchQuery}%,cliente_nombre.ilike.%${searchQuery}%,cliente_email.ilike.%${searchQuery}%`);
       }
 
@@ -81,12 +81,15 @@ function AdminPedidosContent() {
 
       const { data, count, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error cargando pedidos:', error.message || error);
+        throw error;
+      }
 
       setOrders(data || []);
       setTotalPages(Math.ceil((count || 0) / ordersPerPage));
     } catch (error: any) {
-      console.error('Error cargando pedidos:', error);
+      console.error('Error cargando pedidos:', error?.message || error);
     } finally {
       setIsLoading(false);
     }

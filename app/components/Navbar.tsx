@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { Menu, X, ShoppingBag, Search as SearchIcon, Minus, Plus, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '@/lib/hooks/useCart';
@@ -15,13 +16,35 @@ export default function Navbar() {
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
+  const pathname = usePathname();
   const { items, itemCount, subtotal, updateQuantity, removeItem } = useCart();
   const { user, isAdmin } = useAuth();
 
+  // Determinar si estamos en el área de admin o de cuenta
+  const isInAdminArea = pathname?.startsWith('/admin');
+  const isInAccountArea = pathname?.startsWith('/cuenta');
+
+  // Determinar qué mostrar en el botón
+  const getAccountButtonConfig = () => {
+    if (!user) {
+      return { label: 'Cuenta', href: '/cuenta' };
+    }
+    if (isAdmin) {
+      // Si es admin, mostrar el botón opuesto a donde está
+      if (isInAdminArea) {
+        return { label: 'Cuenta', href: '/cuenta/perfil' };
+      } else {
+        return { label: 'Panel Admin', href: '/admin' };
+      }
+    }
+    // Usuario normal
+    return { label: 'Cuenta', href: '/cuenta/perfil' };
+  };
+
+  const accountButton = getAccountButtonConfig();
+
   const handleAccountClick = () => {
-    const targetPath = isAdmin ? '/admin' : '/cuenta';
-    // Usar navegación completa para asegurar que la página admin se cargue correctamente
-    window.location.href = targetPath;
+    window.location.href = accountButton.href;
   };
 
   const navLinks = [
@@ -86,7 +109,7 @@ export default function Navbar() {
                 onClick={handleAccountClick}
                 className="text-sm font-medium text-gray-700 hover:text-black transition-colors uppercase tracking-wide"
               >
-                {isAdmin ? "Panel Admin" : "Cuenta"}
+                {accountButton.label}
               </button>
               <button
                 onClick={() => setShowCartModal(true)}
@@ -158,7 +181,7 @@ export default function Navbar() {
                   }}
                   className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-2 uppercase tracking-wide border-t border-gray-300 pt-4 w-full text-left"
                 >
-                  {isAdmin ? "Panel Admin" : "Cuenta"}
+                  {accountButton.label}
                 </button>
               </div>
             </motion.div>

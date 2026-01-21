@@ -237,7 +237,7 @@ export default function AdminDashboardPage() {
           {/* Order Status Overview */}
           <div className="grid md:grid-cols-3 gap-4 mb-8">
             <Link
-              href="/admin/pedidos?status=awaiting_verification"
+              href="/admin/pedidos?status=esperando_verificacion"
               className="bg-blue-50 border border-blue-200 rounded-lg p-4 hover:bg-blue-100 transition-colors"
             >
               <div className="flex items-center gap-3">
@@ -249,7 +249,7 @@ export default function AdminDashboardPage() {
               </div>
             </Link>
             <Link
-              href="/admin/pedidos?status=payment_approved"
+              href="/admin/pedidos?status=pago_aprobado"
               className="bg-green-50 border border-green-200 rounded-lg p-4 hover:bg-green-100 transition-colors"
             >
               <div className="flex items-center gap-3">
@@ -261,7 +261,7 @@ export default function AdminDashboardPage() {
               </div>
             </Link>
             <Link
-              href="/admin/pedidos?status=shipped"
+              href="/admin/pedidos?status=enviado"
               className="bg-purple-50 border border-purple-200 rounded-lg p-4 hover:bg-purple-100 transition-colors"
             >
               <div className="flex items-center gap-3">
