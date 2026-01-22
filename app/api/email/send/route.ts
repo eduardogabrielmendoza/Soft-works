@@ -28,6 +28,7 @@ export async function POST(request: NextRequest) {
           orderNumber: data.orderNumber,
           orderId: data.orderId,
           total: data.total,
+          items: data.items || [],
         });
         break;
 
@@ -38,6 +39,7 @@ export async function POST(request: NextRequest) {
           orderNumber: data.orderNumber,
           orderId: data.orderId,
           reason: data.reason,
+          items: data.items || [],
         });
         break;
 
@@ -50,6 +52,7 @@ export async function POST(request: NextRequest) {
           trackingNumber: data.trackingNumber,
           trackingUrl: data.trackingUrl,
           carrier: data.carrier,
+          items: data.items || [],
         });
         break;
 
@@ -59,6 +62,7 @@ export async function POST(request: NextRequest) {
           customerName: data.customerName,
           orderNumber: data.orderNumber,
           orderId: data.orderId,
+          items: data.items || [],
         });
         break;
 
