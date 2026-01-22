@@ -59,10 +59,36 @@ export async function sendPaymentApprovedEmail(params: {
   orderNumber: string;
   orderId: string;
   total: number;
+  items: Array<{
+    producto_nombre: string;
+    producto_imagen: string | null;
+    talle: string;
+    cantidad: number;
+    producto_precio: number;
+  }>;
 }) {
-  const { to, customerName, orderNumber, orderId, total } = params;
+  const { to, customerName, orderNumber, orderId, total, items } = params;
   
   const subject = `Tu pago ha sido aprobado - Pedido #${orderNumber}`;
+  
+  // Generar HTML para los items del pedido
+  const itemsHtml = items.map(item => {
+    const imageUrl = item.producto_imagen || 'https://via.placeholder.com/80x80?text=Producto';
+    return `
+      <tr>
+        <td style="padding: 15px; border-bottom: 1px solid #e5e5e5;">
+          <div style="display: flex; align-items: center; gap: 15px;">
+            <img src="${imageUrl}" alt="${item.producto_nombre}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;" />
+            <div>
+              <div style="color: #000000; font-weight: 600; font-size: 14px; margin-bottom: 4px;">${item.producto_nombre}</div>
+              <div style="color: #666666; font-size: 13px;">Talle: ${item.talle} • Cantidad: ${item.cantidad}</div>
+              <div style="color: #000000; font-size: 13px; margin-top: 4px;">$${item.producto_precio.toLocaleString('es-AR')}</div>
+            </div>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
   
   const html = `
     <!DOCTYPE html>
@@ -81,7 +107,7 @@ export async function sendPaymentApprovedEmail(params: {
         <!-- Content -->
         <div style="padding: 40px 30px;">
           <h2 style="color: #000000; font-size: 22px; margin: 0 0 20px 0; text-align: center;">
-            Pago Aprobado
+            ¡Tu pago ha sido aprobado!
           </h2>
           
           <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
@@ -89,8 +115,16 @@ export async function sendPaymentApprovedEmail(params: {
           </p>
           
           <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
-            ¡Excelentes noticias! Hemos verificado y aprobado tu pago. Tu pedido está siendo preparado para envío.
+            ¡Excelentes noticias! Hemos verificado y aprobado tu pago. Tu pedido #${orderNumber} está siendo preparado para envío.
           </p>
+          
+          <!-- Order Items -->
+          <div style="margin: 30px 0;">
+            <h3 style="color: #000000; font-size: 16px; margin: 0 0 15px 0;">Productos de tu pedido:</h3>
+            <table style="width: 100%; border-collapse: collapse; background-color: #ffffff; border: 1px solid #e5e5e5; border-radius: 8px;">
+              ${itemsHtml}
+            </table>
+          </div>
           
           <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin: 30px 0;">
             <h3 style="color: #000000; font-size: 16px; margin: 0 0 15px 0;">Detalles del pedido:</h3>
@@ -101,6 +135,10 @@ export async function sendPaymentApprovedEmail(params: {
           
           <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
             Te notificaremos nuevamente cuando tu pedido sea despachado con la información de seguimiento.
+          </p>
+          
+          <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+            Por cualquier duda o inconveniente no dudes en contactarnos a nuestro mail: <a href="mailto:softworksargentina@gmail.com" style="color: #000000; text-decoration: underline;">softworksargentina@gmail.com</a>
           </p>
           
           <div style="text-align: center; margin: 30px 0;">
@@ -114,7 +152,7 @@ export async function sendPaymentApprovedEmail(params: {
         <!-- Footer -->
         <div style="background-color: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e5e5e5;">
           <p style="color: #666666; font-size: 14px; margin: 0 0 10px 0;">
-            ¿Tenés alguna pregunta? Respondé este email o contactanos.
+            ¿Tenés alguna pregunta? Respondé este email o contactanos a softworksargentina@gmail.com
           </p>
           <p style="color: #999999; font-size: 12px; margin: 0;">
             © ${new Date().getFullYear()} Softworks. Todos los derechos reservados.
@@ -137,10 +175,36 @@ export async function sendOrderShippedEmail(params: {
   trackingNumber?: string;
   trackingUrl?: string;
   carrier?: string;
+  items: Array<{
+    producto_nombre: string;
+    producto_imagen: string | null;
+    talle: string;
+    cantidad: number;
+    producto_precio: number;
+  }>;
 }) {
-  const { to, customerName, orderNumber, orderId, trackingNumber, trackingUrl, carrier } = params;
+  const { to, customerName, orderNumber, orderId, trackingNumber, trackingUrl, carrier, items } = params;
   
   const subject = `Tu pedido está en camino - Pedido #${orderNumber}`;
+  
+  // Generar HTML para los items del pedido
+  const itemsHtml = items.map(item => {
+    const imageUrl = item.producto_imagen || 'https://via.placeholder.com/80x80?text=Producto';
+    return `
+      <tr>
+        <td style="padding: 15px; border-bottom: 1px solid #e5e5e5;">
+          <div style="display: flex; align-items: center; gap: 15px;">
+            <img src="${imageUrl}" alt="${item.producto_nombre}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;" />
+            <div>
+              <div style="color: #000000; font-weight: 600; font-size: 14px; margin-bottom: 4px;">${item.producto_nombre}</div>
+              <div style="color: #666666; font-size: 13px;">Talle: ${item.talle} • Cantidad: ${item.cantidad}</div>
+              <div style="color: #000000; font-size: 13px; margin-top: 4px;">$${item.producto_precio.toLocaleString('es-AR')}</div>
+            </div>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
   
   const trackingSection = trackingNumber ? `
     <div style="background-color: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 20px; margin: 30px 0;">
@@ -176,7 +240,7 @@ export async function sendOrderShippedEmail(params: {
         <!-- Content -->
         <div style="padding: 40px 30px;">
           <h2 style="color: #000000; font-size: 22px; margin: 0 0 20px 0; text-align: center;">
-            Tu pedido está en camino
+            ¡Tu pedido está en camino!
           </h2>
           
           <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
@@ -184,10 +248,22 @@ export async function sendOrderShippedEmail(params: {
           </p>
           
           <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
-            ¡Tu pedido <strong>#${orderNumber}</strong> ha sido despachado y está en camino hacia vos!
+            ¡Tu pedido #${orderNumber} ha sido despachado y ya está en camino!
           </p>
           
+          <!-- Order Items -->
+          <div style="margin: 30px 0;">
+            <h3 style="color: #000000; font-size: 16px; margin: 0 0 15px 0;">Productos de tu pedido:</h3>
+            <table style="width: 100%; border-collapse: collapse; background-color: #ffffff; border: 1px solid #e5e5e5; border-radius: 8px;">
+              ${itemsHtml}
+            </table>
+          </div>
+          
           ${trackingSection}
+          
+          <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+            Por cualquier duda o inconveniente no dudes en contactarnos a nuestro mail: <a href="mailto:softworksargentina@gmail.com" style="color: #000000; text-decoration: underline;">softworksargentina@gmail.com</a>
+          </p>
           
           <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
             Te notificaremos cuando tu pedido sea entregado. ¡Gracias por tu compra!
@@ -204,7 +280,7 @@ export async function sendOrderShippedEmail(params: {
         <!-- Footer -->
         <div style="background-color: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e5e5e5;">
           <p style="color: #666666; font-size: 14px; margin: 0 0 10px 0;">
-            ¿Tenés alguna pregunta sobre tu envío? Respondé este email.
+            ¿Tenés alguna pregunta sobre tu envío? Contactanos a softworksargentina@gmail.com
           </p>
           <p style="color: #999999; font-size: 12px; margin: 0;">
             © ${new Date().getFullYear()} Softworks. Todos los derechos reservados.
@@ -224,10 +300,36 @@ export async function sendOrderDeliveredEmail(params: {
   customerName: string;
   orderNumber: string;
   orderId: string;
+  items: Array<{
+    producto_nombre: string;
+    producto_imagen: string | null;
+    talle: string;
+    cantidad: number;
+    producto_precio: number;
+  }>;
 }) {
-  const { to, customerName, orderNumber, orderId } = params;
+  const { to, customerName, orderNumber, orderId, items } = params;
   
   const subject = `Tu pedido ha sido entregado - Pedido #${orderNumber}`;
+  
+  // Generar HTML para los items del pedido
+  const itemsHtml = items.map(item => {
+    const imageUrl = item.producto_imagen || 'https://via.placeholder.com/80x80?text=Producto';
+    return `
+      <tr>
+        <td style="padding: 15px; border-bottom: 1px solid #e5e5e5;">
+          <div style="display: flex; align-items: center; gap: 15px;">
+            <img src="${imageUrl}" alt="${item.producto_nombre}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;" />
+            <div>
+              <div style="color: #000000; font-weight: 600; font-size: 14px; margin-bottom: 4px;">${item.producto_nombre}</div>
+              <div style="color: #666666; font-size: 13px;">Talle: ${item.talle} • Cantidad: ${item.cantidad}</div>
+              <div style="color: #000000; font-size: 13px; margin-top: 4px;">$${item.producto_precio.toLocaleString('es-AR')}</div>
+            </div>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
   
   const html = `
     <!DOCTYPE html>
@@ -246,7 +348,7 @@ export async function sendOrderDeliveredEmail(params: {
         <!-- Content -->
         <div style="padding: 40px 30px;">
           <h2 style="color: #000000; font-size: 22px; margin: 0 0 20px 0; text-align: center;">
-            Pedido Entregado
+            ¡Pedido Entregado!
           </h2>
           
           <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
@@ -254,12 +356,20 @@ export async function sendOrderDeliveredEmail(params: {
           </p>
           
           <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
-            ¡Tu pedido <strong>#${orderNumber}</strong> ha sido entregado exitosamente! Esperamos que disfrutes tus productos.
+            ¡Tu pedido #${orderNumber} ha sido entregado exitosamente! Esperamos que disfrutes tus productos.
           </p>
+          
+          <!-- Order Items -->
+          <div style="margin: 30px 0;">
+            <h3 style="color: #000000; font-size: 16px; margin: 0 0 15px 0;">Productos de tu pedido:</h3>
+            <table style="width: 100%; border-collapse: collapse; background-color: #ffffff; border: 1px solid #e5e5e5; border-radius: 8px;">
+              ${itemsHtml}
+            </table>
+          </div>
           
           <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin: 30px 0; text-align: center;">
             <p style="color: #166534; font-size: 16px; margin: 0 0 10px 0; font-weight: 600;">
-              Gracias por tu compra
+              ¡Gracias por tu compra!
             </p>
             <p style="color: #166534; font-size: 14px; margin: 0;">
               Tu opinión es muy importante para nosotros.
@@ -267,7 +377,7 @@ export async function sendOrderDeliveredEmail(params: {
           </div>
           
           <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
-            Si tenés algún problema con tu pedido o querés hacer una devolución, no dudes en contactarnos.
+            Si tenés algún problema, duda o queja respecto a tu pedido, no dudes en contactarnos a nuestro mail: <a href="mailto:softworksargentina@gmail.com" style="color: #000000; text-decoration: underline;">softworksargentina@gmail.com</a>
           </p>
           
           <div style="text-align: center; margin: 30px 0;">
@@ -281,7 +391,7 @@ export async function sendOrderDeliveredEmail(params: {
         <!-- Footer -->
         <div style="background-color: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e5e5e5;">
           <p style="color: #666666; font-size: 14px; margin: 0 0 10px 0;">
-            ¿Tenés alguna pregunta? Respondé este email o contactanos.
+            ¿Tenés alguna pregunta? Contactanos a softworksargentina@gmail.com
           </p>
           <p style="color: #999999; font-size: 12px; margin: 0;">
             © ${new Date().getFullYear()} Softworks. Todos los derechos reservados.
@@ -302,10 +412,36 @@ export async function sendPaymentRejectedEmail(params: {
   orderNumber: string;
   orderId: string;
   reason?: string;
+  items: Array<{
+    producto_nombre: string;
+    producto_imagen: string | null;
+    talle: string;
+    cantidad: number;
+    producto_precio: number;
+  }>;
 }) {
-  const { to, customerName, orderNumber, orderId, reason } = params;
+  const { to, customerName, orderNumber, orderId, reason, items } = params;
   
   const subject = `Problema con tu pago - Pedido #${orderNumber}`;
+  
+  // Generar HTML para los items del pedido
+  const itemsHtml = items.map(item => {
+    const imageUrl = item.producto_imagen || 'https://via.placeholder.com/80x80?text=Producto';
+    return `
+      <tr>
+        <td style="padding: 15px; border-bottom: 1px solid #e5e5e5;">
+          <div style="display: flex; align-items: center; gap: 15px;">
+            <img src="${imageUrl}" alt="${item.producto_nombre}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;" />
+            <div>
+              <div style="color: #000000; font-weight: 600; font-size: 14px; margin-bottom: 4px;">${item.producto_nombre}</div>
+              <div style="color: #666666; font-size: 13px;">Talle: ${item.talle} • Cantidad: ${item.cantidad}</div>
+              <div style="color: #000000; font-size: 13px; margin-top: 4px;">$${item.producto_precio.toLocaleString('es-AR')}</div>
+            </div>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
   
   const html = `
     <!DOCTYPE html>
@@ -332,8 +468,16 @@ export async function sendPaymentRejectedEmail(params: {
           </p>
           
           <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
-            Lamentablemente, no pudimos verificar el pago de tu pedido <strong>#${orderNumber}</strong>.
+            Lamentablemente, no pudimos verificar el pago de tu pedido #${orderNumber}.
           </p>
+          
+          <!-- Order Items -->
+          <div style="margin: 30px 0;">
+            <h3 style="color: #000000; font-size: 16px; margin: 0 0 15px 0;">Productos de tu pedido:</h3>
+            <table style="width: 100%; border-collapse: collapse; background-color: #ffffff; border: 1px solid #e5e5e5; border-radius: 8px;">
+              ${itemsHtml}
+            </table>
+          </div>
           
           ${reason ? `
           <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 20px; margin: 30px 0;">
@@ -343,7 +487,7 @@ export async function sendPaymentRejectedEmail(params: {
           ` : ''}
           
           <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
-            Por favor, ingresá a tu cuenta para subir un nuevo comprobante de pago o contactanos si creés que esto es un error.
+            Por favor, ingresá a tu cuenta para subir un nuevo comprobante de pago o contactanos a <a href="mailto:softworksargentina@gmail.com" style="color: #000000; text-decoration: underline;">softworksargentina@gmail.com</a> si creés que esto es un error.
           </p>
           
           <div style="text-align: center; margin: 30px 0;">
@@ -357,7 +501,7 @@ export async function sendPaymentRejectedEmail(params: {
         <!-- Footer -->
         <div style="background-color: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e5e5e5;">
           <p style="color: #666666; font-size: 14px; margin: 0 0 10px 0;">
-            ¿Necesitás ayuda? Respondé este email o contactanos.
+            ¿Necesitás ayuda? Contactanos a softworksargentina@gmail.com
           </p>
           <p style="color: #999999; font-size: 12px; margin: 0;">
             © ${new Date().getFullYear()} Softworks. Todos los derechos reservados.

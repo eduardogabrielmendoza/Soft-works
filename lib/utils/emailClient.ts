@@ -5,6 +5,15 @@ export type EmailType =
   | 'order_shipped' 
   | 'order_delivered';
 
+// Interface para items del pedido en emails
+export interface EmailOrderItem {
+  producto_nombre: string;
+  producto_imagen: string | null;
+  talle: string;
+  cantidad: number;
+  producto_precio: number;
+}
+
 // Datos requeridos para cada tipo de email
 export interface PaymentApprovedData {
   email: string;
@@ -12,6 +21,7 @@ export interface PaymentApprovedData {
   orderNumber: string;
   orderId: string;
   total: number;
+  items: EmailOrderItem[];
 }
 
 export interface PaymentRejectedData {
@@ -20,6 +30,7 @@ export interface PaymentRejectedData {
   orderNumber: string;
   orderId: string;
   reason?: string;
+  items: EmailOrderItem[];
 }
 
 export interface OrderShippedData {
@@ -30,6 +41,7 @@ export interface OrderShippedData {
   trackingNumber?: string;
   trackingUrl?: string;
   carrier?: string;
+  items: EmailOrderItem[];
 }
 
 export interface OrderDeliveredData {
@@ -37,6 +49,7 @@ export interface OrderDeliveredData {
   customerName: string;
   orderNumber: string;
   orderId: string;
+  items: EmailOrderItem[];
 }
 
 // ============================================================

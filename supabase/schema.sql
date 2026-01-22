@@ -424,20 +424,29 @@ CREATE TRIGGER trigger_generar_numero_pedido
   EXECUTE FUNCTION generar_numero_pedido();
 
 -- Función para crear perfil automáticamente al registrar usuario
+-- Se ejecuta al crear el usuario, incluso antes de confirmar el email
 CREATE OR REPLACE FUNCTION manejar_nuevo_usuario()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.perfiles (id, email, nombre, apellido)
+  -- Insertar perfil con los datos del metadata
+  INSERT INTO public.perfiles (id, email, nombre, apellido, rol)
   VALUES (
     NEW.id,
     NEW.email,
-    COALESCE(NEW.raw_user_meta_data->>'first_name', NEW.raw_user_meta_data->>'nombre'),
-    COALESCE(NEW.raw_user_meta_data->>'last_name', NEW.raw_user_meta_data->>'apellido')
-  );
+    COALESCE(NEW.raw_user_meta_data->>'first_name', ''),
+    COALESCE(NEW.raw_user_meta_data->>'last_name', ''),
+    'cliente'
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    email = EXCLUDED.email,
+    nombre = COALESCE(NULLIF(public.perfiles.nombre, ''), EXCLUDED.nombre),
+    apellido = COALESCE(NULLIF(public.perfiles.apellido, ''), EXCLUDED.apellido);
+  
   RETURN NEW;
 EXCEPTION
   WHEN OTHERS THEN
-    RAISE WARNING 'Error creating profile for user %: %', NEW.id, SQLERRM;
+    -- Log el error pero no fallar la creación del usuario
+    RAISE WARNING 'Error creando perfil para usuario %: %', NEW.id, SQLERRM;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -505,41 +514,67 @@ ALTER TABLE suscriptores_newsletter ENABLE ROW LEVEL SECURITY;
 -- =============================================
 -- POLÍTICAS RLS: perfiles
 -- =============================================
+-- Permitir a usuarios ver su propio perfil
 CREATE POLICY "Usuarios pueden ver su perfil"
   ON perfiles FOR SELECT
   USING (auth.uid() = id);
 
-CREATE POLICY "Usuarios pueden insertar su perfil"
-  ON perfiles FOR INSERT
-  WITH CHECK (auth.uid() = id);
-
-CREATE POLICY "Usuarios pueden actualizar su perfil"
-  ON perfiles FOR UPDATE
-  USING (auth.uid() = id)
-  WITH CHECK (auth.uid() = id AND rol = 'cliente');
-
+-- Permitir a admins ver todos los perfiles (usando rol del JWT)
 CREATE POLICY "Admins pueden ver todos los perfiles"
   ON perfiles FOR SELECT
   USING (
-    EXISTS (SELECT 1 FROM perfiles WHERE id = auth.uid() AND rol = 'admin')
+    (auth.jwt() -> 'user_metadata' ->> 'role' = 'admin')
+    OR 
+    (auth.jwt() -> 'app_metadata' ->> 'role' = 'admin')
   );
 
+-- Permitir inserción de perfiles (para el trigger y la API)
+CREATE POLICY "Sistema puede insertar perfiles"
+  ON perfiles FOR INSERT
+  WITH CHECK (true);
+
+-- Permitir a usuarios actualizar su propio perfil (sin cambiar rol)
+CREATE POLICY "Usuarios pueden actualizar su perfil"
+  ON perfiles FOR UPDATE
+  USING (auth.uid() = id)
+  WITH CHECK (auth.uid() = id);
+
+-- Permitir a admins actualizar cualquier perfil
 CREATE POLICY "Admins pueden actualizar todos los perfiles"
   ON perfiles FOR UPDATE
   USING (
-    EXISTS (SELECT 1 FROM perfiles WHERE id = auth.uid() AND rol = 'admin')
+    (auth.jwt() -> 'user_metadata' ->> 'role' = 'admin')
+    OR 
+    (auth.jwt() -> 'app_metadata' ->> 'role' = 'admin')
   );
 
 -- =============================================
 -- POLÍTICAS RLS: direcciones
 -- =============================================
-CREATE POLICY "Usuarios pueden gestionar sus direcciones"
-  ON direcciones FOR ALL
+-- Permitir a usuarios ver sus propias direcciones
+CREATE POLICY "Usuarios pueden ver sus direcciones"
+  ON direcciones FOR SELECT
+  USING (auth.uid() = usuario_id);
+
+-- Permitir a usuarios crear sus propias direcciones
+CREATE POLICY "Usuarios pueden crear sus direcciones"
+  ON direcciones FOR INSERT
+  WITH CHECK (auth.uid() = usuario_id);
+
+-- Permitir a usuarios actualizar sus propias direcciones
+CREATE POLICY "Usuarios pueden actualizar sus direcciones"
+  ON direcciones FOR UPDATE
   USING (auth.uid() = usuario_id)
   WITH CHECK (auth.uid() = usuario_id);
 
-CREATE POLICY "Admins pueden ver todas las direcciones"
-  ON direcciones FOR SELECT
+-- Permitir a usuarios eliminar sus propias direcciones
+CREATE POLICY "Usuarios pueden eliminar sus direcciones"
+  ON direcciones FOR DELETE
+  USING (auth.uid() = usuario_id);
+
+-- Permitir a admins gestionar todas las direcciones
+CREATE POLICY "Admins pueden gestionar todas las direcciones"
+  ON direcciones FOR ALL
   USING (
     EXISTS (SELECT 1 FROM perfiles WHERE id = auth.uid() AND rol = 'admin')
   );

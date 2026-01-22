@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { useCart } from '@/lib/hooks/useCart';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { CategoriaProducto } from '@/lib/types/database.types';
+import RelatedProducts from '@/app/components/RelatedProducts';
 
 interface Producto {
   id: string;
@@ -554,6 +555,14 @@ export default function ProductoPage({ params }: { params: Promise<{ slug: strin
           </motion.div>
         </div>
       </div>
+
+      {/* Productos Relacionados */}
+      {product && (
+        <RelatedProducts 
+          currentProductId={product.id} 
+          category={product.categoria} 
+        />
+      )}
     </div>
   );
 }

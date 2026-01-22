@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
+import HeroBannerSlideshow from '@/app/components/HeroBannerSlideshow';
+import FAQSection from '@/app/components/FAQSection';
 
 export default function Home() {
   const fadeInUp = {
@@ -13,46 +15,8 @@ export default function Home() {
 
   return (
     <div className="pt-16">
-      {/* Hero Principal - Banner Campaña */}
-      <section className="relative overflow-hidden">
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1 }}
-          className="relative aspect-[9/14] lg:aspect-[21/9]"
-        >
-          <Image
-            src="/images/Herobanner.png"
-            alt="Colección Softworks"
-            fill
-            priority
-            className="object-cover"
-          />
-          <div className="absolute inset-0 bg-black/20" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center z-10">
-            <motion.h1 
-              {...fadeInUp}
-              className="text-5xl lg:text-7xl font-medium text-white mb-4"
-            >
-              Colecciones
-            </motion.h1>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3, duration: 0.6 }}
-              className="flex flex-col items-center gap-3"
-            >
-              <Link 
-                href="/colecciones"
-                className="inline-block px-8 py-3 bg-white text-foreground rounded-full hover:bg-white/90 transition-all font-medium"
-              >
-                Explorar
-              </Link>
-              <p className="text-base lg:text-lg text-gray-400">Buenos Aires - Argentina</p>
-            </motion.div>
-          </div>
-        </motion.div>
-      </section>
+      {/* Hero Principal - Banner Slideshow */}
+      <HeroBannerSlideshow />
 
       {/* Grid de Productos Destacados 1 */}
       <section className="px-4 py-16 lg:py-24 max-w-7xl mx-auto">
@@ -252,58 +216,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Galería de Comunidad / UGC */}
-      <section className="py-16 lg:py-24 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-2xl lg:text-3xl font-medium mb-4">Softworks + vos</h2>
-            <p className="text-foreground/70">Comparti tu estilo con #softworks</p>
-          </motion.div>
-
-          {/* Grid de Imágenes UGC */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-            {[1, 2, 3, 4, 5, 6].map((item) => (
-              <motion.div
-                key={item}
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: item * 0.05 }}
-                className="aspect-square rounded-lg overflow-hidden relative cursor-pointer group"
-              >
-                <Image
-                  src={`/images/vos${item}.png`}
-                  alt={`Softworks Community ${item}`}
-                  fill
-                  className="object-cover group-hover:scale-110 transition-transform duration-500"
-                />
-              </motion.div>
-            ))}
-          </div>
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.3 }}
-            className="text-center mt-8"
-          >
-            <a 
-              href="https://instagram.com/softworks"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block px-8 py-3 border-2 border-foreground rounded-full hover:bg-foreground hover:text-white transition-all font-medium"
-            >
-              Seguinos en Instagram
-            </a>
-          </motion.div>
-        </div>
-      </section>
+      {/* FAQ Section */}
+      <FAQSection />
     </div>
   );
 }

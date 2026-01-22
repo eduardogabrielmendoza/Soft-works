@@ -15,10 +15,35 @@ export default function Navbar() {
   const [showCartModal, setShowCartModal] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
   
   const pathname = usePathname();
   const { items, itemCount, subtotal, updateQuantity, removeItem } = useCart();
   const { user, isAdmin } = useAuth();
+
+  // Control de visibilidad del navbar en scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      if (currentScrollY < 10) {
+        // Cerca del top, siempre mostrar
+        setIsVisible(true);
+      } else if (currentScrollY > lastScrollY) {
+        // Scrolleando hacia abajo, ocultar
+        setIsVisible(false);
+      } else {
+        // Scrolleando hacia arriba, mostrar
+        setIsVisible(true);
+      }
+      
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
 
   // Determinar si estamos en el área de admin o de cuenta
   const isInAdminArea = pathname?.startsWith('/admin');
@@ -51,7 +76,12 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#F5F5F0]/80 backdrop-blur-md border-b border-gray-200">
+      <motion.nav 
+        initial={{ y: 0 }}
+        animate={{ y: isVisible ? 0 : '-100%' }}
+        transition={{ duration: 0.3, ease: 'easeInOut' }}
+        className="fixed top-0 left-0 right-0 z-50 bg-[#F5F5F0]/80 backdrop-blur-md border-b border-gray-200"
+      >
         <div className="max-w-[1600px] mx-auto px-6 lg:px-12">
           <div className="flex items-center justify-between h-16 lg:h-20">
             {/* Left Navigation */}
@@ -134,7 +164,7 @@ export default function Navbar() {
                   <span className="absolute -top-1 -right-1 w-5 h-5 bg-foreground text-white text-xs rounded-full flex items-center justify-center">
                     {itemCount}
                   </span>
-                )}
+        motion.        )}
               </button>
             </div>
           </div>

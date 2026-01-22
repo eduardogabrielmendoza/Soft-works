@@ -18,6 +18,7 @@ function CuentaContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -159,16 +160,28 @@ function CuentaContent() {
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setShowResetModal(true);
-                  setResetEmail(email);
-                }}
-                className="text-sm text-gray-600 hover:text-black transition-colors underline"
-              >
-                ¿Olvidaste tu contraseña?
-              </button>
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-4 h-4 rounded border-gray-300 text-foreground focus:ring-gray-400 cursor-pointer"
+                  />
+                  <span className="text-sm text-gray-700">Mantenerme loggeado</span>
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowResetModal(true);
+                    setResetEmail(email);
+                  }}
+                  className="text-sm text-gray-600 hover:text-black transition-colors underline"
+                >
+                  ¿Olvidaste tu contraseña?
+                </button>
+              </div>
 
               <button
                 type="submit"

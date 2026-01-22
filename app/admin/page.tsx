@@ -22,6 +22,7 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { formatPrice } from '@/lib/utils/helpers';
+import MonthlyRevenueChart from '@/app/components/MonthlyRevenueChart';
 
 interface DashboardStats {
   totalOrders: number;
@@ -269,6 +270,11 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
             </Link>
+          </div>
+
+          {/* Monthly Revenue Chart */}
+          <div className="mb-8">
+            <MonthlyRevenueChart />
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6">

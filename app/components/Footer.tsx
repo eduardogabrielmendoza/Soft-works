@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Instagram, Youtube, Twitter, Facebook } from 'lucide-react';
+import { Instagram, Youtube, Twitter, Facebook, Mail } from 'lucide-react';
 import { useState } from 'react';
 import { useSiteConfig } from '@/lib/hooks/useSiteConfig';
 
@@ -162,9 +162,18 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-gray-200">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-foreground/70">
-              © {config.site_name} {new Date().getFullYear()}
-            </p>
+            <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
+              <p className="text-sm text-foreground/70">
+                © {config.site_name} {new Date().getFullYear()}
+              </p>
+              <a
+                href="mailto:softworksargentina@gmail.com"
+                className="flex items-center gap-2 text-sm text-foreground/70 hover:text-foreground transition-colors"
+              >
+                <Mail className="w-4 h-4" />
+                softworksargentina@gmail.com
+              </a>
+            </div>
 
             {/* Social Links */}
             {hasSocialLinks && (

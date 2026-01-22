@@ -101,6 +101,13 @@ export default function AdminPedidoDetailPage({ params }: { params: Promise<{ id
           orderNumber: order.numero_pedido,
           orderId: order.id,
           total: order.total,
+          items: order.items.map(item => ({
+            producto_nombre: item.producto_nombre,
+            producto_imagen: item.producto_imagen,
+            talle: item.talle,
+            cantidad: item.cantidad,
+            producto_precio: item.producto_precio,
+          })),
         });
       }
       
@@ -131,6 +138,13 @@ export default function AdminPedidoDetailPage({ params }: { params: Promise<{ id
           orderNumber: order.numero_pedido,
           orderId: order.id,
           reason: rejectionReason,
+          items: order.items.map(item => ({
+            producto_nombre: item.producto_nombre,
+            producto_imagen: item.producto_imagen,
+            talle: item.talle,
+            cantidad: item.cantidad,
+            producto_precio: item.producto_precio,
+          })),
         });
       }
       
@@ -170,6 +184,13 @@ export default function AdminPedidoDetailPage({ params }: { params: Promise<{ id
       // Enviar email de pedido enviado
       if (order!.cliente_email) {
         await sendOrderEmail('order_shipped', {
+          items: order!.items.map(item => ({
+            producto_nombre: item.producto_nombre,
+            producto_imagen: item.producto_imagen,
+            talle: item.talle,
+            cantidad: item.cantidad,
+            producto_precio: item.producto_precio,
+          })),
           email: order!.cliente_email,
           customerName: order!.cliente_nombre || 'Cliente',
           orderNumber: order!.numero_pedido,
@@ -205,7 +226,14 @@ export default function AdminPedidoDetailPage({ params }: { params: Promise<{ id
     try {
       await updateOrderStatus(order!.id, 'entregado');
       
-      // Enviar email de pedido entregado
+      //  items: order!.items.map(item => ({
+            producto_nombre: item.producto_nombre,
+            producto_imagen: item.producto_imagen,
+            talle: item.talle,
+            cantidad: item.cantidad,
+            producto_precio: item.producto_precio,
+          })),
+         Enviar email de pedido entregado
       if (order!.cliente_email) {
         await sendOrderEmail('order_delivered', {
           email: order!.cliente_email,
