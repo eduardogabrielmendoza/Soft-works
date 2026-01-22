@@ -226,14 +226,7 @@ export default function AdminPedidoDetailPage({ params }: { params: Promise<{ id
     try {
       await updateOrderStatus(order!.id, 'entregado');
       
-      //  items: order!.items.map(item => ({
-            producto_nombre: item.producto_nombre,
-            producto_imagen: item.producto_imagen,
-            talle: item.talle,
-            cantidad: item.cantidad,
-            producto_precio: item.producto_precio,
-          })),
-         Enviar email de pedido entregado
+      // Enviar email de pedido entregado
       if (order!.cliente_email) {
         await sendOrderEmail('order_delivered', {
           email: order!.cliente_email,

@@ -60,8 +60,8 @@ export default function RelatedProducts({ currentProductId, category }: RelatedP
         if (newError) throw newError;
 
         // Combinar resultados, evitando duplicados
-        const existingIds = new Set(data?.map(p => p.id) || []);
-        const uniqueNewProducts = newProducts?.filter(p => !existingIds.has(p.id)) || [];
+        const existingIds = new Set(data?.map((p: RelatedProduct) => p.id) || []);
+        const uniqueNewProducts = newProducts?.filter((p: RelatedProduct) => !existingIds.has(p.id)) || [];
         data = [...(data || []), ...uniqueNewProducts].slice(0, 4);
       }
 

@@ -51,7 +51,7 @@ export default function MonthlyRevenueChart() {
       }
 
       // Procesar pedidos
-      orders?.forEach((order) => {
+      orders?.forEach((order: any) => {
         const date = new Date(order.fecha_creacion);
         const monthKey = `${months[date.getMonth()]} ${date.getFullYear().toString().slice(-2)}`;
         
@@ -120,7 +120,8 @@ export default function MonthlyRevenueChart() {
               borderRadius: '6px',
               fontSize: '14px'
             }}
-            formatter={(value: number, name: string) => {
+            formatter={(value: number | undefined, name: string | undefined) => {
+              if (!value || !name) return ['0', ''];
               if (name === 'ingresos') {
                 return [`$${value.toLocaleString()}`, 'Ingresos'];
               }
