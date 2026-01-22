@@ -233,6 +233,13 @@ export default function AdminPedidoDetailPage({ params }: { params: Promise<{ id
           customerName: order!.cliente_nombre || 'Cliente',
           orderNumber: order!.numero_pedido,
           orderId: order!.id,
+          items: order!.items.map(item => ({
+            producto_nombre: item.producto_nombre,
+            producto_imagen: item.producto_imagen,
+            talle: item.talle,
+            cantidad: item.cantidad,
+            producto_precio: item.producto_precio,
+          })),
         });
       }
       
