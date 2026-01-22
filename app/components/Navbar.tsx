@@ -169,9 +169,7 @@ export default function Navbar() {
             </div>
           </div>
         </div>
-      </nav>
-                  <X className="w-6 h-6 text-foreground" />
-                ) : (
+      </motion.nav>
 
       {/* Mobile Menu */}
       <AnimatePresence>
