@@ -31,28 +31,25 @@ export default function Navbar() {
   
   // Detectar si estamos en la home para el estilo transparente inicial
   const isHomePage = pathname === '/';
+  const isInAdminArea = pathname?.startsWith('/admin');
   
   // Estado inicial: transparente en home, sólido en otras páginas
+  // Inicializar directamente basado en la ruta para evitar flash
   const [headerState, setHeaderState] = useState<HeaderState>(() => 
-    typeof window !== 'undefined' && pathname === '/' ? 'transparent' : 'solid'
+    isHomePage ? 'transparent' : 'solid'
   );
   const { itemCount } = useCart();
   const { user, isAdmin } = useAuth();
-
-  // Forzar transparencia inicial en home al montar el componente
-  useEffect(() => {
-    if (isHomePage && typeof window !== 'undefined' && window.scrollY < 10) {
-      setHeaderState('transparent');
-    }
-  }, [isHomePage]);
 
   // Smart sticky behavior con AnnouncementBar
   const handleScroll = useCallback(() => {
     const currentScrollY = window.scrollY;
     const scrollThreshold = 100;
     
-    // AnnouncementBar: visible solo en scrollY === 0
-    setShowAnnouncement(currentScrollY < 10);
+    // AnnouncementBar: visible solo en scrollY === 0 y fuera de admin
+    if (!isInAdminArea) {
+      setShowAnnouncement(currentScrollY < 10);
+    }
     
     if (currentScrollY < 10) {
       // En el tope absoluto - transparente en home, sólido en otras páginas
@@ -66,7 +63,7 @@ export default function Navbar() {
     }
     
     setLastScrollY(currentScrollY);
-  }, [lastScrollY, isHomePage]);
+  }, [lastScrollY, isHomePage, isInAdminArea]);
 
   useEffect(() => {
     // Inicializar el estado
@@ -80,10 +77,7 @@ export default function Navbar() {
     setIsMenuOpen(false);
   }, [pathname]);
 
-  // Determinar si estamos en el área de admin o de cuenta
-  const isInAdminArea = pathname?.startsWith('/admin');
-
-  // Determinar qué mostrar en el botón
+  // Determinar qué mostrar en el botón de cuenta
   const getAccountButtonConfig = () => {
     if (!user) {
       return { label: 'Cuenta', href: '/cuenta' };
@@ -121,15 +115,23 @@ export default function Navbar() {
 
   return (
     <>
-      {/* Announcement Bar - Tope absoluto */}
-      <AnnouncementBar isVisible={showAnnouncement} />
+      {/* Announcement Bar - Oculto en panel admin */}
+      {!isInAdminArea && (
+        <>
+          <AnnouncementBar isVisible={showAnnouncement} />
+          {/* Gap elegante entre announcement y header en páginas no-home */}
+          {!isHomePage && showAnnouncement && (
+            <div className="fixed top-[44px] left-0 right-0 h-4 z-[54] pointer-events-none" />
+          )}
+        </>
+      )}
       
       {/* Header - Debajo de AnnouncementBar o fijo en scroll */}
       <motion.header
         initial={{ y: 0 }}
         animate={{ 
           y: isHidden ? '-100%' : 0,
-          top: showAnnouncement && !isHidden ? ANNOUNCEMENT_HEIGHT : 0
+          top: !isInAdminArea && showAnnouncement && !isHidden ? (isHomePage ? ANNOUNCEMENT_HEIGHT : ANNOUNCEMENT_HEIGHT + 16) : 0
         }}
         transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
         className={`fixed left-0 right-0 z-50 transition-colors duration-300 ${bgClass}`}
@@ -309,7 +311,11 @@ export default function Navbar() {
       {/* Layout Spacer - Solo en páginas que no sean home */}
       {!isHomePage && (
         <div 
-          style={{ height: showAnnouncement ? `calc(64px + ${ANNOUNCEMENT_HEIGHT}px)` : '64px' }}
+          style={{ 
+            height: !isInAdminArea && showAnnouncement 
+              ? `calc(64px + ${ANNOUNCEMENT_HEIGHT}px + 16px)` 
+              : '64px' 
+          }}
           className="lg:h-20"
         />
       )}
