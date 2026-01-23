@@ -4,7 +4,6 @@ import { useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Slide {
   image: string;
@@ -227,22 +226,6 @@ export default function HeroBannerSlideshow() {
                 </motion.div>
               </AnimatePresence>
             </div>
-
-            {/* Flechas de navegación - Estilo minimal */}
-            <button
-              onClick={() => paginate(-1)}
-              className="absolute left-4 lg:left-8 top-1/2 -translate-y-1/2 z-20 w-12 h-12 lg:w-14 lg:h-14 flex items-center justify-center bg-white/10 hover:bg-white/25 backdrop-blur-md rounded-full transition-all duration-200 hover:scale-110 active:scale-100 border border-white/20"
-              aria-label="Slide anterior"
-            >
-              <ChevronLeft className="w-6 h-6 lg:w-7 lg:h-7 text-white" />
-            </button>
-            <button
-              onClick={() => paginate(1)}
-              className="absolute right-4 lg:right-8 top-1/2 -translate-y-1/2 z-20 w-12 h-12 lg:w-14 lg:h-14 flex items-center justify-center bg-white/10 hover:bg-white/25 backdrop-blur-md rounded-full transition-all duration-200 hover:scale-110 active:scale-100 border border-white/20"
-              aria-label="Siguiente slide"
-            >
-              <ChevronRight className="w-6 h-6 lg:w-7 lg:h-7 text-white" />
-            </button>
 
             {/* Indicadores de navegación - Dots simples */}
             <div className="absolute bottom-8 lg:bottom-10 left-1/2 -translate-x-1/2 z-20 flex gap-3">

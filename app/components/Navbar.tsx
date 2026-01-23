@@ -10,6 +10,10 @@ import { useCart } from '@/lib/hooks/useCart';
 import { useAuth } from '@/lib/hooks/useAuth';
 import SearchDrawer from './SearchDrawer';
 import CartDrawer from './CartDrawer';
+import AnnouncementBar from './AnnouncementBar';
+
+// Altura de la barra de anuncios
+const ANNOUNCEMENT_HEIGHT = 36;
 
 // Estados del header
 type HeaderState = 'transparent' | 'hidden' | 'solid';
@@ -18,6 +22,7 @@ export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showCartDrawer, setShowCartDrawer] = useState(false);
   const [showSearchDrawer, setShowSearchDrawer] = useState(false);
+  const [showAnnouncement, setShowAnnouncement] = useState(true);
   
   // Smart sticky state
   const [lastScrollY, setLastScrollY] = useState(0);
@@ -34,19 +39,22 @@ export default function Navbar() {
   const { itemCount } = useCart();
   const { user, isAdmin } = useAuth();
 
-  // Smart sticky behavior: transparente en top (solo home), oculto al bajar, sólido al subir
+  // Smart sticky behavior con AnnouncementBar
   const handleScroll = useCallback(() => {
     const currentScrollY = window.scrollY;
     const scrollThreshold = 100;
     
-    if (isHomePage && currentScrollY < 50) {
-      // En el top de home - transparente
-      setHeaderState('transparent');
+    // AnnouncementBar: visible solo en scrollY === 0
+    setShowAnnouncement(currentScrollY < 10);
+    
+    if (currentScrollY < 10) {
+      // En el tope absoluto - transparente en home, sólido en otras páginas
+      setHeaderState(isHomePage ? 'transparent' : 'solid');
     } else if (currentScrollY > lastScrollY && currentScrollY > scrollThreshold) {
-      // Scrolleando hacia abajo - ocultar
+      // Scrolleando hacia abajo - ocultar header
       setHeaderState('hidden');
     } else if (currentScrollY < lastScrollY) {
-      // Scrolleando hacia arriba - mostrar sólido
+      // Scrolleando hacia arriba - mostrar header sólido
       setHeaderState('solid');
     }
     
@@ -106,12 +114,18 @@ export default function Navbar() {
 
   return (
     <>
-      {/* Header - Overlay sobre el hero */}
+      {/* Announcement Bar - Tope absoluto */}
+      <AnnouncementBar isVisible={showAnnouncement} />
+      
+      {/* Header - Debajo de AnnouncementBar o fijo en scroll */}
       <motion.header
         initial={{ y: 0 }}
-        animate={{ y: isHidden ? '-100%' : 0 }}
+        animate={{ 
+          y: isHidden ? '-100%' : 0,
+          top: showAnnouncement && !isHidden ? ANNOUNCEMENT_HEIGHT : 0
+        }}
         transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-        className={`fixed top-0 left-0 right-0 z-50 transition-colors duration-300 ${bgClass}`}
+        className={`fixed left-0 right-0 z-50 transition-colors duration-300 ${bgClass}`}
       >
         <div className="max-w-[1600px] mx-auto px-6 lg:px-12">
           <div className="flex items-center h-16 lg:h-20">
@@ -246,7 +260,8 @@ export default function Navbar() {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="absolute top-16 left-0 right-0 bg-[#F5F5F0] shadow-xl border-b border-gray-200"
+              style={{ top: showAnnouncement ? 64 + ANNOUNCEMENT_HEIGHT : 64 }}
+              className="absolute left-0 right-0 bg-[#F5F5F0] shadow-xl border-b border-gray-200"
             >
               <nav className="px-6 py-6 space-y-1">
                 {leftLinks.map((link) => (
