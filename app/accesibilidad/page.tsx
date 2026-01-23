@@ -60,14 +60,3 @@ export default function AccesibilidadPage() {
     </LegalPageLayout>
   );
 }
-          <h2 className="text-xl font-medium text-foreground mb-3">Limitaciones Conocidas</h2>
-          <p>
-            A pesar de nuestros esfuerzos, algunas áreas de nuestro sitio pueden tener 
-            limitaciones temporales de accesibilidad. Estamos trabajando activamente 
-            para abordar estos problemas.
-          </p>
-        </section>
-      </div>
-    </div>
-  );
-}
