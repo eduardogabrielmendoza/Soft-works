@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import { Menu, X, ShoppingBag, Search as SearchIcon, Minus, Plus, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -15,35 +15,45 @@ export default function Navbar() {
   const [showCartModal, setShowCartModal] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Smart sticky states
   const [isVisible, setIsVisible] = useState(true);
+  const [isAtTop, setIsAtTop] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   
   const pathname = usePathname();
   const { items, itemCount, subtotal, updateQuantity, removeItem } = useCart();
   const { user, isAdmin } = useAuth();
 
-  // Control de visibilidad del navbar en scroll
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      
-      if (currentScrollY < 10) {
-        // Cerca del top, siempre mostrar
-        setIsVisible(true);
-      } else if (currentScrollY > lastScrollY) {
-        // Scrolleando hacia abajo, ocultar
-        setIsVisible(false);
-      } else {
-        // Scrolleando hacia arriba, mostrar
-        setIsVisible(true);
-      }
-      
-      setLastScrollY(currentScrollY);
-    };
+  // Detectar si estamos en la home para el estilo transparente
+  const isHomePage = pathname === '/';
 
+  // Smart sticky behavior: transparente en top, oculta al bajar, sólida al subir
+  const handleScroll = useCallback(() => {
+    const currentScrollY = window.scrollY;
+    const scrollThreshold = 100;
+    
+    // Determinar si estamos en el top
+    setIsAtTop(currentScrollY < 50);
+    
+    if (currentScrollY < scrollThreshold) {
+      // Cerca del top, siempre mostrar
+      setIsVisible(true);
+    } else if (currentScrollY > lastScrollY && currentScrollY > scrollThreshold) {
+      // Scrolleando hacia abajo y pasamos el threshold, ocultar
+      setIsVisible(false);
+    } else if (currentScrollY < lastScrollY) {
+      // Scrolleando hacia arriba, mostrar con fondo sólido
+      setIsVisible(true);
+    }
+    
+    setLastScrollY(currentScrollY);
+  }, [lastScrollY]);
+
+  useEffect(() => {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY]);
+  }, [handleScroll]);
 
   // Determinar si estamos en el área de admin o de cuenta
   const isInAdminArea = pathname?.startsWith('/admin');
@@ -80,17 +90,25 @@ export default function Navbar() {
         initial={{ y: 0 }}
         animate={{ y: isVisible ? 0 : '-100%' }}
         transition={{ duration: 0.3, ease: 'easeInOut' }}
-        className="fixed top-0 left-0 right-0 z-50 bg-[#F5F5F0]/80 backdrop-blur-md border-b border-gray-200"
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          isHomePage && isAtTop
+            ? 'bg-transparent'
+            : 'bg-[#F5F5F0]/95 backdrop-blur-md shadow-sm'
+        }`}
       >
         <div className="max-w-[1600px] mx-auto px-6 lg:px-12">
           <div className="flex items-center justify-between h-16 lg:h-20">
             {/* Left Navigation */}
-            <div className="hidden lg:flex items-center space-x-8">
+            <div className="hidden lg:flex items-center space-x-8 flex-1">
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="text-sm font-medium text-gray-700 hover:text-black transition-colors uppercase tracking-wide"
+                  className={`text-sm font-medium transition-colors uppercase tracking-wide ${
+                    isHomePage && isAtTop
+                      ? 'text-white/90 hover:text-white'
+                      : 'text-gray-700 hover:text-black'
+                  }`}
                 >
                   {link.label}
                 </Link>
@@ -100,13 +118,17 @@ export default function Navbar() {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="lg:hidden p-2 hover:bg-gray-200 rounded transition-colors"
+              className={`lg:hidden p-2 rounded transition-colors ${
+                isHomePage && isAtTop
+                  ? 'hover:bg-white/10 text-white'
+                  : 'hover:bg-gray-200 text-gray-700'
+              }`}
               aria-label="Menú"
             >
               {isOpen ? (
-                <X className="w-6 h-6 text-gray-700" />
+                <X className="w-6 h-6" />
               ) : (
-                <Menu className="w-6 h-6 text-gray-700" />
+                <Menu className="w-6 h-6" />
               )}
             </button>
 
@@ -117,29 +139,43 @@ export default function Navbar() {
                   src="/images/logosoftworks.png"
                   alt="Softworks"
                   fill
-                  className="object-contain"
+                  className={`object-contain transition-all duration-300 ${
+                    isHomePage && isAtTop ? 'brightness-0 invert' : ''
+                  }`}
                   priority
                 />
               </div>
             </Link>
 
             {/* Right Actions */}
-            <div className="hidden lg:flex items-center space-x-6">
+            <div className="hidden lg:flex items-center justify-end space-x-6 flex-1">
               <button
                 onClick={() => setShowSearchModal(true)}
-                className="text-sm font-medium text-gray-700 hover:text-black transition-colors uppercase tracking-wide"
+                className={`text-sm font-medium transition-colors uppercase tracking-wide ${
+                  isHomePage && isAtTop
+                    ? 'text-white/90 hover:text-white'
+                    : 'text-gray-700 hover:text-black'
+                }`}
               >
                 Buscar
               </button>
               <Link
                 href={accountButton.href}
-                className="text-sm font-medium text-gray-700 hover:text-black transition-colors uppercase tracking-wide"
+                className={`text-sm font-medium transition-colors uppercase tracking-wide ${
+                  isHomePage && isAtTop
+                    ? 'text-white/90 hover:text-white'
+                    : 'text-gray-700 hover:text-black'
+                }`}
               >
                 {accountButton.label}
               </Link>
               <button
                 onClick={() => setShowCartModal(true)}
-                className="text-sm font-medium text-gray-700 hover:text-black transition-colors uppercase tracking-wide relative"
+                className={`text-sm font-medium transition-colors uppercase tracking-wide relative ${
+                  isHomePage && isAtTop
+                    ? 'text-white/90 hover:text-white'
+                    : 'text-gray-700 hover:text-black'
+                }`}
               >
                 Carrito ({itemCount})
               </button>
@@ -149,19 +185,27 @@ export default function Navbar() {
             <div className="lg:hidden flex items-center space-x-2">
               <button
                 onClick={() => setShowSearchModal(true)}
-                className="p-2 hover:bg-gray-200 rounded transition-colors"
+                className={`p-2 rounded transition-colors ${
+                  isHomePage && isAtTop
+                    ? 'hover:bg-white/10 text-white'
+                    : 'hover:bg-gray-200 text-gray-700'
+                }`}
                 aria-label="Buscar"
               >
-                <SearchIcon className="w-5 h-5 text-gray-700" />
+                <SearchIcon className="w-5 h-5" />
               </button>
               <button
                 onClick={() => setShowCartModal(true)}
-                className="p-2 hover:bg-gray-200 rounded transition-colors relative"
+                className={`p-2 rounded transition-colors relative ${
+                  isHomePage && isAtTop
+                    ? 'hover:bg-white/10 text-white'
+                    : 'hover:bg-gray-200 text-gray-700'
+                }`}
                 aria-label="Carrito"
               >
-                <ShoppingBag className="w-5 h-5 text-gray-700" />
+                <ShoppingBag className="w-5 h-5" />
                 {itemCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-foreground text-white text-xs rounded-full flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-white text-black text-xs rounded-full flex items-center justify-center font-medium">
                     {itemCount}
                   </span>
                 )}

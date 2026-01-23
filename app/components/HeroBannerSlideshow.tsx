@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -42,6 +42,12 @@ export default function HeroBannerSlideshow() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [direction, setDirection] = useState(0);
 
+  // Parallax effect con scroll
+  const { scrollY } = useScroll();
+  const y = useTransform(scrollY, [0, 600], [0, 150]);
+  const opacity = useTransform(scrollY, [0, 400], [1, 0.3]);
+  const scale = useTransform(scrollY, [0, 600], [1, 1.1]);
+
   // Auto-advance slides
   useEffect(() => {
     const timer = setInterval(() => {
@@ -51,20 +57,20 @@ export default function HeroBannerSlideshow() {
     return () => clearInterval(timer);
   }, [currentSlide]);
 
-  const nextSlide = () => {
+  const nextSlide = useCallback(() => {
     setDirection(1);
     setCurrentSlide((prev) => (prev + 1) % slides.length);
-  };
+  }, []);
 
-  const prevSlide = () => {
+  const prevSlide = useCallback(() => {
     setDirection(-1);
     setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
-  };
+  }, []);
 
-  const goToSlide = (index: number) => {
+  const goToSlide = useCallback((index: number) => {
     setDirection(index > currentSlide ? 1 : -1);
     setCurrentSlide(index);
-  };
+  }, [currentSlide]);
 
   const variants = {
     enter: (direction: number) => ({
@@ -82,92 +88,120 @@ export default function HeroBannerSlideshow() {
   };
 
   return (
-    <section className="relative overflow-hidden">
-      <div className="relative aspect-[9/14] lg:aspect-[21/9]">
-        <AnimatePresence initial={false} custom={direction} mode="wait">
-          <motion.div
-            key={currentSlide}
-            custom={direction}
-            variants={variants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={{
-              x: { type: 'tween', duration: 0.5, ease: 'easeInOut' },
-              opacity: { duration: 0.3 },
-            }}
-            className="absolute inset-0"
-          >
-            <Image
-              src={slides[currentSlide].image}
-              alt={slides[currentSlide].title}
-              fill
-              priority
-              className="object-cover"
-            />
-            <div className="absolute inset-0 bg-black/20" />
-          </motion.div>
-        </AnimatePresence>
-
-        {/* Content Overlay */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center z-10">
-          <AnimatePresence mode="wait">
+    <section className="relative px-4 lg:px-8 pt-20 lg:pt-24 pb-4">
+      {/* Card container con márgenes y bordes redondeados */}
+      <motion.div 
+        style={{ opacity }}
+        className="relative overflow-hidden rounded-2xl lg:rounded-3xl shadow-2xl"
+      >
+        <div className="relative aspect-[9/16] sm:aspect-[4/5] lg:aspect-[21/9]">
+          <AnimatePresence initial={false} custom={direction} mode="wait">
             <motion.div
               key={currentSlide}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.5 }}
-              className="flex flex-col items-center gap-3"
+              custom={direction}
+              variants={variants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{
+                x: { type: 'tween', duration: 0.5, ease: 'easeInOut' },
+                opacity: { duration: 0.3 },
+              }}
+              className="absolute inset-0"
             >
-              <h1 className="text-5xl lg:text-7xl font-medium text-white mb-4">
-                {slides[currentSlide].title}
-              </h1>
-              <Link
-                href={slides[currentSlide].ctaLink}
-                className="inline-block px-8 py-3 bg-white text-foreground rounded-full hover:bg-white/90 transition-all font-medium"
+              {/* Parallax image container */}
+              <motion.div 
+                style={{ y, scale }}
+                className="absolute inset-0"
               >
-                {slides[currentSlide].ctaText}
-              </Link>
-              <p className="text-base lg:text-lg text-gray-400">
-                {slides[currentSlide].subtitle}
-              </p>
+                <Image
+                  src={slides[currentSlide].image}
+                  alt={slides[currentSlide].title}
+                  fill
+                  priority
+                  className="object-cover"
+                />
+              </motion.div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
             </motion.div>
           </AnimatePresence>
-        </div>
 
-        {/* Navigation Arrows */}
-        <button
-          onClick={prevSlide}
-          className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full p-2 transition-colors"
-          aria-label="Slide anterior"
-        >
-          <ChevronLeft className="w-6 h-6 text-white" />
-        </button>
-        <button
-          onClick={nextSlide}
-          className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full p-2 transition-colors"
-          aria-label="Siguiente slide"
-        >
-          <ChevronRight className="w-6 h-6 text-white" />
-        </button>
+          {/* Content Overlay */}
+          <div className="absolute inset-0 flex items-center justify-center z-10">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentSlide}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -30 }}
+                transition={{ duration: 0.5, ease: 'easeOut' }}
+                className="text-center px-6"
+              >
+                <motion.h1 
+                  className="text-5xl sm:text-6xl lg:text-8xl font-medium text-white mb-6 tracking-tight"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1, duration: 0.5 }}
+                >
+                  {slides[currentSlide].title}
+                </motion.h1>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2, duration: 0.5 }}
+                >
+                  <Link
+                    href={slides[currentSlide].ctaLink}
+                    className="inline-block px-10 py-4 bg-white text-foreground rounded-full hover:bg-white/90 hover:scale-105 transition-all font-medium text-lg shadow-lg"
+                  >
+                    {slides[currentSlide].ctaText}
+                  </Link>
+                </motion.div>
+                <motion.p 
+                  className="text-base lg:text-lg text-white/70 mt-6 tracking-wide"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.3, duration: 0.5 }}
+                >
+                  {slides[currentSlide].subtitle}
+                </motion.p>
+              </motion.div>
+            </AnimatePresence>
+          </div>
 
-        {/* Dots Indicator */}
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex gap-2">
-          {slides.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => goToSlide(index)}
-              className={`w-2 h-2 rounded-full transition-all ${
-                index === currentSlide
-                  ? 'bg-white w-8'
-                  : 'bg-white/50 hover:bg-white/70'
-              }`}
-              aria-label={`Ir al slide ${index + 1}`}
-            />
-          ))}
+          {/* Navigation Arrows */}
+          <button
+            onClick={prevSlide}
+            className="absolute left-4 lg:left-6 top-1/2 -translate-y-1/2 z-20 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full p-3 transition-all hover:scale-110 border border-white/20"
+            aria-label="Slide anterior"
+          >
+            <ChevronLeft className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
+          </button>
+          <button
+            onClick={nextSlide}
+            className="absolute right-4 lg:right-6 top-1/2 -translate-y-1/2 z-20 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full p-3 transition-all hover:scale-110 border border-white/20"
+            aria-label="Siguiente slide"
+          >
+            <ChevronRight className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
+          </button>
+
+          {/* Dots Indicator - Improved design */}
+          <div className="absolute bottom-6 lg:bottom-8 left-1/2 -translate-x-1/2 z-20 flex gap-3">
+            {slides.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => goToSlide(index)}
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  index === currentSlide
+                    ? 'bg-white w-10'
+                    : 'bg-white/40 w-1.5 hover:bg-white/60'
+                }`}
+                aria-label={`Ir al slide ${index + 1}`}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 }

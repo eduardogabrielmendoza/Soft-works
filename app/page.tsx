@@ -4,7 +4,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import HeroBannerSlideshow from '@/app/components/HeroBannerSlideshow';
-import FAQSection from '@/app/components/FAQSection';
 
 export default function Home() {
   const fadeInUp = {
@@ -215,9 +214,6 @@ export default function Home() {
           ))}
         </div>
       </section>
-
-      {/* FAQ Section */}
-      <FAQSection />
     </div>
   );
 }

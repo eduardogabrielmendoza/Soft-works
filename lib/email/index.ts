@@ -13,6 +13,29 @@ if (process.env.SENDGRID_API_KEY) {
 const FROM_EMAIL = process.env.EMAIL_FROM || 'softworksargentina@gmail.com';
 const FROM_NAME = process.env.EMAIL_FROM_NAME || 'Softworks';
 
+// URL base del sitio para convertir rutas relativas a absolutas
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://softworks.com.ar';
+
+// Función helper para asegurar que la URL de imagen sea absoluta
+function getAbsoluteImageUrl(imageUrl: string | null): string {
+  const placeholder = 'https://via.placeholder.com/80x80?text=Producto';
+  
+  if (!imageUrl) return placeholder;
+  
+  // Si ya es una URL absoluta (comienza con http o https), usarla directamente
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+    return imageUrl;
+  }
+  
+  // Si es una ruta relativa, agregar el dominio base
+  if (imageUrl.startsWith('/')) {
+    return `${SITE_URL}${imageUrl}`;
+  }
+  
+  // Si no tiene / al inicio, agregarlo
+  return `${SITE_URL}/${imageUrl}`;
+}
+
 export interface EmailData {
   to: string;
   subject: string;
@@ -71,20 +94,24 @@ export async function sendPaymentApprovedEmail(params: {
   
   const subject = `Tu pago ha sido aprobado - Pedido #${orderNumber}`;
   
-  // Generar HTML para los items del pedido
+  // Generar HTML para los items del pedido (usando tabla para compatibilidad con clientes de email)
   const itemsHtml = items.map(item => {
-    const imageUrl = item.producto_imagen || 'https://via.placeholder.com/80x80?text=Producto';
+    const imageUrl = getAbsoluteImageUrl(item.producto_imagen);
     return `
       <tr>
         <td style="padding: 15px; border-bottom: 1px solid #e5e5e5;">
-          <div style="display: flex; align-items: center; gap: 15px;">
-            <img src="${imageUrl}" alt="${item.producto_nombre}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;" />
-            <div>
-              <div style="color: #000000; font-weight: 600; font-size: 14px; margin-bottom: 4px;">${item.producto_nombre}</div>
-              <div style="color: #666666; font-size: 13px;">Talle: ${item.talle} • Cantidad: ${item.cantidad}</div>
-              <div style="color: #000000; font-size: 13px; margin-top: 4px;">$${item.producto_precio.toLocaleString('es-AR')}</div>
-            </div>
-          </div>
+          <table cellpadding="0" cellspacing="0" border="0" width="100%">
+            <tr>
+              <td width="70" style="vertical-align: top;">
+                <img src="${imageUrl}" alt="${item.producto_nombre}" width="60" height="60" style="display: block; width: 60px; height: 60px; object-fit: cover; border-radius: 4px;" />
+              </td>
+              <td style="vertical-align: top; padding-left: 15px;">
+                <div style="color: #000000; font-weight: 600; font-size: 14px; margin-bottom: 4px;">${item.producto_nombre}</div>
+                <div style="color: #666666; font-size: 13px;">Talle: ${item.talle} • Cantidad: ${item.cantidad}</div>
+                <div style="color: #000000; font-size: 13px; margin-top: 4px;">$${item.producto_precio.toLocaleString('es-AR')}</div>
+              </td>
+            </tr>
+          </table>
         </td>
       </tr>
     `;
@@ -187,20 +214,24 @@ export async function sendOrderShippedEmail(params: {
   
   const subject = `Tu pedido está en camino - Pedido #${orderNumber}`;
   
-  // Generar HTML para los items del pedido
+  // Generar HTML para los items del pedido (usando tabla para compatibilidad con clientes de email)
   const itemsHtml = items.map(item => {
-    const imageUrl = item.producto_imagen || 'https://via.placeholder.com/80x80?text=Producto';
+    const imageUrl = getAbsoluteImageUrl(item.producto_imagen);
     return `
       <tr>
         <td style="padding: 15px; border-bottom: 1px solid #e5e5e5;">
-          <div style="display: flex; align-items: center; gap: 15px;">
-            <img src="${imageUrl}" alt="${item.producto_nombre}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;" />
-            <div>
-              <div style="color: #000000; font-weight: 600; font-size: 14px; margin-bottom: 4px;">${item.producto_nombre}</div>
-              <div style="color: #666666; font-size: 13px;">Talle: ${item.talle} • Cantidad: ${item.cantidad}</div>
-              <div style="color: #000000; font-size: 13px; margin-top: 4px;">$${item.producto_precio.toLocaleString('es-AR')}</div>
-            </div>
-          </div>
+          <table cellpadding="0" cellspacing="0" border="0" width="100%">
+            <tr>
+              <td width="70" style="vertical-align: top;">
+                <img src="${imageUrl}" alt="${item.producto_nombre}" width="60" height="60" style="display: block; width: 60px; height: 60px; object-fit: cover; border-radius: 4px;" />
+              </td>
+              <td style="vertical-align: top; padding-left: 15px;">
+                <div style="color: #000000; font-weight: 600; font-size: 14px; margin-bottom: 4px;">${item.producto_nombre}</div>
+                <div style="color: #666666; font-size: 13px;">Talle: ${item.talle} • Cantidad: ${item.cantidad}</div>
+                <div style="color: #000000; font-size: 13px; margin-top: 4px;">$${item.producto_precio.toLocaleString('es-AR')}</div>
+              </td>
+            </tr>
+          </table>
         </td>
       </tr>
     `;
@@ -312,20 +343,24 @@ export async function sendOrderDeliveredEmail(params: {
   
   const subject = `Tu pedido ha sido entregado - Pedido #${orderNumber}`;
   
-  // Generar HTML para los items del pedido
+  // Generar HTML para los items del pedido (usando tabla para compatibilidad con clientes de email)
   const itemsHtml = items.map(item => {
-    const imageUrl = item.producto_imagen || 'https://via.placeholder.com/80x80?text=Producto';
+    const imageUrl = getAbsoluteImageUrl(item.producto_imagen);
     return `
       <tr>
         <td style="padding: 15px; border-bottom: 1px solid #e5e5e5;">
-          <div style="display: flex; align-items: center; gap: 15px;">
-            <img src="${imageUrl}" alt="${item.producto_nombre}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;" />
-            <div>
-              <div style="color: #000000; font-weight: 600; font-size: 14px; margin-bottom: 4px;">${item.producto_nombre}</div>
-              <div style="color: #666666; font-size: 13px;">Talle: ${item.talle} • Cantidad: ${item.cantidad}</div>
-              <div style="color: #000000; font-size: 13px; margin-top: 4px;">$${item.producto_precio.toLocaleString('es-AR')}</div>
-            </div>
-          </div>
+          <table cellpadding="0" cellspacing="0" border="0" width="100%">
+            <tr>
+              <td width="70" style="vertical-align: top;">
+                <img src="${imageUrl}" alt="${item.producto_nombre}" width="60" height="60" style="display: block; width: 60px; height: 60px; object-fit: cover; border-radius: 4px;" />
+              </td>
+              <td style="vertical-align: top; padding-left: 15px;">
+                <div style="color: #000000; font-weight: 600; font-size: 14px; margin-bottom: 4px;">${item.producto_nombre}</div>
+                <div style="color: #666666; font-size: 13px;">Talle: ${item.talle} • Cantidad: ${item.cantidad}</div>
+                <div style="color: #000000; font-size: 13px; margin-top: 4px;">$${item.producto_precio.toLocaleString('es-AR')}</div>
+              </td>
+            </tr>
+          </table>
         </td>
       </tr>
     `;
@@ -424,20 +459,24 @@ export async function sendPaymentRejectedEmail(params: {
   
   const subject = `Problema con tu pago - Pedido #${orderNumber}`;
   
-  // Generar HTML para los items del pedido
+  // Generar HTML para los items del pedido (usando tabla para compatibilidad con clientes de email)
   const itemsHtml = items.map(item => {
-    const imageUrl = item.producto_imagen || 'https://via.placeholder.com/80x80?text=Producto';
+    const imageUrl = getAbsoluteImageUrl(item.producto_imagen);
     return `
       <tr>
         <td style="padding: 15px; border-bottom: 1px solid #e5e5e5;">
-          <div style="display: flex; align-items: center; gap: 15px;">
-            <img src="${imageUrl}" alt="${item.producto_nombre}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;" />
-            <div>
-              <div style="color: #000000; font-weight: 600; font-size: 14px; margin-bottom: 4px;">${item.producto_nombre}</div>
-              <div style="color: #666666; font-size: 13px;">Talle: ${item.talle} • Cantidad: ${item.cantidad}</div>
-              <div style="color: #000000; font-size: 13px; margin-top: 4px;">$${item.producto_precio.toLocaleString('es-AR')}</div>
-            </div>
-          </div>
+          <table cellpadding="0" cellspacing="0" border="0" width="100%">
+            <tr>
+              <td width="70" style="vertical-align: top;">
+                <img src="${imageUrl}" alt="${item.producto_nombre}" width="60" height="60" style="display: block; width: 60px; height: 60px; object-fit: cover; border-radius: 4px;" />
+              </td>
+              <td style="vertical-align: top; padding-left: 15px;">
+                <div style="color: #000000; font-weight: 600; font-size: 14px; margin-bottom: 4px;">${item.producto_nombre}</div>
+                <div style="color: #666666; font-size: 13px;">Talle: ${item.talle} • Cantidad: ${item.cantidad}</div>
+                <div style="color: #000000; font-size: 13px; margin-top: 4px;">$${item.producto_precio.toLocaleString('es-AR')}</div>
+              </td>
+            </tr>
+          </table>
         </td>
       </tr>
     `;
