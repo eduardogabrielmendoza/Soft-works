@@ -39,6 +39,13 @@ export default function Navbar() {
   const { itemCount } = useCart();
   const { user, isAdmin } = useAuth();
 
+  // Forzar transparencia inicial en home al montar el componente
+  useEffect(() => {
+    if (isHomePage && typeof window !== 'undefined' && window.scrollY < 10) {
+      setHeaderState('transparent');
+    }
+  }, [isHomePage]);
+
   // Smart sticky behavior con AnnouncementBar
   const handleScroll = useCallback(() => {
     const currentScrollY = window.scrollY;
@@ -128,7 +135,7 @@ export default function Navbar() {
         className={`fixed left-0 right-0 z-50 transition-colors duration-300 ${bgClass}`}
       >
         <div className="max-w-[1600px] mx-auto px-6 lg:px-12">
-          <div className="flex items-center h-16 lg:h-20">
+          <div className="flex items-end h-16 lg:h-20 pb-2">
             {/* Left Navigation - Desktop */}
             <nav className="hidden lg:flex items-center space-x-8 flex-1">
               {leftLinks.map((link) => (
@@ -298,6 +305,14 @@ export default function Navbar() {
         isOpen={showCartDrawer} 
         onClose={() => setShowCartDrawer(false)} 
       />
+      
+      {/* Layout Spacer - Solo en páginas que no sean home */}
+      {!isHomePage && (
+        <div 
+          style={{ height: showAnnouncement ? `calc(64px + ${ANNOUNCEMENT_HEIGHT}px)` : '64px' }}
+          className="lg:h-20"
+        />
+      )}
     </>
   );
 }

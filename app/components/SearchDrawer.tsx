@@ -117,15 +117,15 @@ export default function SearchDrawer({ isOpen, onClose }: SearchDrawerProps) {
     >
       <div className="flex flex-col h-full">
         {/* Search Header */}
-        <div className="p-6 border-b border-gray-100">
+        <div className="p-6 border-b border-[#545454]/10">
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#545454]/60" />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Buscar productos..."
-              className="w-full pl-12 pr-4 py-4 bg-gray-50 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-black/10 transition-all"
+              className="w-full pl-12 pr-4 py-4 bg-[#F2F0EB] text-[#545454] rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-[#545454]/20 transition-all placeholder:text-[#545454]/50"
               autoFocus
             />
           </div>
@@ -136,7 +136,7 @@ export default function SearchDrawer({ isOpen, onClose }: SearchDrawerProps) {
           {query.length >= 2 ? (
             // Resultados de búsqueda
             <div className="space-y-4">
-              <p className="text-sm text-gray-500 uppercase tracking-wide">
+              <p className="text-sm text-[#545454]/70 uppercase tracking-wide">
                 {isSearching ? 'Buscando...' : `${results.length} resultados`}
               </p>
               
@@ -152,9 +152,9 @@ export default function SearchDrawer({ isOpen, onClose }: SearchDrawerProps) {
                       <Link
                         href={`/producto/${product.slug}`}
                         onClick={handleProductClick}
-                        className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors group"
+                        className="flex items-center gap-4 p-3 rounded-xl hover:bg-[#F2F0EB] transition-colors group"
                       >
-                        <div className="w-16 h-16 relative rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                        <div className="w-16 h-16 relative rounded-lg overflow-hidden bg-[#F2F0EB] flex-shrink-0">
                           {product.imagenes?.[0]?.src && (
                             <Image
                               src={product.imagenes[0].src}
@@ -165,22 +165,22 @@ export default function SearchDrawer({ isOpen, onClose }: SearchDrawerProps) {
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-gray-900 truncate group-hover:text-black">
+                          <p className="font-medium text-[#545454] truncate group-hover:text-black">
                             {product.nombre}
                           </p>
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm text-[#545454]/70">
                             {formatPrice(product.precio)}
                           </p>
                         </div>
-                        <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-black transition-colors" />
+                        <ArrowRight className="w-4 h-4 text-[#545454]/40 group-hover:text-[#545454] transition-colors" />
                       </Link>
                     </motion.div>
                   ))}
                 </div>
               ) : !isSearching && (
                 <div className="text-center py-12">
-                  <p className="text-gray-500">No se encontraron productos</p>
-                  <p className="text-sm text-gray-400 mt-1">Intentá con otro término</p>
+                  <p className="text-[#545454]">No se encontraron productos</p>
+                  <p className="text-sm text-[#545454]/60 mt-1">Intentá con otro término</p>
                 </div>
               )}
             </div>
@@ -190,7 +190,7 @@ export default function SearchDrawer({ isOpen, onClose }: SearchDrawerProps) {
               {/* Búsquedas recientes */}
               {recentSearches.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                  <h3 className="text-sm font-medium text-[#545454]/70 uppercase tracking-wide mb-3 flex items-center gap-2">
                     <Clock className="w-4 h-4" />
                     Recientes
                   </h3>
@@ -199,7 +199,7 @@ export default function SearchDrawer({ isOpen, onClose }: SearchDrawerProps) {
                       <button
                         key={term}
                         onClick={() => handleSearch(term)}
-                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full text-sm transition-colors"
+                        className="px-4 py-2 bg-[#F2F0EB] hover:bg-[#545454]/10 text-[#545454] rounded-full text-sm transition-colors"
                       >
                         {term}
                       </button>
@@ -210,7 +210,7 @@ export default function SearchDrawer({ isOpen, onClose }: SearchDrawerProps) {
 
               {/* Búsquedas populares */}
               <div>
-                <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                <h3 className="text-sm font-medium text-[#545454]/70 uppercase tracking-wide mb-3 flex items-center gap-2">
                   <TrendingUp className="w-4 h-4" />
                   Populares
                 </h3>
@@ -219,7 +219,7 @@ export default function SearchDrawer({ isOpen, onClose }: SearchDrawerProps) {
                     <button
                       key={term}
                       onClick={() => handleSearch(term)}
-                      className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full text-sm transition-colors"
+                      className="px-4 py-2 bg-[#F2F0EB] hover:bg-[#545454]/10 text-[#545454] rounded-full text-sm transition-colors"
                     >
                       {term}
                     </button>
@@ -230,7 +230,7 @@ export default function SearchDrawer({ isOpen, onClose }: SearchDrawerProps) {
               {/* Productos destacados */}
               {featuredProducts.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">
+                  <h3 className="text-sm font-medium text-[#545454]/70 uppercase tracking-wide mb-4">
                     Productos Destacados
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
@@ -246,7 +246,7 @@ export default function SearchDrawer({ isOpen, onClose }: SearchDrawerProps) {
                           onClick={handleProductClick}
                           className="group block"
                         >
-                          <div className="aspect-square relative rounded-xl overflow-hidden bg-gray-100 mb-2">
+                          <div className="aspect-square relative rounded-xl overflow-hidden bg-[#F2F0EB] mb-2">
                             {product.imagenes?.[0]?.src && (
                               <Image
                                 src={product.imagenes[0].src}
@@ -256,10 +256,10 @@ export default function SearchDrawer({ isOpen, onClose }: SearchDrawerProps) {
                               />
                             )}
                           </div>
-                          <p className="font-medium text-sm text-gray-900 truncate group-hover:text-black">
+                          <p className="font-medium text-sm text-[#545454] truncate group-hover:text-black">
                             {product.nombre}
                           </p>
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm text-[#545454]/70">
                             {formatPrice(product.precio)}
                           </p>
                         </Link>

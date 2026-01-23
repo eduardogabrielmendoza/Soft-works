@@ -33,7 +33,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
       <div className="relative">
         <ShoppingBag className="w-5 h-5" />
         {itemCount > 0 && (
-          <span className="absolute -top-2 -right-2 w-4 h-4 bg-black text-white text-[10px] rounded-full flex items-center justify-center font-medium">
+          <span className="absolute -top-2 -right-2 w-4 h-4 bg-[#545454] text-white text-[10px] rounded-full flex items-center justify-center font-medium">
             {itemCount}
           </span>
         )}
@@ -47,23 +47,23 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
     <div className="p-6 space-y-4">
       {/* Línea separadora sutil */}
       <div className="flex justify-between items-baseline">
-        <span className="text-gray-600">Subtotal</span>
-        <span className="text-xl font-semibold">{formatPrice(subtotal)}</span>
+        <span className="text-[#545454]">Subtotal</span>
+        <span className="text-xl font-semibold text-[#545454]">{formatPrice(subtotal)}</span>
       </div>
-      <p className="text-xs text-gray-500 text-center">
+      <p className="text-xs text-[#545454]/70 text-center">
         Los impuestos y el envío se calculan en el checkout
       </p>
       <Link
         href="/checkout"
         onClick={onClose}
-        className="flex items-center justify-center gap-2 w-full py-4 bg-black text-white rounded-xl hover:bg-gray-900 transition-colors font-medium group"
+        className="flex items-center justify-center gap-2 w-full py-4 bg-[#545454] text-[#F2F0EB] rounded-xl hover:bg-[#3a3a3a] transition-colors font-medium group"
       >
         Finalizar Compra
         <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
       </Link>
       <button
         onClick={onClose}
-        className="block w-full py-3 text-gray-600 hover:text-black transition-colors text-sm"
+        className="block w-full py-3 text-[#545454] hover:text-black transition-colors text-sm"
       >
         Seguir Comprando
       </button>
@@ -80,25 +80,25 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
     >
       {/* Barra de progreso para envío gratis */}
       {items.length > 0 && (
-        <div className="px-6 py-4 bg-gray-50 border-b border-gray-100">
+        <div className="px-6 py-4 bg-[#F2F0EB]/30 border-b border-[#545454]/10">
           <div className="flex items-center gap-2 mb-2">
-            <Truck className={`w-4 h-4 ${freeShippingProgress.achieved ? 'text-green-600' : 'text-gray-400'}`} />
+            <Truck className={`w-4 h-4 ${freeShippingProgress.achieved ? 'text-green-600' : 'text-[#545454]/60'}`} />
             {freeShippingProgress.achieved ? (
               <span className="text-sm font-medium text-green-600">
                 ¡Envío gratis desbloqueado!
               </span>
             ) : (
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-[#545454]">
                 Te faltan <span className="font-semibold">{formatPrice(freeShippingProgress.remaining)}</span> para envío gratis
               </span>
             )}
           </div>
-          <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+          <div className="h-1.5 bg-[#545454]/10 rounded-full overflow-hidden">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${freeShippingProgress.progress}%` }}
               transition={{ duration: 0.5, ease: 'easeOut' }}
-              className={`h-full rounded-full ${freeShippingProgress.achieved ? 'bg-green-500' : 'bg-black'}`}
+              className={`h-full rounded-full ${freeShippingProgress.achieved ? 'bg-green-500' : 'bg-[#545454]'}`}
             />
           </div>
         </div>
@@ -113,19 +113,19 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
             animate={{ opacity: 1, y: 0 }}
             className="text-center py-16"
           >
-            <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gray-100 flex items-center justify-center">
-              <ShoppingBag className="w-10 h-10 text-gray-300" />
+            <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-[#F2F0EB] flex items-center justify-center">
+              <ShoppingBag className="w-10 h-10 text-[#545454]/40" />
             </div>
-            <h3 className="text-xl font-medium text-gray-900 mb-2">
+            <h3 className="text-xl font-medium text-[#545454] mb-2">
               Tu carrito está vacío
             </h3>
-            <p className="text-gray-500 mb-8 max-w-xs mx-auto">
+            <p className="text-[#545454]/70 mb-8 max-w-xs mx-auto">
               Descubrí nuestras colecciones y encontrá tu próximo favorito
             </p>
             <Link
               href="/colecciones"
               onClick={onClose}
-              className="inline-flex items-center gap-2 px-8 py-3 bg-black text-white rounded-full hover:bg-gray-900 transition-colors font-medium group"
+              className="inline-flex items-center gap-2 px-8 py-3 bg-[#545454] text-[#F2F0EB] rounded-full hover:bg-[#3a3a3a] transition-colors font-medium group"
             >
               Ver Colecciones
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
