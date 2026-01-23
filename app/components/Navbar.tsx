@@ -12,8 +12,8 @@ import SearchDrawer from './SearchDrawer';
 import CartDrawer from './CartDrawer';
 import AnnouncementBar from './AnnouncementBar';
 
-// Altura de la barra de anuncios
-const ANNOUNCEMENT_HEIGHT = 36;
+// Altura de la barra de anuncios (incluye mt-2)
+const ANNOUNCEMENT_HEIGHT = 44; // 36px altura + 8px margin-top
 
 // Estados del header
 type HeaderState = 'transparent' | 'hidden' | 'solid';
@@ -106,11 +106,11 @@ export default function Navbar() {
 
   const textColorClass = isTransparent 
     ? 'text-white/90 hover:text-white' 
-    : 'text-gray-700 hover:text-black';
+    : 'text-[#545454] hover:text-black';
 
   const bgClass = isTransparent 
     ? 'bg-transparent' 
-    : 'bg-[#F5F5F0]/95 backdrop-blur-md shadow-sm';
+    : 'bg-[#F2F0EB]/95 backdrop-blur-md shadow-sm';
 
   return (
     <>
@@ -261,7 +261,7 @@ export default function Navbar() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               style={{ top: showAnnouncement ? 64 + ANNOUNCEMENT_HEIGHT : 64 }}
-              className="absolute left-0 right-0 bg-[#F5F5F0] shadow-xl border-b border-gray-200"
+              className="absolute left-0 right-0 bg-[#F2F0EB] shadow-xl border-b border-[#E8DED3]"
             >
               <nav className="px-6 py-6 space-y-1">
                 {leftLinks.map((link) => (
@@ -269,16 +269,16 @@ export default function Navbar() {
                     key={link.href}
                     href={link.href}
                     onClick={() => setIsMenuOpen(false)}
-                    className="block py-3 text-base font-medium text-gray-700 hover:text-black transition-colors uppercase tracking-wide"
+                    className="block py-3 text-base font-medium text-[#545454] hover:text-black transition-colors uppercase tracking-wide"
                   >
                     {link.label}
                   </Link>
                 ))}
-                <div className="pt-4 border-t border-gray-200 mt-4">
+                <div className="pt-4 border-t border-[#E8DED3] mt-4">
                   <Link
                     href={accountButton.href}
                     onClick={() => setIsMenuOpen(false)}
-                    className="block py-3 text-base font-medium text-gray-700 hover:text-black transition-colors uppercase tracking-wide"
+                    className="block py-3 text-base font-medium text-[#545454] hover:text-black transition-colors uppercase tracking-wide"
                   >
                     {accountButton.label}
                   </Link>
