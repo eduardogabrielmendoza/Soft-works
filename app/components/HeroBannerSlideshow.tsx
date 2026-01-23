@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -42,7 +42,7 @@ const slides: Slide[] = [
 const slideVariants = {
   enter: (direction: number) => ({
     x: direction > 0 ? '100%' : '-100%',
-    opacity: 1, // Mantener opacidad al 100% para evitar parpadeos
+    opacity: 1,
   }),
   center: {
     x: 0,
@@ -50,32 +50,45 @@ const slideVariants = {
     zIndex: 1,
   },
   exit: (direction: number) => ({
-    x: direction > 0 ? '-30%' : '30%', // Movimiento más sutil al salir
-    opacity: 0.5,
+    x: direction > 0 ? '-100%' : '100%',
+    opacity: 1, // Mantener opacidad completa para evitar fundido a blanco
     zIndex: 0,
   }),
 };
 
-// Variantes para el contenido con parallax interno
+// Variantes para el contenido con animaciones sincronizadas
 const contentVariants = {
   enter: (direction: number) => ({
-    x: direction > 0 ? 100 : -100,
+    x: direction > 0 ? 60 : -60,
     opacity: 0,
   }),
   center: {
     x: 0,
     opacity: 1,
+    transition: {
+      duration: 0.5,
+      ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
+      staggerChildren: 0.08,
+      delayChildren: 0.1,
+    },
   },
   exit: (direction: number) => ({
-    x: direction > 0 ? -50 : 50,
+    x: direction > 0 ? -40 : 40,
     opacity: 0,
+    transition: { duration: 0.3 },
   }),
+};
+
+// Variantes para elementos hijos (título, botón, subtítulo)
+const childVariants = {
+  enter: { opacity: 0, y: 20 },
+  center: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -10 },
 };
 
 export default function HeroBannerSlideshow() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [direction, setDirection] = useState(0);
-  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Parallax effect con scroll - el contenedor se desvanece y la imagen se mueve
@@ -85,20 +98,7 @@ export default function HeroBannerSlideshow() {
   const containerOpacity = useTransform(scrollY, [0, 400], [1, 0.3]);
   const imageScale = useTransform(scrollY, [0, 500], [1, 1.15]);
 
-  // Auto-advance slides
-  useEffect(() => {
-    if (!isAutoPlaying) return;
-    
-    const timer = setInterval(() => {
-      setDirection(1);
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 6000);
-
-    return () => clearInterval(timer);
-  }, [isAutoPlaying, currentSlide]);
-
   const paginate = useCallback((newDirection: number) => {
-    setIsAutoPlaying(false);
     setDirection(newDirection);
     setCurrentSlide((prev) => {
       const next = prev + newDirection;
@@ -106,16 +106,11 @@ export default function HeroBannerSlideshow() {
       if (next >= slides.length) return 0;
       return next;
     });
-    
-    // Reanudar autoplay después de interacción
-    setTimeout(() => setIsAutoPlaying(true), 10000);
   }, []);
 
   const goToSlide = useCallback((index: number) => {
-    setIsAutoPlaying(false);
     setDirection(index > currentSlide ? 1 : -1);
     setCurrentSlide(index);
-    setTimeout(() => setIsAutoPlaying(true), 10000);
   }, [currentSlide]);
 
   // Swipe handlers para móvil
@@ -191,7 +186,7 @@ export default function HeroBannerSlideshow() {
               </motion.div>
             </AnimatePresence>
 
-            {/* Contenido con animación de parallax */}
+            {/* Contenido con animaciones sincronizadas via staggerChildren */}
             <div className="absolute inset-0 flex items-center justify-center z-10">
               <AnimatePresence mode="wait">
                 <motion.div
@@ -201,29 +196,19 @@ export default function HeroBannerSlideshow() {
                   initial="enter"
                   animate="center"
                   exit="exit"
-                  transition={{
-                    duration: 0.6,
-                    ease: [0.22, 1, 0.36, 1],
-                  }}
                   style={{ y: contentY }}
                   className="text-center px-6 max-w-4xl mx-auto"
                 >
-                  {/* Título principal con animación escalonada */}
+                  {/* Título principal - sincronizado con stagger */}
                   <motion.h1 
+                    variants={childVariants}
                     className="text-5xl sm:text-6xl lg:text-8xl font-medium text-white mb-8 tracking-tight"
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2, duration: 0.6, ease: 'easeOut' }}
                   >
                     {slides[currentSlide].title}
                   </motion.h1>
                   
-                  {/* CTA Button */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3, duration: 0.5 }}
-                  >
+                  {/* CTA Button - sincronizado con stagger */}
+                  <motion.div variants={childVariants}>
                     <Link
                       href={slides[currentSlide].ctaLink}
                       className="inline-block px-12 py-4 bg-white text-black rounded-full font-medium text-lg shadow-xl hover:bg-white/95 hover:scale-105 active:scale-100 transition-all duration-200"
@@ -232,12 +217,10 @@ export default function HeroBannerSlideshow() {
                     </Link>
                   </motion.div>
                   
-                  {/* Subtítulo */}
+                  {/* Subtítulo - sincronizado con stagger */}
                   <motion.p 
+                    variants={childVariants}
                     className="text-base lg:text-lg text-white/60 mt-8 tracking-widest uppercase"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.5, duration: 0.5 }}
                   >
                     {slides[currentSlide].subtitle}
                   </motion.p>
@@ -261,34 +244,24 @@ export default function HeroBannerSlideshow() {
               <ChevronRight className="w-6 h-6 lg:w-7 lg:h-7 text-white" />
             </button>
 
-            {/* Indicadores de progreso - Estilo línea */}
+            {/* Indicadores de navegación - Dots simples */}
             <div className="absolute bottom-8 lg:bottom-10 left-1/2 -translate-x-1/2 z-20 flex gap-3">
               {slides.map((_, index) => (
                 <button
                   key={index}
                   onClick={() => goToSlide(index)}
-                  className="group relative h-1 transition-all duration-500 ease-out"
-                  style={{ width: index === currentSlide ? '48px' : '8px' }}
+                  className="group p-1"
                   aria-label={`Ir al slide ${index + 1}`}
                 >
-                  {/* Fondo base */}
-                  <span className="absolute inset-0 bg-white/30 rounded-full" />
-                  
-                  {/* Barra de progreso activa */}
-                  {index === currentSlide && (
-                    <motion.span
-                      className="absolute inset-0 bg-white rounded-full origin-left"
-                      initial={{ scaleX: 0 }}
-                      animate={{ scaleX: 1 }}
-                      transition={{ duration: 6, ease: 'linear' }}
-                      key={`progress-${currentSlide}`}
-                    />
-                  )}
-                  
-                  {/* Indicador completado */}
-                  {index !== currentSlide && (
-                    <span className="absolute inset-0 bg-white/50 rounded-full group-hover:bg-white/70 transition-colors" />
-                  )}
+                  <motion.span
+                    className="block w-2.5 h-2.5 rounded-full transition-colors duration-300"
+                    animate={{
+                      backgroundColor: index === currentSlide ? 'rgba(255, 255, 255, 1)' : 'rgba(255, 255, 255, 0.4)',
+                      scale: index === currentSlide ? 1.2 : 1,
+                    }}
+                    whileHover={{ backgroundColor: 'rgba(255, 255, 255, 0.8)' }}
+                    transition={{ duration: 0.2 }}
+                  />
                 </button>
               ))}
             </div>

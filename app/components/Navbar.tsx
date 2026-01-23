@@ -20,23 +20,27 @@ export default function Navbar() {
   const [showSearchDrawer, setShowSearchDrawer] = useState(false);
   
   // Smart sticky state
-  const [headerState, setHeaderState] = useState<HeaderState>('transparent');
   const [lastScrollY, setLastScrollY] = useState(0);
   
   const pathname = usePathname();
+  
+  // Detectar si estamos en la home para el estilo transparente inicial
+  const isHomePage = pathname === '/';
+  
+  // Estado inicial: transparente en home, sólido en otras páginas
+  const [headerState, setHeaderState] = useState<HeaderState>(() => 
+    typeof window !== 'undefined' && pathname === '/' ? 'transparent' : 'solid'
+  );
   const { itemCount } = useCart();
   const { user, isAdmin } = useAuth();
 
-  // Detectar si estamos en la home para el estilo transparente
-  const isHomePage = pathname === '/';
-
-  // Smart sticky behavior: transparente en top, oculto al bajar, sólido al subir
+  // Smart sticky behavior: transparente en top (solo home), oculto al bajar, sólido al subir
   const handleScroll = useCallback(() => {
     const currentScrollY = window.scrollY;
     const scrollThreshold = 100;
     
-    if (currentScrollY < 50) {
-      // En el top - transparente
+    if (isHomePage && currentScrollY < 50) {
+      // En el top de home - transparente
       setHeaderState('transparent');
     } else if (currentScrollY > lastScrollY && currentScrollY > scrollThreshold) {
       // Scrolleando hacia abajo - ocultar
@@ -47,7 +51,7 @@ export default function Navbar() {
     }
     
     setLastScrollY(currentScrollY);
-  }, [lastScrollY]);
+  }, [lastScrollY, isHomePage]);
 
   useEffect(() => {
     // Inicializar el estado
@@ -81,13 +85,10 @@ export default function Navbar() {
 
   const accountButton = getAccountButtonConfig();
 
-  // Navigation links - divididos para split navigation
+  // Navigation links - Grupo A (izquierda)
   const leftLinks = [
     { href: '/colecciones', label: 'Colecciones' },
     { href: '/nosotros', label: 'Nosotros' },
-  ];
-
-  const rightLinks = [
     { href: '/produccion', label: 'Producción' },
   ];
 
@@ -160,34 +161,25 @@ export default function Navbar() {
               </div>
             </Link>
 
-            {/* Right Navigation - Desktop */}
+            {/* Right Navigation - Desktop (Grupo B: acciones) */}
             <div className="hidden lg:flex items-center justify-end space-x-8 flex-1">
-              {rightLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`text-sm font-medium transition-colors uppercase tracking-wide ${textColorClass}`}
-                >
-                  {link.label}
-                </Link>
-              ))}
-              
-              {/* Divider */}
-              <div className={`w-px h-4 ${isTransparent ? 'bg-white/30' : 'bg-gray-300'}`} />
-              
-              {/* Actions */}
-              <button
-                onClick={() => setShowSearchDrawer(true)}
-                className={`text-sm font-medium transition-colors uppercase tracking-wide ${textColorClass}`}
-              >
-                Buscar
-              </button>
+              {/* Cuenta/Admin */}
               <Link
                 href={accountButton.href}
                 className={`text-sm font-medium transition-colors uppercase tracking-wide ${textColorClass}`}
               >
                 {accountButton.label}
               </Link>
+              
+              {/* Buscar */}
+              <button
+                onClick={() => setShowSearchDrawer(true)}
+                className={`text-sm font-medium transition-colors uppercase tracking-wide ${textColorClass}`}
+              >
+                Buscar
+              </button>
+              
+              {/* Carrito */}
               <button
                 onClick={() => setShowCartDrawer(true)}
                 className={`text-sm font-medium transition-colors uppercase tracking-wide relative flex items-center gap-1 ${textColorClass}`}
@@ -257,7 +249,7 @@ export default function Navbar() {
               className="absolute top-16 left-0 right-0 bg-[#F5F5F0] shadow-xl border-b border-gray-200"
             >
               <nav className="px-6 py-6 space-y-1">
-                {[...leftLinks, ...rightLinks].map((link) => (
+                {leftLinks.map((link) => (
                   <Link
                     key={link.href}
                     href={link.href}
