@@ -336,6 +336,13 @@ export default function AdminDashboardPage() {
                   <span>Gestionar Productos</span>
                 </Link>
                 <Link
+                  href="/admin/usuarios"
+                  className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+                >
+                  <Users className="w-5 h-5 text-gray-600" />
+                  <span>Gestionar Usuarios</span>
+                </Link>
+                <Link
                   href="/admin/configuracion"
                   className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
                 >
