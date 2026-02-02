@@ -12,7 +12,8 @@ import {
   Save,
   Loader2,
   Globe,
-  DollarSign
+  DollarSign,
+  Megaphone
 } from 'lucide-react';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { getSupabaseClient } from '@/lib/supabase/client';
@@ -24,6 +25,8 @@ export default function ConfiguracionAdminPage() {
   const [settings, setSettings] = useState<SiteConfig>({
     site_name: 'Softworks',
     site_description: 'Ropa de calidad premium',
+    announcement_text: 'Envío gratis en pedidos mayores a $100.000',
+    announcement_enabled: true,
     contact_email: 'hola@softworks.com',
     contact_phone: '+54 11 1234-5678',
     contact_address: '',
@@ -87,6 +90,13 @@ export default function ConfiguracionAdminPage() {
           valor: {
             site_name: settings.site_name,
             site_description: settings.site_description,
+          },
+        },
+        {
+          clave: 'banner_anuncio',
+          valor: {
+            announcement_text: settings.announcement_text,
+            announcement_enabled: settings.announcement_enabled,
           },
         },
         {
@@ -205,6 +215,60 @@ export default function ConfiguracionAdminPage() {
           )}
 
           <div className="space-y-6">
+            {/* Banner de Anuncio */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <Megaphone className="w-6 h-6 text-foreground" />
+                <h2 className="text-lg font-medium">Banner de Anuncio</h2>
+              </div>
+              <p className="text-sm text-gray-500 mb-4">
+                Este mensaje aparece en la parte superior de la tienda
+              </p>
+              
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Mostrar banner</p>
+                    <p className="text-sm text-gray-600">Activa o desactiva el banner superior</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={settings.announcement_enabled}
+                      onChange={(e) => setSettings({ ...settings, announcement_enabled: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-foreground"></div>
+                  </label>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Texto del Banner
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.announcement_text}
+                    onChange={(e) => setSettings({ ...settings, announcement_text: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-foreground focus:border-transparent"
+                    placeholder="Ej: Envío gratis en pedidos mayores a $100.000"
+                  />
+                </div>
+
+                {/* Vista previa del banner */}
+                {settings.announcement_enabled && settings.announcement_text && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Vista previa</label>
+                    <div className="bg-[#F2F0EB] rounded-full py-2.5 px-6 shadow-sm">
+                      <p className="text-xs sm:text-sm font-medium text-[#545454] tracking-wide text-center">
+                        {settings.announcement_text}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Información General */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <div className="flex items-center gap-3 mb-4">

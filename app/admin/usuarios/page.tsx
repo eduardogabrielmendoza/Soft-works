@@ -208,22 +208,31 @@ export default function AdminUsuariosPage() {
     
     try {
       setIsSaving(true);
-      const supabase = getSupabaseClient();
       
-      // Primero eliminar el perfil
-      const { error: profileError } = await supabase
-        .from('perfiles')
-        .delete()
-        .eq('id', selectedUser.id);
+      // Usar la API de eliminación que usa service_role
+      const response = await fetch('/api/admin/users/delete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: selectedUser.id,
+          adminId: user?.id,
+        }),
+      });
 
-      if (profileError) throw profileError;
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Error al eliminar usuario');
+      }
       
       showNotification('success', 'Usuario eliminado correctamente');
       setShowDeleteModal(false);
       loadUsuarios();
     } catch (error: any) {
       console.error('Error eliminando usuario:', error);
-      showNotification('error', 'Error al eliminar el usuario. Es posible que tenga pedidos asociados.');
+      showNotification('error', error.message || 'Error al eliminar el usuario.');
     } finally {
       setIsSaving(false);
     }

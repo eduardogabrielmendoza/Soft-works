@@ -1,12 +1,20 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { useSiteConfig } from '@/lib/hooks/useSiteConfig';
 
 interface AnnouncementBarProps {
   isVisible: boolean;
 }
 
 export default function AnnouncementBar({ isVisible }: AnnouncementBarProps) {
+  const { config } = useSiteConfig();
+  
+  // No mostrar si está deshabilitado o no hay texto
+  if (!config.announcement_enabled || !config.announcement_text) {
+    return null;
+  }
+
   return (
     <motion.div
       initial={{ y: 0 }}
@@ -16,7 +24,7 @@ export default function AnnouncementBar({ isVisible }: AnnouncementBarProps) {
     >
       <div className="bg-[#F2F0EB] rounded-full py-2.5 px-6 shadow-sm">
         <p className="text-xs sm:text-sm font-medium text-[#545454] tracking-wide text-center">
-          Envío gratis en pedidos mayores a $100.000
+          {config.announcement_text}
         </p>
       </div>
     </motion.div>

@@ -9,6 +9,10 @@ export interface SiteConfig {
   site_name: string;
   site_description: string;
   
+  // Banner de anuncio
+  announcement_text: string;
+  announcement_enabled: boolean;
+  
   // Contacto
   contact_email: string;
   contact_phone: string;
@@ -38,6 +42,8 @@ export interface SiteConfig {
 const defaultConfig: SiteConfig = {
   site_name: 'Softworks',
   site_description: 'Ropa de calidad premium',
+  announcement_text: 'Envío gratis en pedidos mayores a $100.000',
+  announcement_enabled: true,
   contact_email: 'hola@softworks.com',
   contact_phone: '+54 11 1234-5678',
   contact_address: '',
