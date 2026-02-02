@@ -1,837 +1,1054 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import Link from 'next/link';
-import Image from 'next/image';
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { 
-  Layout, 
-  Image as ImageIcon, 
-  Type, 
   Save, 
   Loader2, 
+  ChevronDown, 
+  ChevronUp, 
+  Plus, 
+  Trash2, 
   ArrowLeft,
-  Plus,
-  Trash2,
-  GripVertical,
-  Eye,
-  ChevronDown,
-  ChevronUp,
-  Link as LinkIcon,
-  X,
-  Check,
-  Upload,
-  Layers,
-  Square,
-  Grid3X3,
-  MessageSquare
+  Home,
+  Users,
+  Factory,
+  Calendar,
+  MapPin,
+  Phone,
+  Image as ImageIcon,
+  FileText,
+  CheckCircle
 } from 'lucide-react';
+import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '@/lib/hooks/useAuth';
+import { useIndexContent, type IndexContent, type HeroSlide, type ProductCard, type LifestyleImage, type ContentItem } from '@/lib/hooks/useIndexContent';
+import { 
+  usePagesContent, 
+  type NosotrosContent,
+  type ProduccionContent,
+  type EventosContent,
+  type UbicacionesContent,
+  type ContactoContent
+} from '@/lib/hooks/usePagesContent';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
-// Tipos para el contenido del index
-interface HeroSlide {
-  id: string;
-  image: string;
-  title: string;
-  subtitle: string;
-  ctaText: string;
-  ctaLink: string;
-}
+type PageType = 'index' | 'nosotros' | 'produccion' | 'eventos' | 'ubicaciones' | 'contacto';
 
-interface ProductCard {
-  id: string;
-  title: string;
-  subtitle: string;
-  description: string;
-  image: string;
-  link: string;
-  size: 'large' | 'medium' | 'small';
-}
-
-interface LifestyleImage {
-  id: string;
-  image: string;
+interface PageOption {
+  id: PageType;
   label: string;
-}
-
-interface ContentItem {
-  id: string;
-  title: string;
+  icon: React.ReactNode;
   description: string;
-  image: string;
-  link: string;
 }
 
-interface BannerSection {
-  image: string;
-  title: string;
-  subtitle: string;
-}
+const pageOptions: PageOption[] = [
+  { id: 'index', label: 'Página Principal', icon: <Home className="w-5 h-5" />, description: 'Hero, productos destacados, filosofía' },
+  { id: 'nosotros', label: 'Nosotros', icon: <Users className="w-5 h-5" />, description: 'Historia, visión y valores' },
+  { id: 'produccion', label: 'Producción', icon: <Factory className="w-5 h-5" />, description: 'Pilares de producción' },
+  { id: 'eventos', label: 'Eventos', icon: <Calendar className="w-5 h-5" />, description: 'Eventos próximos y pasados' },
+  { id: 'ubicaciones', label: 'Ubicaciones', icon: <MapPin className="w-5 h-5" />, description: 'Mapa y showroom' },
+  { id: 'contacto', label: 'Contacto', icon: <Phone className="w-5 h-5" />, description: 'Formulario y etiquetas' },
+];
 
-interface PhilosophySection {
-  title: string;
-  description: string;
-  ctaText: string;
-  ctaLink: string;
-}
-
-interface IndexContent {
-  heroSlides: HeroSlide[];
-  productCardsSection1: ProductCard[];
-  philosophySection: PhilosophySection;
-  lifestyleImages: LifestyleImage[];
-  fullWidthBanner: BannerSection;
-  contentGrid: ContentItem[];
-}
-
-const defaultContent: IndexContent = {
-  heroSlides: [
-    {
-      id: '1',
-      image: '/images/Herobanner.png',
-      title: 'Colecciones',
-      subtitle: 'Buenos Aires - Argentina',
-      ctaText: 'Explorar',
-      ctaLink: '/colecciones',
-    },
-    {
-      id: '2',
-      image: '/images/hoodies.png',
-      title: 'Hoodies',
-      subtitle: 'For the obsessed',
-      ctaText: 'Ver Hoodies',
-      ctaLink: '/colecciones?categoria=hoodies',
-    },
-    {
-      id: '3',
-      image: '/images/shirts.png',
-      title: 'T-Shirts',
-      subtitle: 'Esenciales minimalistas',
-      ctaText: 'Ver T-Shirts',
-      ctaLink: '/colecciones?categoria=t-shirts',
-    },
-  ],
-  productCardsSection1: [
-    {
-      id: '1',
-      title: 'Hoodies',
-      subtitle: '"For the obsessed"',
-      description: 'Confort urbano que redefine el estilo casual contemporáneo. Cada hoodie es una declaración de intención, fusionando siluetas oversized con detalles minimalistas que elevan tu guardarropa esencial.',
-      image: '/images/hoodies.png',
-      link: '/colecciones?categoria=hoodies',
-      size: 'large',
-    },
-    {
-      id: '2',
-      title: 'Remeras',
-      subtitle: '',
-      description: 'Esencialismo minimalista en cada trazo y textura. Prendas fundamentales que trascienden temporadas, confeccionadas con tejidos premium.',
-      image: '/images/shirts.png',
-      link: '/colecciones?categoria=t-shirts',
-      size: 'medium',
-    },
-    {
-      id: '3',
-      title: 'Gorras',
-      subtitle: '',
-      description: 'El detalle perfecto para un statement atemporal. Accesorios esenciales que completan cualquier outfit con un toque de sofisticación urbana.',
-      image: '/images/caps.png',
-      link: '/colecciones?categoria=gorras',
-      size: 'medium',
-    },
-  ],
-  philosophySection: {
-    title: 'Una de cada cosa\nrealmente bien',
-    description: 'En Softworks, nuestra filosofía es hacer una de cada cosa realmente bien. Para nosotros, eso significa una colección de prendas esenciales e intencionadas de alto rendimiento que uses todos los días. Las que amas, en las que confías y a las que siempre vuelves.',
-    ctaText: 'Ver Colecciones',
-    ctaLink: '/colecciones',
-  },
-  lifestyleImages: [
-    { id: '1', image: '/images/item1.png', label: 'Detalle Textura' },
-    { id: '2', image: '/images/item2.png', label: 'Lifestyle 1' },
-    { id: '3', image: '/images/item3.png', label: 'Producto Plano' },
-    { id: '4', image: '/images/item4.png', label: 'Lifestyle 2' },
-  ],
-  fullWidthBanner: {
-    image: '/images/lifebanner.png',
-    title: 'Diseñado para durar',
-    subtitle: 'Calidad atemporal, estilo consciente',
-  },
-  contentGrid: [
-    { id: '1', title: 'Nuestra Misión', description: 'Restaurar, diseñar y crear', image: '/images/mision.png', link: '/nosotros' },
-    { id: '2', title: 'Filantropía', description: 'Apoyando estilos de vida', image: '/images/filantropia.png', link: '/futuros-softworks' },
-    { id: '3', title: 'Sostenibilidad', description: 'Moda consciente y responsable', image: '/images/sostenibilidad.png', link: '/produccion' },
-  ],
-};
-
-// Componente de sección colapsable
+// Collapsible Section Component
 function CollapsibleSection({ 
   title, 
-  icon: Icon, 
+  icon,
   children, 
   defaultOpen = false 
 }: { 
   title: string; 
-  icon: any; 
-  children: React.ReactNode;
+  icon?: React.ReactNode;
+  children: React.ReactNode; 
   defaultOpen?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
-
+  
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+    <div className="border border-gray-200 rounded-lg overflow-hidden">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+        className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
       >
         <div className="flex items-center gap-3">
-          <Icon className="w-5 h-5 text-foreground" />
-          <h2 className="text-lg font-medium">{title}</h2>
+          {icon}
+          <span className="font-medium">{title}</span>
         </div>
-        {isOpen ? (
-          <ChevronUp className="w-5 h-5 text-gray-500" />
-        ) : (
-          <ChevronDown className="w-5 h-5 text-gray-500" />
-        )}
+        {isOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
       </button>
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            <div className="px-6 pb-6 border-t border-gray-100 pt-4">
-              {children}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {isOpen && (
+        <div className="p-4 space-y-4">
+          {children}
+        </div>
+      )}
     </div>
   );
 }
 
+// Input Field Component
+function InputField({ 
+  label, 
+  value, 
+  onChange, 
+  type = 'text',
+  placeholder,
+  rows
+}: { 
+  label: string; 
+  value: string; 
+  onChange: (value: string) => void;
+  type?: 'text' | 'textarea' | 'url';
+  placeholder?: string;
+  rows?: number;
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-medium mb-1">{label}</label>
+      {type === 'textarea' ? (
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          rows={rows || 3}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-foreground/20 resize-none"
+        />
+      ) : (
+        <input
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-foreground/20"
+        />
+      )}
+    </div>
+  );
+}
+
+// Select Field Component
+function SelectField({ 
+  label, 
+  value, 
+  onChange,
+  options
+}: { 
+  label: string; 
+  value: string; 
+  onChange: (value: string) => void;
+  options: { value: string; label: string }[];
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-medium mb-1">{label}</label>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-foreground/20"
+      >
+        {options.map(opt => (
+          <option key={opt.value} value={opt.value}>{opt.label}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+// Image Preview Component
+function ImagePreview({ src, alt }: { src: string; alt: string }) {
+  if (!src) return null;
+  return (
+    <div className="mt-2 relative w-32 h-24 rounded-lg overflow-hidden border border-gray-200">
+      <Image src={src} alt={alt} fill className="object-cover" />
+    </div>
+  );
+}
+
+// Generate unique ID
+function generateId(): string {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2);
+}
+
 export default function AdminContenidosPage() {
-  const { user, isAdmin, isLoading: authLoading } = useAuth();
-  const [content, setContent] = useState<IndexContent>(defaultContent);
-  const [isLoading, setIsLoading] = useState(true);
+  const { isAdmin, isLoading: authLoading } = useAuth();
+  const { content: indexContent, refreshContent: refreshIndex } = useIndexContent();
+  const { nosotros, produccion, eventos, ubicaciones, contacto, refreshContent: refreshPages } = usePagesContent();
+  
+  const [selectedPage, setSelectedPage] = useState<PageType>('index');
   const [isSaving, setIsSaving] = useState(false);
-  const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [saveMessage, setSaveMessage] = useState('');
+  
+  // Local state for each page
+  const [localIndex, setLocalIndex] = useState<IndexContent>(indexContent);
+  const [localNosotros, setLocalNosotros] = useState<NosotrosContent>(nosotros);
+  const [localProduccion, setLocalProduccion] = useState<ProduccionContent>(produccion);
+  const [localEventos, setLocalEventos] = useState<EventosContent>(eventos);
+  const [localUbicaciones, setLocalUbicaciones] = useState<UbicacionesContent>(ubicaciones);
+  const [localContacto, setLocalContacto] = useState<ContactoContent>(contacto);
 
-  // Cargar contenido
-  const loadContent = useCallback(async () => {
-    try {
-      const supabase = getSupabaseClient();
-      const { data, error } = await supabase
-        .from('configuracion_sitio')
-        .select('valor')
-        .eq('clave', 'contenido_index')
-        .single();
+  // Sync with context
+  useEffect(() => { setLocalIndex(indexContent); }, [indexContent]);
+  useEffect(() => { setLocalNosotros(nosotros); }, [nosotros]);
+  useEffect(() => { setLocalProduccion(produccion); }, [produccion]);
+  useEffect(() => { setLocalEventos(eventos); }, [eventos]);
+  useEffect(() => { setLocalUbicaciones(ubicaciones); }, [ubicaciones]);
+  useEffect(() => { setLocalContacto(contacto); }, [contacto]);
 
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error cargando contenido:', error);
-      }
-
-      if (data?.valor) {
-        setContent({ ...defaultContent, ...data.valor });
-      }
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (isAdmin) {
-      loadContent();
-    }
-  }, [isAdmin, loadContent]);
-
-  const showNotification = (type: 'success' | 'error', message: string) => {
-    setNotification({ type, message });
-    setTimeout(() => setNotification(null), 4000);
-  };
-
-  // Guardar contenido
   const handleSave = async () => {
+    setIsSaving(true);
+    setSaveMessage('');
+    const supabase = getSupabaseClient();
+
     try {
-      setIsSaving(true);
-      const supabase = getSupabaseClient();
+      let clave = '';
+      let valor = '';
+
+      switch (selectedPage) {
+        case 'index':
+          clave = 'contenido_index';
+          valor = JSON.stringify(localIndex);
+          break;
+        case 'nosotros':
+          clave = 'contenido_nosotros';
+          valor = JSON.stringify(localNosotros);
+          break;
+        case 'produccion':
+          clave = 'contenido_produccion';
+          valor = JSON.stringify(localProduccion);
+          break;
+        case 'eventos':
+          clave = 'contenido_eventos';
+          valor = JSON.stringify(localEventos);
+          break;
+        case 'ubicaciones':
+          clave = 'contenido_ubicaciones';
+          valor = JSON.stringify(localUbicaciones);
+          break;
+        case 'contacto':
+          clave = 'contenido_contacto';
+          valor = JSON.stringify(localContacto);
+          break;
+      }
 
       const { error } = await supabase
         .from('configuracion_sitio')
-        .upsert(
-          { clave: 'contenido_index', valor: content },
-          { onConflict: 'clave' }
-        );
+        .upsert({ clave, valor }, { onConflict: 'clave' });
 
       if (error) throw error;
 
-      showNotification('success', '¡Contenido guardado correctamente! Los cambios ya están activos.');
-    } catch (error: any) {
-      console.error('Error guardando:', error);
-      showNotification('error', 'Error al guardar el contenido');
+      if (selectedPage === 'index') {
+        await refreshIndex();
+      } else {
+        await refreshPages();
+      }
+
+      setSaveMessage('¡Contenido guardado exitosamente!');
+      setTimeout(() => setSaveMessage(''), 3000);
+    } catch (error) {
+      console.error('Error saving content:', error);
+      setSaveMessage('Error al guardar. Intenta de nuevo.');
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Generar ID único
-  const generateId = () => Math.random().toString(36).substr(2, 9);
-
-  // Handlers para Hero Slides
-  const addHeroSlide = () => {
-    setContent({
-      ...content,
-      heroSlides: [
-        ...content.heroSlides,
-        {
-          id: generateId(),
-          image: '/images/placeholder.png',
-          title: 'Nuevo Slide',
-          subtitle: 'Subtítulo',
-          ctaText: 'Ver más',
-          ctaLink: '/colecciones',
-        },
-      ],
-    });
-  };
-
-  const updateHeroSlide = (id: string, field: keyof HeroSlide, value: string) => {
-    setContent({
-      ...content,
-      heroSlides: content.heroSlides.map((slide) =>
-        slide.id === id ? { ...slide, [field]: value } : slide
-      ),
-    });
-  };
-
-  const deleteHeroSlide = (id: string) => {
-    if (content.heroSlides.length <= 1) {
-      showNotification('error', 'Debe haber al menos un slide');
-      return;
-    }
-    setContent({
-      ...content,
-      heroSlides: content.heroSlides.filter((slide) => slide.id !== id),
-    });
-  };
-
-  // Handlers para Product Cards
-  const updateProductCard = (id: string, field: keyof ProductCard, value: string) => {
-    setContent({
-      ...content,
-      productCardsSection1: content.productCardsSection1.map((card) =>
-        card.id === id ? { ...card, [field]: value } : card
-      ),
-    });
-  };
-
-  // Handlers para Philosophy Section
-  const updatePhilosophy = (field: keyof PhilosophySection, value: string) => {
-    setContent({
-      ...content,
-      philosophySection: { ...content.philosophySection, [field]: value },
-    });
-  };
-
-  // Handlers para Lifestyle Images
-  const updateLifestyleImage = (id: string, field: keyof LifestyleImage, value: string) => {
-    setContent({
-      ...content,
-      lifestyleImages: content.lifestyleImages.map((img) =>
-        img.id === id ? { ...img, [field]: value } : img
-      ),
-    });
-  };
-
-  // Handlers para Full Width Banner
-  const updateBanner = (field: keyof BannerSection, value: string) => {
-    setContent({
-      ...content,
-      fullWidthBanner: { ...content.fullWidthBanner, [field]: value },
-    });
-  };
-
-  // Handlers para Content Grid
-  const updateContentItem = (id: string, field: keyof ContentItem, value: string) => {
-    setContent({
-      ...content,
-      contentGrid: content.contentGrid.map((item) =>
-        item.id === id ? { ...item, [field]: value } : item
-      ),
-    });
-  };
-
-  // Estados de carga
-  if (authLoading || isLoading) {
+  if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center pt-20">
-        <Loader2 className="w-8 h-8 animate-spin text-foreground" />
+      <div className="pt-20 min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin" />
       </div>
     );
   }
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen flex items-center justify-center pt-20">
-        <div className="text-center p-8 bg-white rounded-lg shadow-md">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Acceso Denegado</h1>
-          <p className="text-gray-600 mb-6">No tienes permisos para acceder a esta página.</p>
-          <Link href="/" className="px-6 py-3 bg-foreground text-white rounded-md hover:bg-foreground/90">
-            Volver al Inicio
-          </Link>
-        </div>
+      <div className="pt-20 min-h-screen flex items-center justify-center">
+        <p className="text-red-500">Acceso denegado. Solo administradores.</p>
       </div>
     );
   }
 
-  return (
-    <div className="pt-20 px-4 py-8 pb-24">
-      <div className="max-w-5xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          {/* Notificación */}
-          <AnimatePresence>
-            {notification && (
-              <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className={`fixed top-24 right-4 z-50 px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 ${
-                  notification.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-                }`}
-              >
-                {notification.type === 'success' ? <Check className="w-5 h-5" /> : <X className="w-5 h-5" />}
-                {notification.message}
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Header */}
-          <div className="mb-8">
-            <Link 
-              href="/admin" 
-              className="inline-flex items-center gap-2 text-gray-600 hover:text-foreground mb-4 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Volver al Dashboard
-            </Link>
+  // ============ INDEX EDITOR ============
+  const renderIndexEditor = () => (
+    <div className="space-y-4">
+      {/* Hero Slides */}
+      <CollapsibleSection title="Hero Slides (Carrusel Principal)" icon={<ImageIcon className="w-5 h-5" />} defaultOpen>
+        {localIndex.heroSlides.map((slide, idx) => (
+          <div key={slide.id} className="p-4 border border-gray-200 rounded-lg space-y-3">
             <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl lg:text-3xl font-medium flex items-center gap-3">
-                  <Layout className="w-8 h-8" />
-                  Editor de Contenidos
-                </h1>
-                <p className="text-gray-500 mt-1">Edita el contenido de la página principal</p>
+              <span className="font-medium">Slide {idx + 1}</span>
+              {localIndex.heroSlides.length > 1 && (
+                <button
+                  onClick={() => {
+                    const newSlides = localIndex.heroSlides.filter((_, i) => i !== idx);
+                    setLocalIndex({ ...localIndex, heroSlides: newSlides });
+                  }}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            <InputField
+              label="URL de Imagen"
+              value={slide.image}
+              onChange={(v) => {
+                const newSlides = [...localIndex.heroSlides];
+                newSlides[idx] = { ...newSlides[idx], image: v };
+                setLocalIndex({ ...localIndex, heroSlides: newSlides });
+              }}
+            />
+            <ImagePreview src={slide.image} alt={`Slide ${idx + 1}`} />
+            <div className="grid grid-cols-2 gap-4">
+              <InputField
+                label="Título"
+                value={slide.title}
+                onChange={(v) => {
+                  const newSlides = [...localIndex.heroSlides];
+                  newSlides[idx] = { ...newSlides[idx], title: v };
+                  setLocalIndex({ ...localIndex, heroSlides: newSlides });
+                }}
+              />
+              <InputField
+                label="Subtítulo"
+                value={slide.subtitle}
+                onChange={(v) => {
+                  const newSlides = [...localIndex.heroSlides];
+                  newSlides[idx] = { ...newSlides[idx], subtitle: v };
+                  setLocalIndex({ ...localIndex, heroSlides: newSlides });
+                }}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <InputField
+                label="Texto del Botón"
+                value={slide.ctaText}
+                onChange={(v) => {
+                  const newSlides = [...localIndex.heroSlides];
+                  newSlides[idx] = { ...newSlides[idx], ctaText: v };
+                  setLocalIndex({ ...localIndex, heroSlides: newSlides });
+                }}
+              />
+              <InputField
+                label="Link del Botón"
+                value={slide.ctaLink}
+                onChange={(v) => {
+                  const newSlides = [...localIndex.heroSlides];
+                  newSlides[idx] = { ...newSlides[idx], ctaLink: v };
+                  setLocalIndex({ ...localIndex, heroSlides: newSlides });
+                }}
+              />
+            </div>
+          </div>
+        ))}
+        <button
+          onClick={() => {
+            const newSlide: HeroSlide = {
+              id: generateId(),
+              image: '/images/placeholder.png',
+              title: 'Nuevo Slide',
+              subtitle: 'Subtítulo',
+              ctaText: 'Ver más',
+              ctaLink: '/colecciones'
+            };
+            setLocalIndex({
+              ...localIndex,
+              heroSlides: [...localIndex.heroSlides, newSlide]
+            });
+          }}
+          className="flex items-center gap-2 px-4 py-2 border border-dashed border-gray-300 rounded-lg hover:bg-gray-50 transition-colors w-full justify-center"
+        >
+          <Plus className="w-4 h-4" />
+          Agregar Slide
+        </button>
+      </CollapsibleSection>
+
+      {/* Product Cards */}
+      <CollapsibleSection title="Cards de Productos" icon={<FileText className="w-5 h-5" />}>
+        {localIndex.productCardsSection1.map((card, idx) => (
+          <div key={card.id} className="p-4 border border-gray-200 rounded-lg space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="font-medium">Card {idx + 1}</span>
+              {localIndex.productCardsSection1.length > 1 && (
+                <button
+                  onClick={() => {
+                    const newCards = localIndex.productCardsSection1.filter((_, i) => i !== idx);
+                    setLocalIndex({ ...localIndex, productCardsSection1: newCards });
+                  }}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            <InputField
+              label="URL de Imagen"
+              value={card.image}
+              onChange={(v) => {
+                const newCards = [...localIndex.productCardsSection1];
+                newCards[idx] = { ...newCards[idx], image: v };
+                setLocalIndex({ ...localIndex, productCardsSection1: newCards });
+              }}
+            />
+            <ImagePreview src={card.image} alt={card.title} />
+            <div className="grid grid-cols-2 gap-4">
+              <InputField
+                label="Título"
+                value={card.title}
+                onChange={(v) => {
+                  const newCards = [...localIndex.productCardsSection1];
+                  newCards[idx] = { ...newCards[idx], title: v };
+                  setLocalIndex({ ...localIndex, productCardsSection1: newCards });
+                }}
+              />
+              <InputField
+                label="Subtítulo"
+                value={card.subtitle}
+                onChange={(v) => {
+                  const newCards = [...localIndex.productCardsSection1];
+                  newCards[idx] = { ...newCards[idx], subtitle: v };
+                  setLocalIndex({ ...localIndex, productCardsSection1: newCards });
+                }}
+              />
+            </div>
+            <InputField
+              label="Descripción"
+              type="textarea"
+              rows={3}
+              value={card.description}
+              onChange={(v) => {
+                const newCards = [...localIndex.productCardsSection1];
+                newCards[idx] = { ...newCards[idx], description: v };
+                setLocalIndex({ ...localIndex, productCardsSection1: newCards });
+              }}
+            />
+            <div className="grid grid-cols-2 gap-4">
+              <InputField
+                label="Link"
+                value={card.link}
+                onChange={(v) => {
+                  const newCards = [...localIndex.productCardsSection1];
+                  newCards[idx] = { ...newCards[idx], link: v };
+                  setLocalIndex({ ...localIndex, productCardsSection1: newCards });
+                }}
+              />
+              <SelectField
+                label="Tamaño"
+                value={card.size}
+                onChange={(v) => {
+                  const newCards = [...localIndex.productCardsSection1];
+                  newCards[idx] = { ...newCards[idx], size: v as 'large' | 'medium' | 'small' };
+                  setLocalIndex({ ...localIndex, productCardsSection1: newCards });
+                }}
+                options={[
+                  { value: 'large', label: 'Grande' },
+                  { value: 'medium', label: 'Mediano' },
+                  { value: 'small', label: 'Pequeño' }
+                ]}
+              />
+            </div>
+          </div>
+        ))}
+        <button
+          onClick={() => {
+            const newCard: ProductCard = {
+              id: generateId(),
+              title: 'Nueva Categoría',
+              subtitle: '',
+              description: 'Descripción de la categoría',
+              image: '/images/placeholder.png',
+              link: '/colecciones',
+              size: 'medium'
+            };
+            setLocalIndex({
+              ...localIndex,
+              productCardsSection1: [...localIndex.productCardsSection1, newCard]
+            });
+          }}
+          className="flex items-center gap-2 px-4 py-2 border border-dashed border-gray-300 rounded-lg hover:bg-gray-50 transition-colors w-full justify-center"
+        >
+          <Plus className="w-4 h-4" />
+          Agregar Card
+        </button>
+      </CollapsibleSection>
+
+      {/* Philosophy Section */}
+      <CollapsibleSection title="Sección Filosofía" icon={<FileText className="w-5 h-5" />}>
+        <InputField
+          label="Título (usa \n para salto de línea)"
+          value={localIndex.philosophySection.title}
+          onChange={(v) => setLocalIndex({
+            ...localIndex,
+            philosophySection: { ...localIndex.philosophySection, title: v }
+          })}
+        />
+        <InputField
+          label="Descripción"
+          type="textarea"
+          rows={4}
+          value={localIndex.philosophySection.description}
+          onChange={(v) => setLocalIndex({
+            ...localIndex,
+            philosophySection: { ...localIndex.philosophySection, description: v }
+          })}
+        />
+        <div className="grid grid-cols-2 gap-4">
+          <InputField
+            label="Texto del Botón"
+            value={localIndex.philosophySection.ctaText}
+            onChange={(v) => setLocalIndex({
+              ...localIndex,
+              philosophySection: { ...localIndex.philosophySection, ctaText: v }
+            })}
+          />
+          <InputField
+            label="Link del Botón"
+            value={localIndex.philosophySection.ctaLink}
+            onChange={(v) => setLocalIndex({
+              ...localIndex,
+              philosophySection: { ...localIndex.philosophySection, ctaLink: v }
+            })}
+          />
+        </div>
+      </CollapsibleSection>
+
+      {/* Lifestyle Images */}
+      <CollapsibleSection title="Imágenes Lifestyle" icon={<ImageIcon className="w-5 h-5" />}>
+        {localIndex.lifestyleImages.map((img, idx) => (
+          <div key={img.id} className="p-4 border border-gray-200 rounded-lg space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="font-medium">Imagen {idx + 1}</span>
+              {localIndex.lifestyleImages.length > 1 && (
+                <button
+                  onClick={() => {
+                    const newImages = localIndex.lifestyleImages.filter((_, i) => i !== idx);
+                    setLocalIndex({ ...localIndex, lifestyleImages: newImages });
+                  }}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            <InputField
+              label="URL de Imagen"
+              value={img.image}
+              onChange={(v) => {
+                const newImages = [...localIndex.lifestyleImages];
+                newImages[idx] = { ...newImages[idx], image: v };
+                setLocalIndex({ ...localIndex, lifestyleImages: newImages });
+              }}
+            />
+            <ImagePreview src={img.image} alt={img.label} />
+            <InputField
+              label="Etiqueta"
+              value={img.label}
+              onChange={(v) => {
+                const newImages = [...localIndex.lifestyleImages];
+                newImages[idx] = { ...newImages[idx], label: v };
+                setLocalIndex({ ...localIndex, lifestyleImages: newImages });
+              }}
+            />
+          </div>
+        ))}
+        <button
+          onClick={() => {
+            const newImage: LifestyleImage = {
+              id: generateId(),
+              image: '/images/placeholder.png',
+              label: 'Nueva Imagen'
+            };
+            setLocalIndex({
+              ...localIndex,
+              lifestyleImages: [...localIndex.lifestyleImages, newImage]
+            });
+          }}
+          className="flex items-center gap-2 px-4 py-2 border border-dashed border-gray-300 rounded-lg hover:bg-gray-50 transition-colors w-full justify-center"
+        >
+          <Plus className="w-4 h-4" />
+          Agregar Imagen
+        </button>
+      </CollapsibleSection>
+
+      {/* Full Width Banner */}
+      <CollapsibleSection title="Banner Full Width" icon={<ImageIcon className="w-5 h-5" />}>
+        <InputField
+          label="URL de Imagen"
+          value={localIndex.fullWidthBanner.image}
+          onChange={(v) => setLocalIndex({
+            ...localIndex,
+            fullWidthBanner: { ...localIndex.fullWidthBanner, image: v }
+          })}
+        />
+        <ImagePreview src={localIndex.fullWidthBanner.image} alt="Banner" />
+        <InputField
+          label="Título"
+          value={localIndex.fullWidthBanner.title}
+          onChange={(v) => setLocalIndex({
+            ...localIndex,
+            fullWidthBanner: { ...localIndex.fullWidthBanner, title: v }
+          })}
+        />
+        <InputField
+          label="Subtítulo"
+          value={localIndex.fullWidthBanner.subtitle}
+          onChange={(v) => setLocalIndex({
+            ...localIndex,
+            fullWidthBanner: { ...localIndex.fullWidthBanner, subtitle: v }
+          })}
+        />
+      </CollapsibleSection>
+
+      {/* Content Grid */}
+      <CollapsibleSection title="Grid de Contenido (3 Columnas)" icon={<FileText className="w-5 h-5" />}>
+        {localIndex.contentGrid.map((item, idx) => (
+          <div key={item.id} className="p-4 border border-gray-200 rounded-lg space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="font-medium">Columna {idx + 1}</span>
+              {localIndex.contentGrid.length > 1 && (
+                <button
+                  onClick={() => {
+                    const newGrid = localIndex.contentGrid.filter((_, i) => i !== idx);
+                    setLocalIndex({ ...localIndex, contentGrid: newGrid });
+                  }}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            <InputField
+              label="URL de Imagen"
+              value={item.image}
+              onChange={(v) => {
+                const newGrid = [...localIndex.contentGrid];
+                newGrid[idx] = { ...newGrid[idx], image: v };
+                setLocalIndex({ ...localIndex, contentGrid: newGrid });
+              }}
+            />
+            <ImagePreview src={item.image} alt={item.title} />
+            <InputField
+              label="Título"
+              value={item.title}
+              onChange={(v) => {
+                const newGrid = [...localIndex.contentGrid];
+                newGrid[idx] = { ...newGrid[idx], title: v };
+                setLocalIndex({ ...localIndex, contentGrid: newGrid });
+              }}
+            />
+            <InputField
+              label="Descripción"
+              value={item.description}
+              onChange={(v) => {
+                const newGrid = [...localIndex.contentGrid];
+                newGrid[idx] = { ...newGrid[idx], description: v };
+                setLocalIndex({ ...localIndex, contentGrid: newGrid });
+              }}
+            />
+            <InputField
+              label="Link"
+              value={item.link}
+              onChange={(v) => {
+                const newGrid = [...localIndex.contentGrid];
+                newGrid[idx] = { ...newGrid[idx], link: v };
+                setLocalIndex({ ...localIndex, contentGrid: newGrid });
+              }}
+            />
+          </div>
+        ))}
+        <button
+          onClick={() => {
+            const newItem: ContentItem = {
+              id: generateId(),
+              title: 'Nuevo Item',
+              description: 'Descripción',
+              image: '/images/placeholder.png',
+              link: '/'
+            };
+            setLocalIndex({
+              ...localIndex,
+              contentGrid: [...localIndex.contentGrid, newItem]
+            });
+          }}
+          className="flex items-center gap-2 px-4 py-2 border border-dashed border-gray-300 rounded-lg hover:bg-gray-50 transition-colors w-full justify-center"
+        >
+          <Plus className="w-4 h-4" />
+          Agregar Columna
+        </button>
+      </CollapsibleSection>
+    </div>
+  );
+
+  // ============ NOSOTROS EDITOR ============
+  const renderNosotrosEditor = () => (
+    <div className="space-y-4">
+      <CollapsibleSection title="Hero Section" icon={<FileText className="w-5 h-5" />} defaultOpen>
+        <InputField label="Título" value={localNosotros.hero.title} onChange={(v) => setLocalNosotros({ ...localNosotros, hero: { ...localNosotros.hero, title: v } })} />
+        <InputField label="Descripción" type="textarea" rows={3} value={localNosotros.hero.description} onChange={(v) => setLocalNosotros({ ...localNosotros, hero: { ...localNosotros.hero, description: v } })} />
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Imagen Header" icon={<ImageIcon className="w-5 h-5" />}>
+        <InputField label="URL de Imagen" value={localNosotros.headerImage} onChange={(v) => setLocalNosotros({ ...localNosotros, headerImage: v })} />
+        <ImagePreview src={localNosotros.headerImage} alt="Header" />
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Sección Visión" icon={<FileText className="w-5 h-5" />}>
+        <InputField label="URL de Imagen" value={localNosotros.vision.image} onChange={(v) => setLocalNosotros({ ...localNosotros, vision: { ...localNosotros.vision, image: v } })} />
+        <ImagePreview src={localNosotros.vision.image} alt="Vision" />
+        <InputField label="Título" value={localNosotros.vision.title} onChange={(v) => setLocalNosotros({ ...localNosotros, vision: { ...localNosotros.vision, title: v } })} />
+        <InputField label="Párrafo 1" type="textarea" rows={3} value={localNosotros.vision.paragraph1} onChange={(v) => setLocalNosotros({ ...localNosotros, vision: { ...localNosotros.vision, paragraph1: v } })} />
+        <InputField label="Párrafo 2" type="textarea" rows={3} value={localNosotros.vision.paragraph2} onChange={(v) => setLocalNosotros({ ...localNosotros, vision: { ...localNosotros.vision, paragraph2: v } })} />
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Sección Valores" icon={<FileText className="w-5 h-5" />}>
+        <InputField label="URL de Imagen" value={localNosotros.values.image} onChange={(v) => setLocalNosotros({ ...localNosotros, values: { ...localNosotros.values, image: v } })} />
+        <ImagePreview src={localNosotros.values.image} alt="Values" />
+        <InputField label="Título" value={localNosotros.values.title} onChange={(v) => setLocalNosotros({ ...localNosotros, values: { ...localNosotros.values, title: v } })} />
+        <div className="space-y-3">
+          <span className="font-medium">Valores:</span>
+          {localNosotros.values.items.map((item, idx) => (
+            <div key={idx} className="p-3 border border-gray-200 rounded-lg space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Valor {idx + 1}</span>
+                {localNosotros.values.items.length > 1 && (
+                  <button onClick={() => {
+                    const newItems = localNosotros.values.items.filter((_, i) => i !== idx);
+                    setLocalNosotros({ ...localNosotros, values: { ...localNosotros.values, items: newItems } });
+                  }} className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></button>
+                )}
               </div>
-              <Link
-                href="/"
-                target="_blank"
-                className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <Eye className="w-4 h-4" />
-                Ver Sitio
-              </Link>
+              <InputField label="Título" value={item.title} onChange={(v) => {
+                const newItems = [...localNosotros.values.items];
+                newItems[idx] = { ...newItems[idx], title: v };
+                setLocalNosotros({ ...localNosotros, values: { ...localNosotros.values, items: newItems } });
+              }} />
+              <InputField label="Descripción" value={item.description} onChange={(v) => {
+                const newItems = [...localNosotros.values.items];
+                newItems[idx] = { ...newItems[idx], description: v };
+                setLocalNosotros({ ...localNosotros, values: { ...localNosotros.values, items: newItems } });
+              }} />
+            </div>
+          ))}
+          <button onClick={() => {
+            setLocalNosotros({ ...localNosotros, values: { ...localNosotros.values, items: [...localNosotros.values.items, { title: 'Nuevo Valor', description: 'Descripción' }] } });
+          }} className="flex items-center gap-2 px-4 py-2 border border-dashed border-gray-300 rounded-lg hover:bg-gray-50 transition-colors w-full justify-center">
+            <Plus className="w-4 h-4" /> Agregar Valor
+          </button>
+        </div>
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Sección CTA" icon={<FileText className="w-5 h-5" />}>
+        <InputField label="Título" value={localNosotros.cta.title} onChange={(v) => setLocalNosotros({ ...localNosotros, cta: { ...localNosotros.cta, title: v } })} />
+        <InputField label="Descripción" type="textarea" value={localNosotros.cta.description} onChange={(v) => setLocalNosotros({ ...localNosotros, cta: { ...localNosotros.cta, description: v } })} />
+        <div className="grid grid-cols-2 gap-4">
+          <InputField label="Texto del Botón" value={localNosotros.cta.buttonText} onChange={(v) => setLocalNosotros({ ...localNosotros, cta: { ...localNosotros.cta, buttonText: v } })} />
+          <InputField label="Link del Botón" value={localNosotros.cta.buttonLink} onChange={(v) => setLocalNosotros({ ...localNosotros, cta: { ...localNosotros.cta, buttonLink: v } })} />
+        </div>
+      </CollapsibleSection>
+    </div>
+  );
+
+  // ============ PRODUCCION EDITOR ============
+  const renderProduccionEditor = () => (
+    <div className="space-y-4">
+      <CollapsibleSection title="Hero Section" icon={<FileText className="w-5 h-5" />} defaultOpen>
+        <InputField label="Título" value={localProduccion.hero.title} onChange={(v) => setLocalProduccion({ ...localProduccion, hero: { ...localProduccion.hero, title: v } })} />
+        <InputField label="Descripción" type="textarea" rows={3} value={localProduccion.hero.description} onChange={(v) => setLocalProduccion({ ...localProduccion, hero: { ...localProduccion.hero, description: v } })} />
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Pilares de Producción" icon={<Factory className="w-5 h-5" />}>
+        {localProduccion.pillars.map((pillar, idx) => (
+          <div key={idx} className="p-4 border border-gray-200 rounded-lg space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="font-medium">Pilar {idx + 1}</span>
+              {localProduccion.pillars.length > 1 && (
+                <button onClick={() => {
+                  const newPillars = localProduccion.pillars.filter((_, i) => i !== idx);
+                  setLocalProduccion({ ...localProduccion, pillars: newPillars });
+                }} className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></button>
+              )}
+            </div>
+            <InputField label="URL de Imagen" value={pillar.image} onChange={(v) => {
+              const newPillars = [...localProduccion.pillars];
+              newPillars[idx] = { ...newPillars[idx], image: v };
+              setLocalProduccion({ ...localProduccion, pillars: newPillars });
+            }} />
+            <ImagePreview src={pillar.image} alt={pillar.title} />
+            <InputField label="Título" value={pillar.title} onChange={(v) => {
+              const newPillars = [...localProduccion.pillars];
+              newPillars[idx] = { ...newPillars[idx], title: v };
+              setLocalProduccion({ ...localProduccion, pillars: newPillars });
+            }} />
+            <InputField label="Descripción" value={pillar.description} onChange={(v) => {
+              const newPillars = [...localProduccion.pillars];
+              newPillars[idx] = { ...newPillars[idx], description: v };
+              setLocalProduccion({ ...localProduccion, pillars: newPillars });
+            }} />
+          </div>
+        ))}
+        <button onClick={() => {
+          setLocalProduccion({ ...localProduccion, pillars: [...localProduccion.pillars, { title: 'Nuevo Pilar', description: 'Descripción', image: '/images/placeholder.png' }] });
+        }} className="flex items-center gap-2 px-4 py-2 border border-dashed border-gray-300 rounded-lg hover:bg-gray-50 transition-colors w-full justify-center">
+          <Plus className="w-4 h-4" /> Agregar Pilar
+        </button>
+      </CollapsibleSection>
+    </div>
+  );
+
+  // ============ EVENTOS EDITOR ============
+  const renderEventosEditor = () => (
+    <div className="space-y-4">
+      <CollapsibleSection title="Encabezado de Página" icon={<FileText className="w-5 h-5" />} defaultOpen>
+        <InputField label="Título" value={localEventos.title} onChange={(v) => setLocalEventos({ ...localEventos, title: v })} />
+        <InputField label="Subtítulo" value={localEventos.subtitle} onChange={(v) => setLocalEventos({ ...localEventos, subtitle: v })} />
+        <div className="grid grid-cols-2 gap-4">
+          <InputField label="Título Próximos Eventos" value={localEventos.upcomingTitle} onChange={(v) => setLocalEventos({ ...localEventos, upcomingTitle: v })} />
+          <InputField label="Título Eventos Pasados" value={localEventos.pastTitle} onChange={(v) => setLocalEventos({ ...localEventos, pastTitle: v })} />
+        </div>
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Próximos Eventos" icon={<Calendar className="w-5 h-5" />}>
+        {localEventos.upcomingEvents.map((evento, idx) => (
+          <div key={evento.id} className="p-4 border border-gray-200 rounded-lg space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="font-medium">Evento {idx + 1}</span>
+              <button onClick={() => {
+                const newEvents = localEventos.upcomingEvents.filter((_, i) => i !== idx);
+                setLocalEventos({ ...localEventos, upcomingEvents: newEvents });
+              }} className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></button>
+            </div>
+            <InputField label="URL de Imagen" value={evento.image} onChange={(v) => {
+              const newEvents = [...localEventos.upcomingEvents];
+              newEvents[idx] = { ...newEvents[idx], image: v };
+              setLocalEventos({ ...localEventos, upcomingEvents: newEvents });
+            }} />
+            <ImagePreview src={evento.image} alt={evento.title} />
+            <div className="grid grid-cols-2 gap-4">
+              <InputField label="Fecha" value={evento.date} onChange={(v) => {
+                const newEvents = [...localEventos.upcomingEvents];
+                newEvents[idx] = { ...newEvents[idx], date: v };
+                setLocalEventos({ ...localEventos, upcomingEvents: newEvents });
+              }} />
+              <InputField label="Ubicación" value={evento.location} onChange={(v) => {
+                const newEvents = [...localEventos.upcomingEvents];
+                newEvents[idx] = { ...newEvents[idx], location: v };
+                setLocalEventos({ ...localEventos, upcomingEvents: newEvents });
+              }} />
+            </div>
+            <InputField label="Título" value={evento.title} onChange={(v) => {
+              const newEvents = [...localEventos.upcomingEvents];
+              newEvents[idx] = { ...newEvents[idx], title: v };
+              setLocalEventos({ ...localEventos, upcomingEvents: newEvents });
+            }} />
+            <InputField label="Descripción Corta" value={evento.description} onChange={(v) => {
+              const newEvents = [...localEventos.upcomingEvents];
+              newEvents[idx] = { ...newEvents[idx], description: v };
+              setLocalEventos({ ...localEventos, upcomingEvents: newEvents });
+            }} />
+            {evento.modalInfo && (
+              <div className="mt-4 p-3 bg-gray-50 rounded-lg space-y-3">
+                <span className="font-medium text-sm">Información del Modal:</span>
+                <InputField label="Horario" value={evento.modalInfo.time} onChange={(v) => {
+                  const newEvents = [...localEventos.upcomingEvents];
+                  newEvents[idx] = { ...newEvents[idx], modalInfo: { ...newEvents[idx].modalInfo!, time: v } };
+                  setLocalEventos({ ...localEventos, upcomingEvents: newEvents });
+                }} />
+                <InputField label="Descripción Completa" type="textarea" rows={3} value={evento.modalInfo.fullDescription} onChange={(v) => {
+                  const newEvents = [...localEventos.upcomingEvents];
+                  newEvents[idx] = { ...newEvents[idx], modalInfo: { ...newEvents[idx].modalInfo!, fullDescription: v } };
+                  setLocalEventos({ ...localEventos, upcomingEvents: newEvents });
+                }} />
+                <InputField label="Incluye" value={evento.modalInfo.includes} onChange={(v) => {
+                  const newEvents = [...localEventos.upcomingEvents];
+                  newEvents[idx] = { ...newEvents[idx], modalInfo: { ...newEvents[idx].modalInfo!, includes: v } };
+                  setLocalEventos({ ...localEventos, upcomingEvents: newEvents });
+                }} />
+                <div className="grid grid-cols-2 gap-4">
+                  <InputField label="Texto del Botón" value={evento.modalInfo.buttonText} onChange={(v) => {
+                    const newEvents = [...localEventos.upcomingEvents];
+                    newEvents[idx] = { ...newEvents[idx], modalInfo: { ...newEvents[idx].modalInfo!, buttonText: v } };
+                    setLocalEventos({ ...localEventos, upcomingEvents: newEvents });
+                  }} />
+                  <InputField label="Email del Botón" value={evento.modalInfo.buttonEmail} onChange={(v) => {
+                    const newEvents = [...localEventos.upcomingEvents];
+                    newEvents[idx] = { ...newEvents[idx], modalInfo: { ...newEvents[idx].modalInfo!, buttonEmail: v } };
+                    setLocalEventos({ ...localEventos, upcomingEvents: newEvents });
+                  }} />
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+        <button onClick={() => {
+          const newEvent = { id: generateId(), image: '/images/placeholder.png', date: 'DD/MM/YYYY', location: 'Buenos Aires', title: 'Nuevo Evento', description: 'Descripción', modalInfo: { time: '18:00 - 22:00 hs', fullDescription: 'Descripción completa.', includes: 'Incluye...', buttonText: 'Reservar', buttonEmail: 'eventos@softworks.com' } };
+          setLocalEventos({ ...localEventos, upcomingEvents: [...localEventos.upcomingEvents, newEvent] });
+        }} className="flex items-center gap-2 px-4 py-2 border border-dashed border-gray-300 rounded-lg hover:bg-gray-50 transition-colors w-full justify-center">
+          <Plus className="w-4 h-4" /> Agregar Evento Próximo
+        </button>
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Eventos Pasados" icon={<Calendar className="w-5 h-5" />}>
+        {localEventos.pastEvents.map((evento, idx) => (
+          <div key={evento.id} className="p-4 border border-gray-200 rounded-lg space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="font-medium">Evento Pasado {idx + 1}</span>
+              <button onClick={() => {
+                const newEvents = localEventos.pastEvents.filter((_, i) => i !== idx);
+                setLocalEventos({ ...localEventos, pastEvents: newEvents });
+              }} className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></button>
+            </div>
+            <InputField label="URL de Imagen" value={evento.image} onChange={(v) => {
+              const newEvents = [...localEventos.pastEvents];
+              newEvents[idx] = { ...newEvents[idx], image: v };
+              setLocalEventos({ ...localEventos, pastEvents: newEvents });
+            }} />
+            <ImagePreview src={evento.image} alt={evento.title} />
+            <InputField label="Título" value={evento.title} onChange={(v) => {
+              const newEvents = [...localEventos.pastEvents];
+              newEvents[idx] = { ...newEvents[idx], title: v };
+              setLocalEventos({ ...localEventos, pastEvents: newEvents });
+            }} />
+            <div className="grid grid-cols-2 gap-4">
+              <InputField label="Fecha" value={evento.date} onChange={(v) => {
+                const newEvents = [...localEventos.pastEvents];
+                newEvents[idx] = { ...newEvents[idx], date: v };
+                setLocalEventos({ ...localEventos, pastEvents: newEvents });
+              }} />
+              <InputField label="Ubicación" value={evento.location} onChange={(v) => {
+                const newEvents = [...localEventos.pastEvents];
+                newEvents[idx] = { ...newEvents[idx], location: v };
+                setLocalEventos({ ...localEventos, pastEvents: newEvents });
+              }} />
+            </div>
+          </div>
+        ))}
+        <button onClick={() => {
+          const newEvent = { id: generateId(), image: '/images/placeholder.png', date: 'DD/MM/YYYY', location: 'Buenos Aires', title: 'Evento Pasado', description: '' };
+          setLocalEventos({ ...localEventos, pastEvents: [...localEventos.pastEvents, newEvent] });
+        }} className="flex items-center gap-2 px-4 py-2 border border-dashed border-gray-300 rounded-lg hover:bg-gray-50 transition-colors w-full justify-center">
+          <Plus className="w-4 h-4" /> Agregar Evento Pasado
+        </button>
+      </CollapsibleSection>
+    </div>
+  );
+
+  // ============ UBICACIONES EDITOR ============
+  const renderUbicacionesEditor = () => (
+    <div className="space-y-4">
+      <CollapsibleSection title="Encabezado" icon={<FileText className="w-5 h-5" />} defaultOpen>
+        <InputField label="Título" value={localUbicaciones.hero.title} onChange={(v) => setLocalUbicaciones({ ...localUbicaciones, hero: { ...localUbicaciones.hero, title: v } })} />
+        <InputField label="Descripción" value={localUbicaciones.hero.description} onChange={(v) => setLocalUbicaciones({ ...localUbicaciones, hero: { ...localUbicaciones.hero, description: v } })} />
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Mapa de Google" icon={<MapPin className="w-5 h-5" />}>
+        <InputField label="URL de Embed del Mapa" type="url" value={localUbicaciones.mapEmbedUrl} onChange={(v) => setLocalUbicaciones({ ...localUbicaciones, mapEmbedUrl: v })} />
+        <p className="text-sm text-gray-500">Para obtener la URL: Google Maps → Compartir → Incorporar un mapa → Copiar el src del iframe</p>
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Información de Ubicación" icon={<MapPin className="w-5 h-5" />}>
+        <InputField label="Título" value={localUbicaciones.location.title} onChange={(v) => setLocalUbicaciones({ ...localUbicaciones, location: { ...localUbicaciones.location, title: v } })} />
+        <InputField label="Dirección" value={localUbicaciones.location.address} onChange={(v) => setLocalUbicaciones({ ...localUbicaciones, location: { ...localUbicaciones.location, address: v } })} />
+        <InputField label="Nota" value={localUbicaciones.location.note} onChange={(v) => setLocalUbicaciones({ ...localUbicaciones, location: { ...localUbicaciones.location, note: v } })} />
+        <div className="grid grid-cols-2 gap-4">
+          <InputField label="Texto del Botón" value={localUbicaciones.location.buttonText} onChange={(v) => setLocalUbicaciones({ ...localUbicaciones, location: { ...localUbicaciones.location, buttonText: v } })} />
+          <InputField label="Email del Botón" value={localUbicaciones.location.buttonEmail} onChange={(v) => setLocalUbicaciones({ ...localUbicaciones, location: { ...localUbicaciones.location, buttonEmail: v } })} />
+        </div>
+      </CollapsibleSection>
+    </div>
+  );
+
+  // ============ CONTACTO EDITOR ============
+  const renderContactoEditor = () => (
+    <div className="space-y-4">
+      <CollapsibleSection title="Encabezado" icon={<FileText className="w-5 h-5" />} defaultOpen>
+        <InputField label="Título" value={localContacto.hero.title} onChange={(v) => setLocalContacto({ ...localContacto, hero: { ...localContacto.hero, title: v } })} />
+        <InputField label="Subtítulo 1" value={localContacto.hero.subtitle1} onChange={(v) => setLocalContacto({ ...localContacto, hero: { ...localContacto.hero, subtitle1: v } })} />
+        <InputField label="Subtítulo 2" value={localContacto.hero.subtitle2} onChange={(v) => setLocalContacto({ ...localContacto, hero: { ...localContacto.hero, subtitle2: v } })} />
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Etiquetas del Formulario" icon={<FileText className="w-5 h-5" />}>
+        <div className="grid grid-cols-2 gap-4">
+          <InputField label="Label: Nombre" value={localContacto.formLabels.nombre} onChange={(v) => setLocalContacto({ ...localContacto, formLabels: { ...localContacto.formLabels, nombre: v } })} />
+          <InputField label="Label: Email" value={localContacto.formLabels.email} onChange={(v) => setLocalContacto({ ...localContacto, formLabels: { ...localContacto.formLabels, email: v } })} />
+          <InputField label="Label: Asunto" value={localContacto.formLabels.asunto} onChange={(v) => setLocalContacto({ ...localContacto, formLabels: { ...localContacto.formLabels, asunto: v } })} />
+          <InputField label="Label: Mensaje" value={localContacto.formLabels.mensaje} onChange={(v) => setLocalContacto({ ...localContacto, formLabels: { ...localContacto.formLabels, mensaje: v } })} />
+        </div>
+        <InputField label="Texto Botón Enviar" value={localContacto.formLabels.submitButton} onChange={(v) => setLocalContacto({ ...localContacto, formLabels: { ...localContacto.formLabels, submitButton: v } })} />
+        <InputField label="Texto Enviando..." value={localContacto.formLabels.submitting} onChange={(v) => setLocalContacto({ ...localContacto, formLabels: { ...localContacto.formLabels, submitting: v } })} />
+        <InputField label="Mensaje de Éxito" value={localContacto.formLabels.successMessage} onChange={(v) => setLocalContacto({ ...localContacto, formLabels: { ...localContacto.formLabels, successMessage: v } })} />
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Sección de Información" icon={<Phone className="w-5 h-5" />}>
+        <InputField label="Título" value={localContacto.infoSection.title} onChange={(v) => setLocalContacto({ ...localContacto, infoSection: { ...localContacto.infoSection, title: v } })} />
+        <p className="text-sm text-gray-500">Los datos de contacto (email, teléfono, dirección, redes sociales) se configuran en la sección de Configuración General del sitio.</p>
+      </CollapsibleSection>
+    </div>
+  );
+
+  const renderEditor = () => {
+    switch (selectedPage) {
+      case 'index': return renderIndexEditor();
+      case 'nosotros': return renderNosotrosEditor();
+      case 'produccion': return renderProduccionEditor();
+      case 'eventos': return renderEventosEditor();
+      case 'ubicaciones': return renderUbicacionesEditor();
+      case 'contacto': return renderContactoEditor();
+      default: return null;
+    }
+  };
+
+  const selectedPageInfo = pageOptions.find(p => p.id === selectedPage);
+
+  return (
+    <div className="pt-20 min-h-screen bg-gray-50">
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <Link href="/admin" className="p-2 hover:bg-gray-200 rounded-lg transition-colors"><ArrowLeft className="w-5 h-5" /></Link>
+            <div>
+              <h1 className="text-2xl font-medium">Editor de Contenido</h1>
+              <p className="text-foreground/70">Edita el contenido de todas las páginas del sitio</p>
+            </div>
+          </div>
+          <button onClick={handleSave} disabled={isSaving} className="flex items-center gap-2 px-6 py-3 bg-foreground text-white rounded-lg hover:bg-foreground/90 transition-colors disabled:opacity-50">
+            {isSaving ? (<><Loader2 className="w-5 h-5 animate-spin" />Guardando...</>) : (<><Save className="w-5 h-5" />Guardar Cambios</>)}
+          </button>
+        </div>
+
+        {saveMessage && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className={`mb-6 p-4 rounded-lg flex items-center gap-2 ${saveMessage.includes('Error') ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`}>
+            <CheckCircle className="w-5 h-5" />{saveMessage}
+          </motion.div>
+        )}
+
+        <div className="grid lg:grid-cols-[280px_1fr] gap-6">
+          <div className="bg-white rounded-lg border border-gray-200 p-4 h-fit">
+            <h2 className="font-medium mb-4">Seleccionar Página</h2>
+            <div className="space-y-2">
+              {pageOptions.map((page) => (
+                <button key={page.id} onClick={() => setSelectedPage(page.id)} className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left ${selectedPage === page.id ? 'bg-foreground text-white' : 'hover:bg-gray-100'}`}>
+                  {page.icon}
+                  <div>
+                    <div className="font-medium">{page.label}</div>
+                    <div className={`text-xs ${selectedPage === page.id ? 'text-white/70' : 'text-gray-500'}`}>{page.description}</div>
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Secciones de contenido */}
-          <div className="space-y-4">
-            {/* Hero Slideshow */}
-            <CollapsibleSection title="Hero Slideshow" icon={Layers} defaultOpen={true}>
-              <div className="space-y-4">
-                <p className="text-sm text-gray-500 mb-4">
-                  Configura los slides del banner principal. Cada slide tiene una imagen, título, subtítulo y botón de acción.
-                </p>
-                
-                {content.heroSlides.map((slide, index) => (
-                  <div key={slide.id} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-sm font-medium text-gray-700">Slide {index + 1}</span>
-                      <button
-                        onClick={() => deleteHeroSlide(slide.id)}
-                        className="p-1 text-red-500 hover:bg-red-50 rounded transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                    
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Imagen</label>
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            value={slide.image}
-                            onChange={(e) => updateHeroSlide(slide.id, 'image', e.target.value)}
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
-                            placeholder="/images/banner.png"
-                          />
-                        </div>
-                        {slide.image && (
-                          <div className="mt-2 aspect-video rounded overflow-hidden bg-gray-100 relative">
-                            <Image src={slide.image} alt="" fill className="object-cover" />
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="space-y-3">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Título</label>
-                          <input
-                            type="text"
-                            value={slide.title}
-                            onChange={(e) => updateHeroSlide(slide.id, 'title', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Subtítulo</label>
-                          <input
-                            type="text"
-                            value={slide.subtitle}
-                            onChange={(e) => updateHeroSlide(slide.id, 'subtitle', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Texto Botón</label>
-                            <input
-                              type="text"
-                              value={slide.ctaText}
-                              onChange={(e) => updateHeroSlide(slide.id, 'ctaText', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Link Botón</label>
-                            <input
-                              type="text"
-                              value={slide.ctaLink}
-                              onChange={(e) => updateHeroSlide(slide.id, 'ctaLink', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-
-                <button
-                  onClick={addHeroSlide}
-                  className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-foreground hover:text-foreground transition-colors flex items-center justify-center gap-2"
-                >
-                  <Plus className="w-5 h-5" />
-                  Agregar Slide
-                </button>
+          <motion.div key={selectedPage} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.2 }} className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-200">
+              {selectedPageInfo?.icon}
+              <div>
+                <h2 className="text-xl font-medium">{selectedPageInfo?.label}</h2>
+                <p className="text-sm text-gray-500">{selectedPageInfo?.description}</p>
               </div>
-            </CollapsibleSection>
-
-            {/* Tarjetas de Productos */}
-            <CollapsibleSection title="Tarjetas de Productos" icon={Grid3X3}>
-              <div className="space-y-4">
-                <p className="text-sm text-gray-500 mb-4">
-                  Edita las tarjetas de productos destacados que aparecen después del hero.
-                </p>
-
-                {content.productCardsSection1.map((card, index) => (
-                  <div key={card.id} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <div className="flex items-center gap-2 mb-4">
-                      <span className="text-sm font-medium text-gray-700">{card.title}</span>
-                      <span className="text-xs px-2 py-0.5 bg-gray-200 rounded">{card.size}</span>
-                    </div>
-                    
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Imagen</label>
-                        <input
-                          type="text"
-                          value={card.image}
-                          onChange={(e) => updateProductCard(card.id, 'image', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                        />
-                        {card.image && (
-                          <div className="mt-2 aspect-video rounded overflow-hidden bg-gray-100 relative">
-                            <Image src={card.image} alt="" fill className="object-cover" />
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="space-y-3">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Título</label>
-                          <input
-                            type="text"
-                            value={card.title}
-                            onChange={(e) => updateProductCard(card.id, 'title', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Subtítulo</label>
-                          <input
-                            type="text"
-                            value={card.subtitle}
-                            onChange={(e) => updateProductCard(card.id, 'subtitle', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Link</label>
-                          <input
-                            type="text"
-                            value={card.link}
-                            onChange={(e) => updateProductCard(card.id, 'link', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="mt-3">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-                      <textarea
-                        value={card.description}
-                        onChange={(e) => updateProductCard(card.id, 'description', e.target.value)}
-                        rows={2}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CollapsibleSection>
-
-            {/* Sección de Filosofía */}
-            <CollapsibleSection title="Sección de Filosofía" icon={Type}>
-              <div className="space-y-4">
-                <p className="text-sm text-gray-500 mb-4">
-                  Edita el contenido de la sección "Una de cada cosa realmente bien".
-                </p>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Título (usa \n para salto de línea)</label>
-                  <input
-                    type="text"
-                    value={content.philosophySection.title}
-                    onChange={(e) => updatePhilosophy('title', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-                  <textarea
-                    value={content.philosophySection.description}
-                    onChange={(e) => updatePhilosophy('description', e.target.value)}
-                    rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Texto del Botón</label>
-                    <input
-                      type="text"
-                      value={content.philosophySection.ctaText}
-                      onChange={(e) => updatePhilosophy('ctaText', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Link del Botón</label>
-                    <input
-                      type="text"
-                      value={content.philosophySection.ctaLink}
-                      onChange={(e) => updatePhilosophy('ctaLink', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    />
-                  </div>
-                </div>
-              </div>
-            </CollapsibleSection>
-
-            {/* Imágenes Lifestyle */}
-            <CollapsibleSection title="Galería Lifestyle" icon={ImageIcon}>
-              <div className="space-y-4">
-                <p className="text-sm text-gray-500 mb-4">
-                  Edita las 4 imágenes de la galería lifestyle.
-                </p>
-                
-                <div className="grid md:grid-cols-2 gap-4">
-                  {content.lifestyleImages.map((img, index) => (
-                    <div key={img.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Imagen {index + 1}</label>
-                      <input
-                        type="text"
-                        value={img.image}
-                        onChange={(e) => updateLifestyleImage(img.id, 'image', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm mb-2"
-                        placeholder="/images/item.png"
-                      />
-                      <input
-                        type="text"
-                        value={img.label}
-                        onChange={(e) => updateLifestyleImage(img.id, 'label', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                        placeholder="Etiqueta"
-                      />
-                      {img.image && (
-                        <div className="mt-2 aspect-[3/4] rounded overflow-hidden bg-gray-100 relative">
-                          <Image src={img.image} alt="" fill className="object-cover" />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </CollapsibleSection>
-
-            {/* Banner Full Width */}
-            <CollapsibleSection title="Banner Full Width" icon={Square}>
-              <div className="space-y-4">
-                <p className="text-sm text-gray-500 mb-4">
-                  Edita el banner de ancho completo "Diseñado para durar".
-                </p>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Imagen de Fondo</label>
-                  <input
-                    type="text"
-                    value={content.fullWidthBanner.image}
-                    onChange={(e) => updateBanner('image', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  />
-                  {content.fullWidthBanner.image && (
-                    <div className="mt-2 aspect-[21/9] rounded overflow-hidden bg-gray-100 relative">
-                      <Image src={content.fullWidthBanner.image} alt="" fill className="object-cover" />
-                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                        <div className="text-center text-white">
-                          <p className="text-2xl font-medium">{content.fullWidthBanner.title}</p>
-                          <p className="text-white/90">{content.fullWidthBanner.subtitle}</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Título</label>
-                    <input
-                      type="text"
-                      value={content.fullWidthBanner.title}
-                      onChange={(e) => updateBanner('title', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Subtítulo</label>
-                    <input
-                      type="text"
-                      value={content.fullWidthBanner.subtitle}
-                      onChange={(e) => updateBanner('subtitle', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    />
-                  </div>
-                </div>
-              </div>
-            </CollapsibleSection>
-
-            {/* Grid de Contenido Final */}
-            <CollapsibleSection title="Grid de Contenido" icon={Grid3X3}>
-              <div className="space-y-4">
-                <p className="text-sm text-gray-500 mb-4">
-                  Edita las 3 tarjetas del grid final (Misión, Filantropía, Sostenibilidad).
-                </p>
-                
-                {content.contentGrid.map((item, index) => (
-                  <div key={item.id} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <span className="text-sm font-medium text-gray-700 mb-3 block">Tarjeta {index + 1}</span>
-                    
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Imagen</label>
-                        <input
-                          type="text"
-                          value={item.image}
-                          onChange={(e) => updateContentItem(item.id, 'image', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                        />
-                        {item.image && (
-                          <div className="mt-2 aspect-square rounded overflow-hidden bg-gray-100 relative">
-                            <Image src={item.image} alt="" fill className="object-cover" />
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="space-y-3">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Título</label>
-                          <input
-                            type="text"
-                            value={item.title}
-                            onChange={(e) => updateContentItem(item.id, 'title', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-                          <input
-                            type="text"
-                            value={item.description}
-                            onChange={(e) => updateContentItem(item.id, 'description', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Link</label>
-                          <input
-                            type="text"
-                            value={item.link}
-                            onChange={(e) => updateContentItem(item.id, 'link', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CollapsibleSection>
-          </div>
-
-          {/* Botón flotante de guardar */}
-          <div className="fixed bottom-6 right-6 z-40">
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="px-6 py-3 bg-foreground text-white rounded-full shadow-lg hover:bg-foreground/90 transition-all hover:scale-105 flex items-center gap-2 disabled:opacity-50"
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Guardando...
-                </>
-              ) : (
-                <>
-                  <Save className="w-5 h-5" />
-                  Guardar Cambios
-                </>
-              )}
-            </button>
-          </div>
-        </motion.div>
+            </div>
+            {renderEditor()}
+          </motion.div>
+        </div>
       </div>
     </div>
   );

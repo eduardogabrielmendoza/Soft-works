@@ -2,75 +2,97 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { X } from 'lucide-react';
+import { X, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { usePagesContent } from '@/lib/hooks/usePagesContent';
 
 export default function EventosPage() {
-  const [showModal, setShowModal] = useState(false);
+  const { eventos: content, isLoading } = usePagesContent();
+  const [selectedEvent, setSelectedEvent] = useState<string | null>(null);
+
+  if (isLoading) {
+    return (
+      <div className="pt-20 min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin" />
+      </div>
+    );
+  }
+
+  const selectedEventData = content.upcomingEvents.find(e => e.id === selectedEvent);
 
   return (
     <div className="pt-20 px-4 py-12 max-w-6xl mx-auto">
-      <h1 className="text-3xl lg:text-4xl font-medium mb-4">Eventos</h1>
-      <p className="text-foreground/70 mb-12">Únete a nosotros en nuestros próximos eventos y experiencias</p>
+      <h1 className="text-3xl lg:text-4xl font-medium mb-4">{content.title}</h1>
+      <p className="text-foreground/70 mb-12">{content.subtitle}</p>
 
       {/* Upcoming Events */}
-      <section className="mb-16">
-        <h2 className="text-2xl font-medium mb-6">Próximos Eventos</h2>
-        <div className="space-y-6">
-          <div className="grid lg:grid-cols-[300px_1fr] gap-6 p-6 border border-gray-200 rounded-lg">
-            <div className="aspect-square rounded-lg relative overflow-hidden">
-              <Image
-                src="/images/showroom2.png"
-                alt="Showroom Palermo Nº2"
-                fill
-                className="object-cover"
-              />
-            </div>
-            <div>
-              <div className="text-sm text-foreground/70 mb-1">06/05/2026 · CABA</div>
-              <h3 className="text-xl font-medium mb-2">Showroom Palermo Nº2</h3>
-              <p className="text-foreground/70 mb-4">
-                Presentación de nuevas colecciones y productos.
-              </p>
-              <button 
-                onClick={() => setShowModal(true)}
-                className="px-6 py-2 border border-foreground rounded-md hover:bg-foreground hover:text-white transition-colors"
-              >
-                Más Información
-              </button>
-            </div>
+      {content.upcomingEvents.length > 0 && (
+        <section className="mb-16">
+          <h2 className="text-2xl font-medium mb-6">{content.upcomingTitle}</h2>
+          <div className="space-y-6">
+            {content.upcomingEvents.map((evento) => (
+              <div key={evento.id} className="grid lg:grid-cols-[300px_1fr] gap-6 p-6 border border-gray-200 rounded-lg">
+                <div className="aspect-square rounded-lg relative overflow-hidden">
+                  <Image
+                    src={evento.image}
+                    alt={evento.title}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                <div>
+                  <div className="text-sm text-foreground/70 mb-1">{evento.date} · {evento.location}</div>
+                  <h3 className="text-xl font-medium mb-2">{evento.title}</h3>
+                  <p className="text-foreground/70 mb-4">
+                    {evento.description}
+                  </p>
+                  {evento.modalInfo && (
+                    <button 
+                      onClick={() => setSelectedEvent(evento.id)}
+                      className="px-6 py-2 border border-foreground rounded-md hover:bg-foreground hover:text-white transition-colors"
+                    >
+                      Más Información
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Past Events */}
-      <section>
-        <h2 className="text-2xl font-medium mb-6">Eventos Pasados</h2>
-        <div className="grid md:grid-cols-3 gap-6">
-          <div>
-            <div className="aspect-[4/3] rounded-lg mb-3 relative overflow-hidden">
-              <Image
-                src="/images/showroom1.png"
-                alt="Showroom Palermo Nº1"
-                fill
-                className="object-cover"
-              />
-            </div>
-            <h3 className="font-medium mb-1">Showroom Palermo Nº1</h3>
-            <p className="text-sm text-foreground/70">15/12/2025 · Buenos Aires</p>
+      {content.pastEvents.length > 0 && (
+        <section>
+          <h2 className="text-2xl font-medium mb-6">{content.pastTitle}</h2>
+          <div className="grid md:grid-cols-3 gap-6">
+            {content.pastEvents.map((evento) => (
+              <div key={evento.id}>
+                <div className="aspect-[4/3] rounded-lg mb-3 relative overflow-hidden">
+                  <Image
+                    src={evento.image}
+                    alt={evento.title}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                <h3 className="font-medium mb-1">{evento.title}</h3>
+                <p className="text-sm text-foreground/70">{evento.date} · {evento.location}</p>
+              </div>
+            ))}
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Modal */}
       <AnimatePresence>
-        {showModal && (
+        {selectedEvent && selectedEventData?.modalInfo && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-            onClick={() => setShowModal(false)}
+            onClick={() => setSelectedEvent(null)}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
@@ -80,32 +102,29 @@ export default function EventosPage() {
               onClick={(e) => e.stopPropagation()}
             >
               <button
-                onClick={() => setShowModal(false)}
+                onClick={() => setSelectedEvent(null)}
                 className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
               
-              <h3 className="text-2xl font-medium mb-4">Showroom Palermo Nº2</h3>
+              <h3 className="text-2xl font-medium mb-4">{selectedEventData.title}</h3>
               <div className="space-y-3 text-foreground/70">
-                <p><strong>Fecha:</strong> 06 de Mayo, 2026</p>
-                <p><strong>Ubicación:</strong> Palermo, Buenos Aires, Argentina</p>
-                <p><strong>Horario:</strong> 18:00 - 22:00 hs</p>
+                <p><strong>Fecha:</strong> {selectedEventData.date}</p>
+                <p><strong>Ubicación:</strong> {selectedEventData.location}</p>
+                <p><strong>Horario:</strong> {selectedEventData.modalInfo.time}</p>
                 <p className="pt-2">
-                  Únete a nosotros para la presentación exclusiva de nuestra nueva colección. 
-                  Descubre las últimas tendencias, conoce el proceso detrás de cada diseño y 
-                  disfruta de una experiencia única en nuestro showroom.
+                  {selectedEventData.modalInfo.fullDescription}
                 </p>
                 <p className="pt-2">
-                  <strong>Incluye:</strong> Cocktail de bienvenida, música en vivo y descuentos exclusivos 
-                  para asistentes.
+                  <strong>Incluye:</strong> {selectedEventData.modalInfo.includes}
                 </p>
                 <div className="pt-4">
                   <a
-                    href="mailto:eventos@softworks.com"
+                    href={`mailto:${selectedEventData.modalInfo.buttonEmail}`}
                     className="inline-block px-6 py-3 bg-foreground text-white rounded-md hover:bg-foreground/90 transition-colors font-medium"
                   >
-                    Reservar Entrada
+                    {selectedEventData.modalInfo.buttonText}
                   </a>
                 </div>
               </div>

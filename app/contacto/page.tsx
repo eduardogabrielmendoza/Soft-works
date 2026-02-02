@@ -2,10 +2,12 @@
 
 import { useState } from 'react';
 import { useSiteConfig } from '@/lib/hooks/useSiteConfig';
+import { usePagesContent } from '@/lib/hooks/usePagesContent';
 import { Loader2 } from 'lucide-react';
 
 export default function ContactoPage() {
-  const { config, isLoading } = useSiteConfig();
+  const { config, isLoading: configLoading } = useSiteConfig();
+  const { contacto: content, isLoading: contentLoading } = usePagesContent();
   const [formData, setFormData] = useState({
     nombre: '',
     email: '',
@@ -22,14 +24,14 @@ export default function ContactoPage() {
     // Simular envío del formulario
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    setSubmitMessage('¡Gracias por tu mensaje! Te responderemos pronto.');
+    setSubmitMessage(content.formLabels.successMessage);
     setFormData({ nombre: '', email: '', asunto: '', mensaje: '' });
     setIsSubmitting(false);
     
     setTimeout(() => setSubmitMessage(''), 5000);
   };
 
-  if (isLoading) {
+  if (configLoading || contentLoading) {
     return (
       <div className="pt-20 min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-foreground" />
@@ -40,9 +42,9 @@ export default function ContactoPage() {
   return (
     <div className="pt-20 px-4 py-12 max-w-4xl mx-auto">
       <div className="text-center mb-12">
-        <h1 className="text-3xl lg:text-4xl font-medium mb-4">Contacto</h1>
-        <p className="text-foreground/70">{config.contact_hours || 'Estamos aquí para ayudarte'}</p>
-        <p className="text-foreground/70">Envíanos un mensaje en cualquier momento</p>
+        <h1 className="text-3xl lg:text-4xl font-medium mb-4">{content.hero.title}</h1>
+        <p className="text-foreground/70">{content.hero.subtitle1}</p>
+        <p className="text-foreground/70">{content.hero.subtitle2}</p>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-12">
@@ -56,7 +58,7 @@ export default function ContactoPage() {
           
           <div>
             <label htmlFor="nombre" className="block text-sm font-medium mb-2">
-              Nombre
+              {content.formLabels.nombre}
             </label>
             <input
               type="text"
@@ -70,7 +72,7 @@ export default function ContactoPage() {
 
           <div>
             <label htmlFor="email" className="block text-sm font-medium mb-2">
-              Email
+              {content.formLabels.email}
             </label>
             <input
               type="email"
@@ -84,7 +86,7 @@ export default function ContactoPage() {
 
           <div>
             <label htmlFor="asunto" className="block text-sm font-medium mb-2">
-              Asunto
+              {content.formLabels.asunto}
             </label>
             <input
               type="text"
@@ -98,7 +100,7 @@ export default function ContactoPage() {
 
           <div>
             <label htmlFor="mensaje" className="block text-sm font-medium mb-2">
-              Mensaje
+              {content.formLabels.mensaje}
             </label>
             <textarea
               id="mensaje"
@@ -118,17 +120,17 @@ export default function ContactoPage() {
             {isSubmitting ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                Enviando...
+                {content.formLabels.submitting}
               </>
             ) : (
-              'Enviar Mensaje'
+              content.formLabels.submitButton
             )}
           </button>
         </form>
 
         {/* Contact Info */}
         <div>
-          <h2 className="text-xl font-medium mb-6">Otras Formas de Contacto</h2>
+          <h2 className="text-xl font-medium mb-6">{content.infoSection.title}</h2>
           <div className="space-y-6 text-foreground/70">
             {config.contact_email && (
               <div>

@@ -3,8 +3,20 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
+import { usePagesContent } from '@/lib/hooks/usePagesContent';
+import { Loader2 } from 'lucide-react';
 
 export default function NosotrosPage() {
+  const { nosotros: content, isLoading } = usePagesContent();
+
+  if (isLoading) {
+    return (
+      <div className="pt-20 min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="pt-20">
       {/* Hero Section */}
@@ -14,11 +26,9 @@ export default function NosotrosPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <h1 className="text-4xl lg:text-6xl font-medium mb-6">Nuestra Historia</h1>
+          <h1 className="text-4xl lg:text-6xl font-medium mb-6">{content.hero.title}</h1>
           <p className="text-lg lg:text-xl text-foreground/70 leading-relaxed">
-            En Softworks, creemos en hacer una de cada cosa realmente bien. 
-            Nuestra filosofía es crear prendas esenciales, intencionadas y de alto rendimiento 
-            que uses todos los días.
+            {content.hero.description}
           </p>
         </motion.div>
       </section>
@@ -32,7 +42,7 @@ export default function NosotrosPage() {
         className="aspect-[16/9] lg:aspect-[21/9] relative mb-16 overflow-hidden"
       >
         <Image
-          src="/images/nosotrosheader.png"
+          src={content.headerImage}
           alt="Equipo Fundador Softworks"
           fill
           className="object-cover"
@@ -50,7 +60,7 @@ export default function NosotrosPage() {
             className="aspect-[4/5] relative rounded-lg overflow-hidden"
           >
             <Image
-              src="/images/nosotros1.png"
+              src={content.vision.image}
               alt="Equipo Softworks"
               fill
               className="object-cover"
@@ -62,16 +72,12 @@ export default function NosotrosPage() {
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <h2 className="text-3xl lg:text-4xl font-medium mb-6">Nuestra Visión</h2>
+            <h2 className="text-3xl lg:text-4xl font-medium mb-6">{content.vision.title}</h2>
             <p className="text-foreground/70 leading-relaxed mb-4">
-              Fundada en 2023, Softworks nació de la frustración con la moda rápida 
-              y la necesidad de crear algo verdaderamente atemporal. Queremos que cada 
-              prenda cuente una historia de calidad, durabilidad y diseño consciente.
+              {content.vision.paragraph1}
             </p>
             <p className="text-foreground/70 leading-relaxed">
-              Creemos que menos es más. Cada pieza de nuestra colección está diseñada 
-              para complementar tu guardarropa existente, no para reemplazarlo. 
-              Sostenibilidad a través de la simplicidad.
+              {content.vision.paragraph2}
             </p>
           </motion.div>
         </div>
@@ -85,14 +91,9 @@ export default function NosotrosPage() {
             transition={{ duration: 0.6 }}
             className="order-2 lg:order-1"
           >
-            <h2 className="text-3xl lg:text-4xl font-medium mb-6">Nuestros Valores</h2>
+            <h2 className="text-3xl lg:text-4xl font-medium mb-6">{content.values.title}</h2>
             <ul className="space-y-4">
-              {[
-                { title: 'Calidad sobre Cantidad', desc: 'Menos piezas, mejor fabricadas' },
-                { title: 'Diseño Atemporal', desc: 'Prendas que trascienden las tendencias' },
-                { title: 'Producción Ética', desc: 'Respeto por quienes hacen nuestra ropa' },
-                { title: 'Transparencia Total', desc: 'Honestidad en cada paso del proceso' }
-              ].map((value, i) => (
+              {content.values.items.map((value, i) => (
                 <motion.li
                   key={i}
                   initial={{ opacity: 0, x: -10 }}
@@ -102,7 +103,7 @@ export default function NosotrosPage() {
                   className="border-l-2 border-foreground pl-4"
                 >
                   <h3 className="font-medium mb-1">{value.title}</h3>
-                  <p className="text-sm text-foreground/70">{value.desc}</p>
+                  <p className="text-sm text-foreground/70">{value.description}</p>
                 </motion.li>
               ))}
             </ul>
@@ -115,7 +116,7 @@ export default function NosotrosPage() {
             className="aspect-[4/5] relative rounded-lg overflow-hidden order-1 lg:order-2"
           >
             <Image
-              src="/images/nosotros2.png"
+              src={content.values.image}
               alt="Proceso de Producción"
               fill
               className="object-cover"
@@ -133,15 +134,15 @@ export default function NosotrosPage() {
           transition={{ duration: 0.6 }}
           className="max-w-3xl mx-auto text-center px-4"
         >
-          <h2 className="text-3xl lg:text-4xl font-medium mb-6">Conoce más sobre nuestro impacto</h2>
+          <h2 className="text-3xl lg:text-4xl font-medium mb-6">{content.cta.title}</h2>
           <p className="text-foreground/70 mb-8">
-            Descubre cómo estamos trabajando para crear un futuro más sostenible y equitativo
+            {content.cta.description}
           </p>
           <Link
-            href="/produccion"
+            href={content.cta.buttonLink}
             className="inline-block px-8 py-3 border-2 border-foreground rounded-full hover:bg-foreground hover:text-white transition-all font-medium"
           >
-            Ver más
+            {content.cta.buttonText}
           </Link>
         </motion.div>
       </section>
