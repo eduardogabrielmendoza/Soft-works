@@ -6,6 +6,21 @@ import { createClient } from '@supabase/supabase-js';
 
 export async function POST(request: NextRequest) {
   try {
+    // Verificar variables de entorno
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      console.error('Variables de entorno faltantes:', { 
+        hasUrl: !!supabaseUrl, 
+        hasKey: !!serviceRoleKey 
+      });
+      return NextResponse.json(
+        { error: 'Configuración del servidor incompleta' },
+        { status: 500 }
+      );
+    }
+
     const body = await request.json();
     const { userId, adminId } = body;
 
@@ -25,16 +40,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Crear cliente con service_role para operaciones de admin
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
       }
-    );
+    });
 
     // Verificar que el solicitante es admin
     const { data: adminProfile, error: adminError } = await supabaseAdmin
@@ -43,7 +54,15 @@ export async function POST(request: NextRequest) {
       .eq('id', adminId)
       .single();
 
-    if (adminError || !adminProfile || adminProfile.rol !== 'admin') {
+    if (adminError) {
+      console.error('Error verificando admin:', adminError);
+      return NextResponse.json(
+        { error: 'Error verificando permisos de administrador' },
+        { status: 500 }
+      );
+    }
+
+    if (!adminProfile || adminProfile.rol !== 'admin') {
       return NextResponse.json(
         { error: 'No tienes permisos para realizar esta acción' },
         { status: 403 }
@@ -57,7 +76,15 @@ export async function POST(request: NextRequest) {
       .eq('id', userId)
       .single();
 
-    if (userError || !userProfile) {
+    if (userError) {
+      console.error('Error buscando usuario:', userError);
+      return NextResponse.json(
+        { error: 'Error buscando usuario' },
+        { status: 500 }
+      );
+    }
+
+    if (!userProfile) {
       return NextResponse.json(
         { error: 'Usuario no encontrado' },
         { status: 404 }
@@ -65,10 +92,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar si tiene pedidos - si tiene, no permitir eliminar
-    const { count: orderCount } = await supabaseAdmin
+    const { count: orderCount, error: orderError } = await supabaseAdmin
       .from('pedidos')
       .select('*', { count: 'exact', head: true })
       .eq('usuario_id', userId);
+
+    if (orderError) {
+      console.error('Error verificando pedidos:', orderError);
+      return NextResponse.json(
+        { error: 'Error verificando pedidos del usuario' },
+        { status: 500 }
+      );
+    }
 
     if (orderCount && orderCount > 0) {
       return NextResponse.json(
@@ -96,7 +131,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Error en API de eliminación:', error);
     return NextResponse.json(
-      { error: 'Error interno del servidor' },
+      { error: error.message || 'Error interno del servidor' },
       { status: 500 }
     );
   }

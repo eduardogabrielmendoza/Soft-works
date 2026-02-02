@@ -158,12 +158,12 @@ export default function ConfiguracionAdminPage() {
       // Actualizar el contexto global
       await refreshConfig();
       
-      setSavedMessage('Configuración guardada correctamente');
+      setSavedMessage('✓ Configuración guardada correctamente. Los cambios ya están activos.');
     } catch (error: any) {
       setSavedMessage('Error al guardar: ' + error.message);
     } finally {
       setIsSaving(false);
-      setTimeout(() => setSavedMessage(''), 3000);
+      setTimeout(() => setSavedMessage(''), 5000);
     }
   };
 
@@ -209,7 +209,20 @@ export default function ConfiguracionAdminPage() {
           </div>
 
           {savedMessage && (
-            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-800">
+            <div className={`mb-6 p-4 rounded-lg flex items-center gap-2 ${
+              savedMessage.includes('Error') 
+                ? 'bg-red-50 border border-red-200 text-red-800' 
+                : 'bg-green-50 border border-green-200 text-green-800'
+            }`}>
+              {savedMessage.includes('Error') ? (
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              )}
               {savedMessage}
             </div>
           )}
@@ -266,6 +279,27 @@ export default function ConfiguracionAdminPage() {
                     </div>
                   </div>
                 )}
+
+                {/* Botón guardar banner */}
+                <div className="pt-2">
+                  <button
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="px-4 py-2 bg-foreground text-white text-sm rounded-md hover:bg-foreground/90 transition-colors flex items-center gap-2 disabled:opacity-50"
+                  >
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Guardando...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4" />
+                        Guardar Banner
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -602,11 +636,28 @@ export default function ConfiguracionAdminPage() {
                 ) : (
                   <>
                     <Save className="w-5 h-5" />
-                    Guardar Cambios
+                    Guardar Todos los Cambios
                   </>
                 )}
               </button>
             </div>
+          </div>
+
+          {/* Botón flotante de guardar */}
+          <div className="fixed bottom-6 right-6 z-40">
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="px-4 py-3 bg-foreground text-white rounded-full shadow-lg hover:bg-foreground/90 transition-all hover:scale-105 flex items-center gap-2 disabled:opacity-50"
+              title="Guardar todos los cambios"
+            >
+              {isSaving ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Save className="w-5 h-5" />
+              )}
+              <span className="hidden sm:inline">Guardar</span>
+            </button>
           </div>
         </motion.div>
       </div>
