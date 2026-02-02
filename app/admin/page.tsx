@@ -16,7 +16,8 @@ import {
   ArrowUp,
   ArrowDown,
   TrendingUp,
-  User
+  User,
+  FileText
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/hooks/useAuth';
@@ -341,6 +342,13 @@ export default function AdminDashboardPage() {
                 >
                   <Users className="w-5 h-5 text-gray-600" />
                   <span>Gestionar Usuarios</span>
+                </Link>
+                <Link
+                  href="/admin/contenidos"
+                  className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+                >
+                  <FileText className="w-5 h-5 text-gray-600" />
+                  <span>Editar Contenido Web</span>
                 </Link>
                 <Link
                   href="/admin/configuracion"

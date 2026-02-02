@@ -5,38 +5,16 @@ import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
 import Image from 'next/image';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useIndexContent } from '@/lib/hooks/useIndexContent';
 
 interface Slide {
+  id: string;
   image: string;
   title: string;
   subtitle: string;
   ctaText: string;
   ctaLink: string;
 }
-
-const slides: Slide[] = [
-  {
-    image: '/images/Herobanner.png',
-    title: 'Colecciones',
-    subtitle: 'Buenos Aires - Argentina',
-    ctaText: 'Explorar',
-    ctaLink: '/colecciones',
-  },
-  {
-    image: '/images/hoodies.png',
-    title: 'Hoodies',
-    subtitle: 'For the obsessed',
-    ctaText: 'Ver Hoodies',
-    ctaLink: '/colecciones?categoria=hoodies',
-  },
-  {
-    image: '/images/shirts.png',
-    title: 'T-Shirts',
-    subtitle: 'Esenciales minimalistas',
-    ctaText: 'Ver T-Shirts',
-    ctaLink: '/colecciones?categoria=t-shirts',
-  },
-];
 
 // Variantes para transición horizontal suave sin parpadeos
 const slideVariants = {
@@ -87,6 +65,9 @@ const childVariants = {
 };
 
 export default function HeroBannerSlideshow() {
+  const { content } = useIndexContent();
+  const slides = content.heroSlides;
+  
   const [currentSlide, setCurrentSlide] = useState(0);
   const [direction, setDirection] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
