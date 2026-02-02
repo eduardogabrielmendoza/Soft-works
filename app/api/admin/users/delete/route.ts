@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
         hasKey: !!serviceRoleKey 
       });
       return NextResponse.json(
-        { error: 'Configuración del servidor incompleta' },
+        { error: 'Configuración del servidor incompleta. Contacta al administrador del sistema.' },
         { status: 500 }
       );
     }
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     // Verificar que el usuario a eliminar existe
     const { data: userProfile, error: userError } = await supabaseAdmin
       .from('perfiles')
-      .select('id, email')
+      .select('id, email, nombre')
       .eq('id', userId)
       .single();
 
@@ -91,28 +91,116 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verificar si tiene pedidos - si tiene, no permitir eliminar
-    const { count: orderCount, error: orderError } = await supabaseAdmin
+    console.log(`Iniciando eliminación completa del usuario: ${userProfile.email}`);
+
+    // ============================================
+    // PASO 1: Obtener todos los pedidos del usuario
+    // ============================================
+    const { data: pedidos, error: pedidosError } = await supabaseAdmin
       .from('pedidos')
-      .select('*', { count: 'exact', head: true })
+      .select('id')
       .eq('usuario_id', userId);
 
-    if (orderError) {
-      console.error('Error verificando pedidos:', orderError);
+    if (pedidosError) {
+      console.error('Error obteniendo pedidos:', pedidosError);
       return NextResponse.json(
-        { error: 'Error verificando pedidos del usuario' },
+        { error: 'Error obteniendo pedidos del usuario' },
         { status: 500 }
       );
     }
 
-    if (orderCount && orderCount > 0) {
-      return NextResponse.json(
-        { error: `El usuario tiene ${orderCount} pedido(s) asociado(s). No se puede eliminar.` },
-        { status: 400 }
-      );
+    const pedidoIds = pedidos?.map(p => p.id) || [];
+    console.log(`Pedidos a eliminar: ${pedidoIds.length}`);
+
+    // ============================================
+    // PASO 2: Eliminar datos relacionados a los pedidos
+    // ============================================
+    if (pedidoIds.length > 0) {
+      // Eliminar verificaciones de pago
+      const { error: verifError } = await supabaseAdmin
+        .from('verificaciones_pago')
+        .delete()
+        .in('pedido_id', pedidoIds);
+      
+      if (verifError) {
+        console.error('Error eliminando verificaciones:', verifError);
+      }
+
+      // Eliminar información de envío
+      const { error: envioError } = await supabaseAdmin
+        .from('info_envio')
+        .delete()
+        .in('pedido_id', pedidoIds);
+      
+      if (envioError) {
+        console.error('Error eliminando info de envío:', envioError);
+      }
+
+      // Eliminar items de pedido
+      const { error: itemsError } = await supabaseAdmin
+        .from('items_pedido')
+        .delete()
+        .in('pedido_id', pedidoIds);
+      
+      if (itemsError) {
+        console.error('Error eliminando items de pedido:', itemsError);
+      }
+
+      // Eliminar historial de pedidos
+      const { error: historialError } = await supabaseAdmin
+        .from('historial_pedido')
+        .delete()
+        .in('pedido_id', pedidoIds);
+      
+      if (historialError) {
+        console.error('Error eliminando historial:', historialError);
+      }
+
+      // Eliminar los pedidos
+      const { error: deletePedidosError } = await supabaseAdmin
+        .from('pedidos')
+        .delete()
+        .eq('usuario_id', userId);
+
+      if (deletePedidosError) {
+        console.error('Error eliminando pedidos:', deletePedidosError);
+        return NextResponse.json(
+          { error: 'Error eliminando pedidos del usuario' },
+          { status: 500 }
+        );
+      }
+      
+      console.log('Pedidos y datos relacionados eliminados correctamente');
     }
 
-    // Eliminar el usuario de auth.users (esto eliminará el perfil en cascada)
+    // ============================================
+    // PASO 3: Eliminar direcciones del usuario
+    // ============================================
+    const { error: direccionesError } = await supabaseAdmin
+      .from('direcciones')
+      .delete()
+      .eq('usuario_id', userId);
+
+    if (direccionesError) {
+      console.error('Error eliminando direcciones:', direccionesError);
+    }
+
+    // ============================================
+    // PASO 4: Eliminar carrito del usuario
+    // ============================================
+    const { error: carritoError } = await supabaseAdmin
+      .from('carritos')
+      .delete()
+      .eq('usuario_id', userId);
+
+    if (carritoError) {
+      console.error('Error eliminando carrito:', carritoError);
+    }
+
+    // ============================================
+    // PASO 5: Eliminar el usuario de auth.users
+    // (Esto eliminará el perfil en cascada)
+    // ============================================
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
     if (deleteError) {
@@ -123,8 +211,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log(`Usuario ${userProfile.email} eliminado completamente`);
+
     return NextResponse.json(
-      { success: true, message: 'Usuario eliminado correctamente' },
+      { 
+        success: true, 
+        message: 'Usuario y todos sus datos eliminados correctamente',
+        deletedOrders: pedidoIds.length
+      },
       { status: 200 }
     );
 
