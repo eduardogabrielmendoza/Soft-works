@@ -5,22 +5,25 @@ import {
   Save, Loader2, ArrowLeft, Monitor, Tablet, Smartphone,
   Home, Users, Factory, Calendar, MapPin, Phone,
   Plus, Trash2, ChevronDown, ChevronUp, Check, AlertCircle,
-  GripVertical, Link as LinkIcon, ExternalLink, Globe, Youtube, MousePointerClick
+  GripVertical, Link as LinkIcon, ExternalLink, Globe, Youtube, MousePointerClick,
+  Layout, PanelTop, PanelBottom, Type
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useIndexContent, type IndexContent, type HeroSlide, type ProductCard, type LifestyleImage, type ContentItem } from '@/lib/hooks/useIndexContent';
 import { usePagesContent, type NosotrosContent, type ProduccionContent, type EventosContent, type EventoItem, type UbicacionesContent, type ContactoContent } from '@/lib/hooks/usePagesContent';
+import { useLayoutContent, type LayoutContent, type NavLink, type FooterLinkColumn, defaultLayoutContent } from '@/lib/hooks/useLayoutContent';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { type CustomSection, type CustomButton, type CustomSectionType, SECTION_TYPE_OPTIONS, createEmptySection, toEmbedUrl } from '@/lib/types/sections';
 
 // ============================================================
 // TYPES
 // ============================================================
-type PageId = 'index' | 'nosotros' | 'produccion' | 'eventos' | 'ubicaciones' | 'contacto';
+type PageId = 'layout' | 'index' | 'nosotros' | 'produccion' | 'eventos' | 'ubicaciones' | 'contacto';
 type DevicePreview = 'desktop' | 'tablet' | 'mobile';
 
 const PAGE_TABS: { id: PageId; label: string; icon: React.ReactNode; path: string }[] = [
+  { id: 'layout', label: 'Layout', icon: <Layout className="w-4 h-4" />, path: '/' },
   { id: 'index', label: 'Inicio', icon: <Home className="w-4 h-4" />, path: '/' },
   { id: 'nosotros', label: 'Nosotros', icon: <Users className="w-4 h-4" />, path: '/nosotros' },
   { id: 'produccion', label: 'Producción', icon: <Factory className="w-4 h-4" />, path: '/produccion' },
@@ -445,9 +448,13 @@ function IndexEditor({ content, onChange }: { content: IndexContent; onChange: (
           <Field label="Título"><TextArea value={content.philosophySection.title} onChange={v => onChange({ ...content, philosophySection: { ...content.philosophySection, title: v } })} rows={2} /></Field>
           <Field label="Descripción"><TextArea value={content.philosophySection.description} onChange={v => onChange({ ...content, philosophySection: { ...content.philosophySection, description: v } })} rows={4} /></Field>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Texto del botón"><TextInput value={content.philosophySection.ctaText} onChange={v => onChange({ ...content, philosophySection: { ...content.philosophySection, ctaText: v } })} /></Field>
-            <Field label="Link del botón"><UrlInput value={content.philosophySection.ctaLink} onChange={v => onChange({ ...content, philosophySection: { ...content.philosophySection, ctaLink: v } })} /></Field>
+            <Field label="Texto del botón principal"><TextInput value={content.philosophySection.ctaText} onChange={v => onChange({ ...content, philosophySection: { ...content.philosophySection, ctaText: v } })} /></Field>
+            <Field label="Link del botón principal"><UrlInput value={content.philosophySection.ctaLink} onChange={v => onChange({ ...content, philosophySection: { ...content.philosophySection, ctaLink: v } })} /></Field>
           </div>
+          <ButtonEditor
+            buttons={content.philosophySection.buttons || []}
+            onChange={buttons => onChange({ ...content, philosophySection: { ...content.philosophySection, buttons } })}
+          />
         </div>
       </SectionCard>
 
@@ -469,6 +476,10 @@ function IndexEditor({ content, onChange }: { content: IndexContent; onChange: (
           <ImageInput value={content.fullWidthBanner.image} onChange={v => onChange({ ...content, fullWidthBanner: { ...content.fullWidthBanner, image: v } })} label="Imagen" />
           <Field label="Título"><TextInput value={content.fullWidthBanner.title} onChange={v => onChange({ ...content, fullWidthBanner: { ...content.fullWidthBanner, title: v } })} /></Field>
           <Field label="Subtítulo"><TextInput value={content.fullWidthBanner.subtitle} onChange={v => onChange({ ...content, fullWidthBanner: { ...content.fullWidthBanner, subtitle: v } })} /></Field>
+          <ButtonEditor
+            buttons={content.fullWidthBanner.buttons || []}
+            onChange={buttons => onChange({ ...content, fullWidthBanner: { ...content.fullWidthBanner, buttons } })}
+          />
         </div>
       </SectionCard>
 
@@ -484,6 +495,10 @@ function IndexEditor({ content, onChange }: { content: IndexContent; onChange: (
                 <Field label="Link"><UrlInput value={item.link} onChange={v => updateGridItem(idx, { link: v })} /></Field>
               </div>
               <Field label="Descripción"><TextInput value={item.description} onChange={v => updateGridItem(idx, { description: v })} /></Field>
+              <ButtonEditor
+                buttons={item.buttons || []}
+                onChange={buttons => updateGridItem(idx, { buttons })}
+              />
             </div>
           ))}
         </div>
@@ -557,9 +572,13 @@ function NosotrosEditor({ content, onChange }: { content: NosotrosContent; onCha
           <Field label="Título"><TextInput value={content.cta.title} onChange={v => onChange({ ...content, cta: { ...content.cta, title: v } })} /></Field>
           <Field label="Descripción"><TextArea value={content.cta.description} onChange={v => onChange({ ...content, cta: { ...content.cta, description: v } })} /></Field>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Texto del botón"><TextInput value={content.cta.buttonText} onChange={v => onChange({ ...content, cta: { ...content.cta, buttonText: v } })} /></Field>
+            <Field label="Texto del botón principal"><TextInput value={content.cta.buttonText} onChange={v => onChange({ ...content, cta: { ...content.cta, buttonText: v } })} /></Field>
             <Field label="Link"><UrlInput value={content.cta.buttonLink} onChange={v => onChange({ ...content, cta: { ...content.cta, buttonLink: v } })} /></Field>
           </div>
+          <ButtonEditor
+            buttons={content.cta.buttons || []}
+            onChange={buttons => onChange({ ...content, cta: { ...content.cta, buttons } })}
+          />
         </div>
       </SectionCard>
 
@@ -570,7 +589,7 @@ function NosotrosEditor({ content, onChange }: { content: NosotrosContent; onCha
 
 // ---- PRODUCCIÓN ----
 function ProduccionEditor({ content, onChange }: { content: ProduccionContent; onChange: (c: ProduccionContent) => void }) {
-  const updatePillar = (idx: number, updates: Partial<{ title: string; description: string; image: string }>) => {
+  const updatePillar = (idx: number, updates: Partial<{ title: string; description: string; image: string; buttons: CustomButton[] }>) => {
     const pillars = content.pillars.map((p, i) => i === idx ? { ...p, ...updates } : p);
     onChange({ ...content, pillars });
   };
@@ -603,6 +622,10 @@ function ProduccionEditor({ content, onChange }: { content: ProduccionContent; o
               <ImageInput value={pillar.image} onChange={v => updatePillar(idx, { image: v })} />
               <Field label="Título"><TextInput value={pillar.title} onChange={v => updatePillar(idx, { title: v })} /></Field>
               <Field label="Descripción"><TextArea value={pillar.description} onChange={v => updatePillar(idx, { description: v })} /></Field>
+              <ButtonEditor
+                buttons={pillar.buttons || []}
+                onChange={buttons => updatePillar(idx, { buttons })}
+              />
             </div>
           ))}
           <button onClick={addPillar} className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-sm text-foreground/50 hover:border-blue-400 hover:text-blue-600 transition-colors flex items-center justify-center gap-2">
@@ -790,6 +813,143 @@ function ContactoEditor({ content, onChange }: { content: ContactoContent; onCha
   );
 }
 
+// ---- LAYOUT (Header / Footer / BrandSection) ----
+function LayoutEditor({ content, onChange }: { content: LayoutContent; onChange: (c: LayoutContent) => void }) {
+  // ---- Header nav links ----
+  const updateNavLink = (idx: number, updates: Partial<NavLink>) => {
+    const links = content.header.navLinks.map((l, i) => i === idx ? { ...l, ...updates } : l);
+    onChange({ ...content, header: { ...content.header, navLinks: links } });
+  };
+  const addNavLink = () => {
+    onChange({ ...content, header: { ...content.header, navLinks: [...content.header.navLinks, { id: Date.now().toString(), label: 'Nuevo', href: '/' }] } });
+  };
+  const removeNavLink = (idx: number) => {
+    onChange({ ...content, header: { ...content.header, navLinks: content.header.navLinks.filter((_, i) => i !== idx) } });
+  };
+  const moveNavLink = (idx: number, dir: -1 | 1) => {
+    const arr = [...content.header.navLinks];
+    const to = idx + dir;
+    if (to < 0 || to >= arr.length) return;
+    [arr[idx], arr[to]] = [arr[to], arr[idx]];
+    onChange({ ...content, header: { ...content.header, navLinks: arr } });
+  };
+
+  // ---- Footer link columns ----
+  const updateColumn = (colIdx: number, updates: Partial<FooterLinkColumn>) => {
+    const cols = content.footer.linkColumns.map((c, i) => i === colIdx ? { ...c, ...updates } : c);
+    onChange({ ...content, footer: { ...content.footer, linkColumns: cols } });
+  };
+  const addColumn = () => {
+    onChange({ ...content, footer: { ...content.footer, linkColumns: [...content.footer.linkColumns, { id: Date.now().toString(), title: 'Nueva Columna', links: [] }] } });
+  };
+  const removeColumn = (idx: number) => {
+    onChange({ ...content, footer: { ...content.footer, linkColumns: content.footer.linkColumns.filter((_, i) => i !== idx) } });
+  };
+  const addFooterLink = (colIdx: number) => {
+    const col = content.footer.linkColumns[colIdx];
+    updateColumn(colIdx, { links: [...col.links, { id: Date.now().toString(), label: 'Nuevo Link', href: '/' }] });
+  };
+  const removeFooterLink = (colIdx: number, linkIdx: number) => {
+    const col = content.footer.linkColumns[colIdx];
+    updateColumn(colIdx, { links: col.links.filter((_, i) => i !== linkIdx) });
+  };
+  const updateFooterLink = (colIdx: number, linkIdx: number, updates: Partial<{ label: string; href: string }>) => {
+    const col = content.footer.linkColumns[colIdx];
+    const links = col.links.map((l, i) => i === linkIdx ? { ...l, ...updates } : l);
+    updateColumn(colIdx, { links });
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* ===== HEADER ===== */}
+      <SectionCard title="🔝 Header / Navegación">
+        <div className="space-y-4 pt-3">
+          <ImageInput value={content.header.logoUrl} onChange={v => onChange({ ...content, header: { ...content.header, logoUrl: v } })} label="URL del Logo" />
+
+          <label className="block text-xs font-medium text-foreground/60 mt-4">Links de Navegación</label>
+          {content.header.navLinks.map((link, idx) => (
+            <div key={link.id} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+              <div className="flex flex-col gap-0.5">
+                <button onClick={() => moveNavLink(idx, -1)} disabled={idx === 0} className="p-0.5 text-foreground/30 hover:text-foreground/60 disabled:opacity-20"><ChevronUp className="w-3 h-3" /></button>
+                <button onClick={() => moveNavLink(idx, 1)} disabled={idx === content.header.navLinks.length - 1} className="p-0.5 text-foreground/30 hover:text-foreground/60 disabled:opacity-20"><ChevronDown className="w-3 h-3" /></button>
+              </div>
+              <div className="flex-1 grid grid-cols-2 gap-2">
+                <TextInput value={link.label} onChange={v => updateNavLink(idx, { label: v })} placeholder="Etiqueta" />
+                <UrlInput value={link.href} onChange={v => updateNavLink(idx, { href: v })} placeholder="/ruta" />
+              </div>
+              <button onClick={() => removeNavLink(idx)} className="p-1 text-red-400 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>
+            </div>
+          ))}
+          <button onClick={addNavLink} className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-xs text-foreground/50 hover:border-blue-400 hover:text-blue-600 transition-colors flex items-center justify-center gap-1.5">
+            <Plus className="w-3.5 h-3.5" /> Agregar Link
+          </button>
+        </div>
+      </SectionCard>
+
+      {/* ===== BRAND SECTION ===== */}
+      <SectionCard title="✦ Sección Pre-Footer (SOFTWORKS)">
+        <div className="space-y-3 pt-3">
+          <div className="flex items-center gap-3">
+            <label className="text-xs font-medium text-foreground/60">Visible</label>
+            <button
+              onClick={() => onChange({ ...content, brandSection: { ...content.brandSection, enabled: !content.brandSection.enabled } })}
+              className={`relative w-10 h-5 rounded-full transition-colors ${content.brandSection.enabled ? 'bg-blue-500' : 'bg-gray-300'}`}
+            >
+              <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${content.brandSection.enabled ? 'translate-x-5' : ''}`} />
+            </button>
+          </div>
+          <Field label="Texto"><TextInput value={content.brandSection.text} onChange={v => onChange({ ...content, brandSection: { ...content.brandSection, text: v } })} placeholder="Softworks" /></Field>
+        </div>
+      </SectionCard>
+
+      {/* ===== FOOTER ===== */}
+      <SectionCard title="📄 Footer — Newsletter">
+        <div className="space-y-3 pt-3">
+          <Field label="Título del Newsletter">
+            <TextInput value={content.footer.newsletterTitle} onChange={v => onChange({ ...content, footer: { ...content.footer, newsletterTitle: v } })} placeholder="Unite a la comunidad {site_name}" />
+          </Field>
+          <p className="text-[10px] text-foreground/40">Usa <code className="bg-gray-100 px-1 rounded">{'{site_name}'}</code> para insertar el nombre del sitio.</p>
+          <Field label="Descripción"><TextArea value={content.footer.newsletterDescription} onChange={v => onChange({ ...content, footer: { ...content.footer, newsletterDescription: v } })} /></Field>
+          <Field label="Nota de privacidad"><TextInput value={content.footer.privacyNote} onChange={v => onChange({ ...content, footer: { ...content.footer, privacyNote: v } })} /></Field>
+          <Field label="Email de contacto"><TextInput value={content.footer.contactEmail} onChange={v => onChange({ ...content, footer: { ...content.footer, contactEmail: v } })} /></Field>
+        </div>
+      </SectionCard>
+
+      <SectionCard title="📄 Footer — Columnas de Links">
+        <div className="space-y-4 pt-3">
+          {content.footer.linkColumns.map((col, colIdx) => (
+            <div key={col.id} className="border border-gray-200 rounded-lg overflow-hidden">
+              <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border-b border-gray-200">
+                <TextInput value={col.title} onChange={v => updateColumn(colIdx, { title: v })} placeholder="Título de columna" />
+                <button onClick={() => removeColumn(colIdx)} className="p-1 text-red-400 hover:text-red-600 shrink-0"><Trash2 className="w-3.5 h-3.5" /></button>
+              </div>
+              <div className="p-3 space-y-2">
+                {col.links.map((link, linkIdx) => (
+                  <div key={link.id} className="flex items-center gap-2">
+                    <div className="flex-1 grid grid-cols-2 gap-2">
+                      <TextInput value={link.label} onChange={v => updateFooterLink(colIdx, linkIdx, { label: v })} placeholder="Etiqueta" />
+                      <UrlInput value={link.href} onChange={v => updateFooterLink(colIdx, linkIdx, { href: v })} placeholder="/ruta" />
+                    </div>
+                    <button onClick={() => removeFooterLink(colIdx, linkIdx)} className="p-0.5 text-red-400 hover:text-red-600"><Trash2 className="w-3 h-3" /></button>
+                  </div>
+                ))}
+                <button onClick={() => addFooterLink(colIdx)} className="w-full py-1.5 border border-dashed border-gray-300 rounded text-[10px] text-foreground/40 hover:border-blue-400 hover:text-blue-600 flex items-center justify-center gap-1">
+                  <Plus className="w-3 h-3" /> Link
+                </button>
+              </div>
+            </div>
+          ))}
+          {content.footer.linkColumns.length < 6 && (
+            <button onClick={addColumn} className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-xs text-foreground/50 hover:border-blue-400 hover:text-blue-600 transition-colors flex items-center justify-center gap-1.5">
+              <Plus className="w-3.5 h-3.5" /> Agregar Columna
+            </button>
+          )}
+        </div>
+      </SectionCard>
+    </div>
+  );
+}
+
 // ============================================================
 // MAIN EDITOR PAGE
 // ============================================================
@@ -797,6 +957,7 @@ export default function AdminContenidosPage() {
   const { isAdmin, isLoading: authLoading } = useAuth();
   const { content: indexContent, refreshContent: refreshIndex } = useIndexContent();
   const { nosotros, produccion, eventos, ubicaciones, contacto, refreshContent: refreshPages } = usePagesContent();
+  const { layout: layoutContent, refreshLayout } = useLayoutContent();
 
   const [activePage, setActivePage] = useState<PageId>('index');
   const [device, setDevice] = useState<DevicePreview>('desktop');
@@ -812,6 +973,7 @@ export default function AdminContenidosPage() {
   const [eventosData, setEventosData] = useState<EventosContent>(eventos);
   const [ubicacionesData, setUbicacionesData] = useState<UbicacionesContent>(ubicaciones);
   const [contactoData, setContactoData] = useState<ContactoContent>(contacto);
+  const [layoutData, setLayoutData] = useState<LayoutContent>(layoutContent);
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [iframeKey, setIframeKey] = useState(0);
@@ -825,6 +987,7 @@ export default function AdminContenidosPage() {
       setEventosData(eventos);
       setUbicacionesData(ubicaciones);
       setContactoData(contacto);
+      setLayoutData(layoutContent);
       setIsLoaded(true);
     }
   }, [authLoading]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -841,6 +1004,38 @@ export default function AdminContenidosPage() {
   const handleEventosChange = useCallback((c: EventosContent) => { setEventosData(c); markChanged(); }, [markChanged]);
   const handleUbicacionesChange = useCallback((c: UbicacionesContent) => { setUbicacionesData(c); markChanged(); }, [markChanged]);
   const handleContactoChange = useCallback((c: ContactoContent) => { setContactoData(c); markChanged(); }, [markChanged]);
+  const handleLayoutChange = useCallback((c: LayoutContent) => { setLayoutData(c); markChanged(); }, [markChanged]);
+
+  // ---- REAL-TIME PREVIEW via postMessage ----
+  const sendPreview = useCallback((key: string, value: unknown) => {
+    try {
+      iframeRef.current?.contentWindow?.postMessage({ type: 'content-preview', key, value }, '*');
+    } catch { /* iframe may not be ready */ }
+  }, []);
+
+  // Send preview updates when data changes (debounced slightly)
+  const previewTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => {
+    clearTimeout(previewTimerRef.current);
+    previewTimerRef.current = setTimeout(() => {
+      const keyMap: Record<PageId, { key: string; value: unknown }> = {
+        layout: { key: 'contenido_layout', value: layoutData },
+        index: { key: 'contenido_index', value: indexData },
+        nosotros: { key: 'contenido_nosotros', value: nosotrosData },
+        produccion: { key: 'contenido_produccion', value: produccionData },
+        eventos: { key: 'contenido_eventos', value: eventosData },
+        ubicaciones: { key: 'contenido_ubicaciones', value: ubicacionesData },
+        contacto: { key: 'contenido_contacto', value: contactoData },
+      };
+      const entry = keyMap[activePage];
+      if (entry) sendPreview(entry.key, entry.value);
+      // Always send layout updates (affects all pages)
+      if (activePage !== 'layout') {
+        sendPreview('contenido_layout', layoutData);
+      }
+    }, 150);
+    return () => clearTimeout(previewTimerRef.current);
+  }, [activePage, indexData, nosotrosData, produccionData, eventosData, ubicacionesData, contactoData, layoutData, sendPreview]);
 
   // ---- SAVE ----
   const handleSave = useCallback(async () => {
@@ -856,6 +1051,7 @@ export default function AdminContenidosPage() {
         { clave: 'contenido_eventos', valor: JSON.stringify(eventosData) },
         { clave: 'contenido_ubicaciones', valor: JSON.stringify(ubicacionesData) },
         { clave: 'contenido_contacto', valor: JSON.stringify(contactoData) },
+        { clave: 'contenido_layout', valor: JSON.stringify(layoutData) },
       ];
 
       for (const u of updates) {
@@ -866,7 +1062,7 @@ export default function AdminContenidosPage() {
         if (error) throw error;
       }
 
-      await Promise.all([refreshIndex(), refreshPages()]);
+      await Promise.all([refreshIndex(), refreshPages(), refreshLayout()]);
       setHasChanges(false);
       setSaveStatus('saved');
       // Refresh iframe preview
@@ -878,7 +1074,7 @@ export default function AdminContenidosPage() {
     } finally {
       setIsSaving(false);
     }
-  }, [indexData, nosotrosData, produccionData, eventosData, ubicacionesData, contactoData, refreshIndex, refreshPages]);
+  }, [indexData, nosotrosData, produccionData, eventosData, ubicacionesData, contactoData, layoutData, refreshIndex, refreshPages, refreshLayout]);
 
   // Ctrl+S
   useEffect(() => {
@@ -980,6 +1176,7 @@ export default function AdminContenidosPage() {
               <h2 className="text-sm font-semibold">{activeTab.label}</h2>
             </div>
 
+            {activePage === 'layout' && <LayoutEditor content={layoutData} onChange={handleLayoutChange} />}
             {activePage === 'index' && <IndexEditor content={indexData} onChange={handleIndexChange} />}
             {activePage === 'nosotros' && <NosotrosEditor content={nosotrosData} onChange={handleNosotrosChange} />}
             {activePage === 'produccion' && <ProduccionEditor content={produccionData} onChange={handleProduccionChange} />}

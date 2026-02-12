@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { usePagesContent } from '@/lib/hooks/usePagesContent';
-import CustomSectionsRenderer from '@/app/components/CustomSections';
+import CustomSectionsRenderer, { SectionButton } from '@/app/components/CustomSections';
 import { Loader2 } from 'lucide-react';
 
 export default function ProduccionPage() {
@@ -41,6 +41,11 @@ export default function ProduccionPage() {
               </div>
               <h3 className="text-xl font-medium mb-2">{pillar.title}</h3>
               <p className="text-foreground/70">{pillar.description}</p>
+              {pillar.buttons && pillar.buttons.length > 0 && (
+                <div className="flex flex-wrap justify-center gap-3 mt-4">
+                  {pillar.buttons.map(btn => <SectionButton key={btn.id} btn={btn} />)}
+                </div>
+              )}
             </div>
           ))}
         </div>

@@ -8,6 +8,7 @@ import { Menu, X, ShoppingBag, Search as SearchIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '@/lib/hooks/useCart';
 import { useAuth } from '@/lib/hooks/useAuth';
+import { useLayoutContent } from '@/lib/hooks/useLayoutContent';
 import SearchDrawer from './SearchDrawer';
 import CartDrawer from './CartDrawer';
 import AnnouncementBar from './AnnouncementBar';
@@ -40,6 +41,7 @@ export default function Navbar() {
   );
   const { itemCount } = useCart();
   const { user, isAdmin } = useAuth();
+  const { layout } = useLayoutContent();
 
   // Smart sticky behavior con AnnouncementBar
   const handleScroll = useCallback(() => {
@@ -94,12 +96,8 @@ export default function Navbar() {
 
   const accountButton = getAccountButtonConfig();
 
-  // Navigation links - Grupo A (izquierda)
-  const leftLinks = [
-    { href: '/colecciones', label: 'Colecciones' },
-    { href: '/nosotros', label: 'Nosotros' },
-    { href: '/produccion', label: 'Producción' },
-  ];
+  // Navigation links from layout config
+  const leftLinks = layout.header.navLinks.map(l => ({ href: l.href, label: l.label }));
 
   // Determinar estilos basados en el estado
   const isTransparent = isHomePage && headerState === 'transparent';
@@ -173,7 +171,7 @@ export default function Navbar() {
             >
               <div className="relative w-32 h-10 lg:w-40 lg:h-12">
                 <Image
-                  src="/images/logosoftworks.png"
+                  src={layout.header.logoUrl || '/images/logosoftworks.png'}
                   alt="Softworks"
                   fill
                   className={`object-contain transition-all duration-300 ${

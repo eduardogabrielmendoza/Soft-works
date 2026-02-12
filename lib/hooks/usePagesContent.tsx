@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { getSupabaseClient } from '@/lib/supabase/client';
-import type { CustomSection } from '@/lib/types/sections';
+import type { CustomSection, CustomButton } from '@/lib/types/sections';
 
 // ============ TIPOS PARA CADA PÁGINA ============
 
@@ -32,6 +32,7 @@ export interface NosotrosContent {
     description: string;
     buttonText: string;
     buttonLink: string;
+    buttons?: CustomButton[];
   };
   customSections?: CustomSection[];
 }
@@ -46,6 +47,7 @@ export interface ProduccionContent {
     title: string;
     description: string;
     image: string;
+    buttons?: CustomButton[];
   }>;
   customSections?: CustomSection[];
 }
@@ -301,6 +303,38 @@ export function PagesContentProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     loadContent();
+  }, []);
+
+  // Listen for real-time preview updates from the admin editor
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      if (e.data?.type === 'content-preview') {
+        try {
+          const val = e.data.value;
+          switch (e.data.key) {
+            case 'contenido_nosotros':
+              setNosotros({ ...defaultNosotrosContent, ...val });
+              break;
+            case 'contenido_produccion':
+              setProduccion({ ...defaultProduccionContent, ...val });
+              break;
+            case 'contenido_eventos':
+              setEventos({ ...defaultEventosContent, ...val });
+              break;
+            case 'contenido_ubicaciones':
+              setUbicaciones({ ...defaultUbicacionesContent, ...val });
+              break;
+            case 'contenido_contacto':
+              setContacto({ ...defaultContactoContent, ...val });
+              break;
+          }
+        } catch (err) {
+          console.error('Preview message error:', err);
+        }
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
   }, []);
 
   return (

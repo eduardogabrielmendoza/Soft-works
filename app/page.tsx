@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import HeroBannerSlideshow from '@/app/components/HeroBannerSlideshow';
-import CustomSectionsRenderer from '@/app/components/CustomSections';
+import CustomSectionsRenderer, { SectionButton } from '@/app/components/CustomSections';
 import { useIndexContent } from '@/lib/hooks/useIndexContent';
 
 export default function Home() {
@@ -115,6 +115,11 @@ export default function Home() {
             >
               {content.philosophySection.ctaText}
             </Link>
+            {content.philosophySection.buttons && content.philosophySection.buttons.length > 0 && (
+              <div className="flex flex-wrap justify-center gap-4 mt-4">
+                {content.philosophySection.buttons.map(btn => <SectionButton key={btn.id} btn={btn} />)}
+              </div>
+            )}
           </motion.div>
 
           {/* Grid de Imágenes Lifestyle */}
@@ -160,6 +165,11 @@ export default function Home() {
             <div className="text-center text-white">
               <h2 className="text-3xl lg:text-5xl font-medium mb-4">{content.fullWidthBanner.title}</h2>
               <p className="text-white/90">{content.fullWidthBanner.subtitle}</p>
+              {content.fullWidthBanner.buttons && content.fullWidthBanner.buttons.length > 0 && (
+                <div className="flex flex-wrap justify-center gap-4 mt-6">
+                  {content.fullWidthBanner.buttons.map(btn => <SectionButton key={btn.id} btn={{ ...btn, style: btn.style === 'filled' ? 'outlined' : btn.style }} />)}
+                </div>
+              )}
             </div>
           </div>
         </motion.div>
@@ -189,6 +199,11 @@ export default function Home() {
               </Link>
               <h3 className="text-xl font-medium mb-2">{item.title}</h3>
               <p className="text-foreground/70">{item.description}</p>
+              {item.buttons && item.buttons.length > 0 && (
+                <div className="flex flex-wrap justify-center gap-3 mt-4">
+                  {item.buttons.map(btn => <SectionButton key={btn.id} btn={btn} />)}
+                </div>
+              )}
             </motion.div>
           ))}
         </div>

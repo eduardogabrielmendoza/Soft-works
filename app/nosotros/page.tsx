@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePagesContent } from '@/lib/hooks/usePagesContent';
-import CustomSectionsRenderer from '@/app/components/CustomSections';
+import CustomSectionsRenderer, { SectionButton } from '@/app/components/CustomSections';
 import { Loader2 } from 'lucide-react';
 
 export default function NosotrosPage() {
@@ -145,6 +145,11 @@ export default function NosotrosPage() {
           >
             {content.cta.buttonText}
           </Link>
+          {content.cta.buttons && content.cta.buttons.length > 0 && (
+            <div className="flex flex-wrap justify-center gap-4 mt-4">
+              {content.cta.buttons.map(btn => <SectionButton key={btn.id} btn={btn} />)}
+            </div>
+          )}
         </motion.div>
       </section>
 

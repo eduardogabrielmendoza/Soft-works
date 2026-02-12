@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Instagram, Youtube, Twitter, Facebook, Mail } from 'lucide-react';
 import { useState } from 'react';
 import { useSiteConfig } from '@/lib/hooks/useSiteConfig';
+import { useLayoutContent } from '@/lib/hooks/useLayoutContent';
 
 // Icono de TikTok (no viene con lucide-react)
 const TikTokIcon = () => (
@@ -14,6 +15,7 @@ const TikTokIcon = () => (
 
 export default function Footer() {
   const { config } = useSiteConfig();
+  const { layout } = useLayoutContent();
   const [email, setEmail] = useState('');
   const [subscribeMessage, setSubscribeMessage] = useState('');
 
@@ -33,10 +35,10 @@ export default function Footer() {
         {/* Newsletter Section */}
         <div className="mb-12 lg:mb-16 max-w-2xl">
           <h3 className="text-2xl lg:text-3xl font-medium mb-4">
-            Unite a la comunidad {config.site_name}
+            {layout.footer.newsletterTitle.replace('{site_name}', config.site_name)}
           </h3>
           <p className="text-sm text-foreground/70 mb-6">
-            Recibi contenido exclusivo, tips de estilo y acceso anticipado a nuevas colecciones.
+            {layout.footer.newsletterDescription}
           </p>
           {subscribeMessage && (
             <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md text-green-800 text-sm">
@@ -68,95 +70,22 @@ export default function Footer() {
           </p>
         </div>
 
-        {/* Links Grid */}
+        {/* Links Grid - Dynamic from layout config */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
-          {/* Comprar */}
-          <div>
-            <h4 className="font-medium mb-4 text-sm">Comprar</h4>
-            <ul className="space-y-3 text-sm text-foreground/70">
-              <li>
-                <Link href="/colecciones/toda-la-ropa" className="hover:text-foreground transition-colors">
-                  Toda la Ropa
-                </Link>
-              </li>
-              <li>
-                <Link href="/colecciones" className="hover:text-foreground transition-colors">
-                  Colecciones
-                </Link>
-              </li>
-              <li>
-                <Link href="/ubicaciones" className="hover:text-foreground transition-colors">
-                  Ubicaciones
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Sobre Nosotros */}
-          <div>
-            <h4 className="font-medium mb-4 text-sm">Sobre Nosotros</h4>
-            <ul className="space-y-3 text-sm text-foreground/70">
-              <li>
-                <Link href="/nosotros" className="hover:text-foreground transition-colors">
-                  Nuestra Historia
-                </Link>
-              </li>
-              <li>
-                <Link href="/produccion" className="hover:text-foreground transition-colors">
-                  Nuestra Producción
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Ayuda */}
-          <div>
-            <h4 className="font-medium mb-4 text-sm">Ayuda</h4>
-            <ul className="space-y-3 text-sm text-foreground/70">
-              <li>
-                <Link href="/preguntas-frecuentes" className="hover:text-foreground transition-colors">
-                  Preguntas Frecuentes
-                </Link>
-              </li>
-              <li>
-                <Link href="/contacto" className="hover:text-foreground transition-colors">
-                  Contacto
-                </Link>
-              </li>
-              <li>
-                <Link href="/eventos" className="hover:text-foreground transition-colors">
-                  Eventos
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Legal */}
-          <div>
-            <h4 className="font-medium mb-4 text-sm">Legal</h4>
-            <ul className="space-y-3 text-sm text-foreground/70">
-              <li>
-                <Link href="/politica-privacidad" className="hover:text-foreground transition-colors">
-                  Privacidad
-                </Link>
-              </li>
-              <li>
-                <Link href="/terminos-servicio" className="hover:text-foreground transition-colors">
-                  Términos
-                </Link>
-              </li>
-              <li>
-                <Link href="/politica-cookies" className="hover:text-foreground transition-colors">
-                  Cookies
-                </Link>
-              </li>
-              <li>
-                <Link href="/accesibilidad" className="hover:text-foreground transition-colors">
-                  Accesibilidad
-                </Link>
-              </li>
-            </ul>
-          </div>
+          {layout.footer.linkColumns.map(col => (
+            <div key={col.id}>
+              <h4 className="font-medium mb-4 text-sm">{col.title}</h4>
+              <ul className="space-y-3 text-sm text-foreground/70">
+                {col.links.map(link => (
+                  <li key={link.id}>
+                    <Link href={link.href} className="hover:text-foreground transition-colors">
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
 
         {/* Bottom Bar */}
@@ -167,11 +96,11 @@ export default function Footer() {
                 © {config.site_name} {new Date().getFullYear()}
               </p>
               <a
-                href="mailto:softworksargentina@gmail.com"
+                href={`mailto:${layout.footer.contactEmail}`}
                 className="flex items-center gap-2 text-sm text-foreground/70 hover:text-foreground transition-colors"
               >
                 <Mail className="w-4 h-4" />
-                softworksargentina@gmail.com
+                {layout.footer.contactEmail}
               </a>
             </div>
 

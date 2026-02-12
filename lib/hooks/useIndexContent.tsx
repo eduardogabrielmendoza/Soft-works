@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { getSupabaseClient } from '@/lib/supabase/client';
-import type { CustomSection } from '@/lib/types/sections';
+import type { CustomSection, CustomButton } from '@/lib/types/sections';
 
 // Tipos para el contenido del index
 export interface HeroSlide {
@@ -36,12 +36,14 @@ export interface ContentItem {
   description: string;
   image: string;
   link: string;
+  buttons?: CustomButton[];
 }
 
 export interface BannerSection {
   image: string;
   title: string;
   subtitle: string;
+  buttons?: CustomButton[];
 }
 
 export interface PhilosophySection {
@@ -49,6 +51,7 @@ export interface PhilosophySection {
   description: string;
   ctaText: string;
   ctaLink: string;
+  buttons?: CustomButton[];
 }
 
 export interface IndexContent {
@@ -180,6 +183,17 @@ export function IndexContentProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     loadContent();
   }, [loadContent]);
+
+  // Listen for real-time preview updates from the admin editor
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      if (e.data?.type === 'content-preview' && e.data?.key === 'contenido_index') {
+        setContent({ ...defaultContent, ...e.data.value });
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, []);
 
   const refreshContent = async () => {
     await loadContent();
