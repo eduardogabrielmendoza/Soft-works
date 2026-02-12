@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { X, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePagesContent } from '@/lib/hooks/usePagesContent';
+import CustomSectionsRenderer from '@/app/components/CustomSections';
 
 export default function EventosPage() {
   const { eventos: content, isLoading } = usePagesContent();
@@ -132,6 +133,8 @@ export default function EventosPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <CustomSectionsRenderer sections={content.customSections} />
     </div>
   );
 }

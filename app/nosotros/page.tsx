@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePagesContent } from '@/lib/hooks/usePagesContent';
+import CustomSectionsRenderer from '@/app/components/CustomSections';
 import { Loader2 } from 'lucide-react';
 
 export default function NosotrosPage() {
@@ -146,6 +147,8 @@ export default function NosotrosPage() {
           </Link>
         </motion.div>
       </section>
+
+      <CustomSectionsRenderer sections={content.customSections} />
     </div>
   );
 }

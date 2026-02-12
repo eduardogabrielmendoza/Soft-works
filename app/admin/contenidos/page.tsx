@@ -4,13 +4,15 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Save, Loader2, ArrowLeft, Monitor, Tablet, Smartphone,
   Home, Users, Factory, Calendar, MapPin, Phone,
-  Plus, Trash2, ChevronDown, ChevronUp, Check, AlertCircle
+  Plus, Trash2, ChevronDown, ChevronUp, Check, AlertCircle,
+  GripVertical, Link as LinkIcon, ExternalLink, Globe, Youtube, MousePointerClick
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useIndexContent, type IndexContent, type HeroSlide, type ProductCard, type LifestyleImage, type ContentItem } from '@/lib/hooks/useIndexContent';
 import { usePagesContent, type NosotrosContent, type ProduccionContent, type EventosContent, type EventoItem, type UbicacionesContent, type ContactoContent } from '@/lib/hooks/usePagesContent';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import { type CustomSection, type CustomButton, type CustomSectionType, SECTION_TYPE_OPTIONS, createEmptySection, toEmbedUrl } from '@/lib/types/sections';
 
 // ============================================================
 // TYPES
@@ -75,6 +77,290 @@ function ImageInput({ value, onChange, label }: { value: string; onChange: (v: s
   );
 }
 
+function UrlInput({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
+  const isValid = value && (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('/'));
+  return (
+    <div className="space-y-1">
+      <div className="relative">
+        <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-foreground/30" />
+        <input
+          type="url"
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder={placeholder || 'https://...'}
+          className="w-full pl-9 pr-9 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-colors"
+        />
+        {isValid && value.startsWith('http') && (
+          <a href={value} target="_blank" rel="noopener noreferrer" className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-blue-500 hover:text-blue-700 rounded">
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+        )}
+      </div>
+      {value && !isValid && (
+        <p className="text-xs text-amber-500">URL debe comenzar con https://, http:// o /</p>
+      )}
+    </div>
+  );
+}
+
+function EmbedPreview({ url }: { url: string }) {
+  const embedSrc = toEmbedUrl(url);
+  if (!embedSrc) return null;
+  const isYoutube = embedSrc.includes('youtube.com/embed');
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center gap-1.5 text-xs text-foreground/40">
+        {isYoutube ? <Youtube className="w-3.5 h-3.5 text-red-500" /> : <Globe className="w-3.5 h-3.5" />}
+        {isYoutube ? 'YouTube embed' : 'Embed URL'}
+      </div>
+      <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+        <iframe src={embedSrc} className="absolute inset-0 w-full h-full border-0" title="Preview" />
+      </div>
+    </div>
+  );
+}
+
+// ---- BUTTON EDITOR ----
+function ButtonEditor({ buttons, onChange }: { buttons: CustomButton[]; onChange: (b: CustomButton[]) => void }) {
+  const update = (idx: number, updates: Partial<CustomButton>) => {
+    onChange(buttons.map((b, i) => i === idx ? { ...b, ...updates } : b));
+  };
+  const add = () => {
+    onChange([...buttons, { id: Date.now().toString(), text: 'Nuevo botón', link: '/', style: 'filled' }]);
+  };
+  const remove = (idx: number) => {
+    onChange(buttons.filter((_, i) => i !== idx));
+  };
+
+  return (
+    <div className="space-y-3">
+      <label className="flex items-center gap-1.5 text-xs font-medium text-foreground/60">
+        <MousePointerClick className="w-3.5 h-3.5" /> Botones
+      </label>
+      {buttons.map((btn, idx) => (
+        <div key={btn.id} className="p-3 bg-white border border-gray-200 rounded-lg space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-foreground/50">Botón {idx + 1}</span>
+            <button onClick={() => remove(idx)} className="p-0.5 text-red-400 hover:text-red-600 rounded"><Trash2 className="w-3 h-3" /></button>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Texto"><TextInput value={btn.text} onChange={v => update(idx, { text: v })} /></Field>
+            <Field label="Estilo">
+              <select
+                value={btn.style}
+                onChange={e => update(idx, { style: e.target.value as CustomButton['style'] })}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400"
+              >
+                <option value="filled">Relleno (oscuro)</option>
+                <option value="outlined">Borde</option>
+                <option value="text">Solo texto</option>
+              </select>
+            </Field>
+          </div>
+          <Field label="URL del enlace"><UrlInput value={btn.link} onChange={v => update(idx, { link: v })} /></Field>
+        </div>
+      ))}
+      <button onClick={add} className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-xs text-foreground/50 hover:border-blue-400 hover:text-blue-600 transition-colors flex items-center justify-center gap-1.5">
+        <Plus className="w-3.5 h-3.5" /> Agregar Botón
+      </button>
+    </div>
+  );
+}
+
+// ---- CUSTOM SECTION EDITOR (single section) ----
+function CustomSectionItemEditor({ section, onUpdate, onRemove, onMoveUp, onMoveDown, isFirst, isLast }: {
+  section: CustomSection;
+  onUpdate: (s: CustomSection) => void;
+  onRemove: () => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  isFirst: boolean;
+  isLast: boolean;
+}) {
+  const typeInfo = SECTION_TYPE_OPTIONS.find(o => o.value === section.type);
+
+  return (
+    <div className="border border-blue-200 rounded-xl bg-blue-50/30 overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 border-b border-blue-200">
+        <GripVertical className="w-3.5 h-3.5 text-foreground/30" />
+        <span className="text-xs">{typeInfo?.emoji}</span>
+        <span className="text-xs font-semibold text-foreground/70 flex-1">{typeInfo?.label || section.type}</span>
+        <div className="flex items-center gap-1">
+          <button onClick={onMoveUp} disabled={isFirst} className="p-1 text-foreground/40 hover:text-foreground/70 disabled:opacity-30 rounded" title="Mover arriba"><ChevronUp className="w-3.5 h-3.5" /></button>
+          <button onClick={onMoveDown} disabled={isLast} className="p-1 text-foreground/40 hover:text-foreground/70 disabled:opacity-30 rounded" title="Mover abajo"><ChevronDown className="w-3.5 h-3.5" /></button>
+          <button onClick={onRemove} className="p-1 text-red-400 hover:text-red-600 rounded" title="Eliminar"><Trash2 className="w-3.5 h-3.5" /></button>
+        </div>
+      </div>
+
+      {/* Content fields based on type */}
+      <div className="p-4 space-y-3">
+        {/* Type selector */}
+        <Field label="Tipo de sección">
+          <select
+            value={section.type}
+            onChange={e => {
+              const newType = e.target.value as CustomSectionType;
+              const fresh = createEmptySection(newType);
+              onUpdate({ ...fresh, id: section.id, title: section.title, description: section.description });
+            }}
+            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 bg-white"
+          >
+            {SECTION_TYPE_OPTIONS.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.emoji} {opt.label} — {opt.description}</option>
+            ))}
+          </select>
+        </Field>
+
+        {/* Title (all types) */}
+        {section.type !== 'image' && (
+          <Field label="Título"><TextInput value={section.title || ''} onChange={v => onUpdate({ ...section, title: v })} placeholder="Título de la sección" /></Field>
+        )}
+
+        {/* Description (text, banner, cta, image-text) */}
+        {['text', 'banner', 'cta', 'image-text'].includes(section.type) && (
+          <Field label="Descripción"><TextArea value={section.description || ''} onChange={v => onUpdate({ ...section, description: v })} /></Field>
+        )}
+
+        {/* Image (image, banner, image-text) */}
+        {['image', 'banner', 'image-text'].includes(section.type) && (
+          <ImageInput value={section.image || ''} onChange={v => onUpdate({ ...section, image: v })} label="Imagen" />
+        )}
+
+        {/* Image title (only for image type) */}
+        {section.type === 'image' && (
+          <>
+            <Field label="Título (opcional)"><TextInput value={section.title || ''} onChange={v => onUpdate({ ...section, title: v })} /></Field>
+            <Field label="Pie de imagen (opcional)"><TextInput value={section.description || ''} onChange={v => onUpdate({ ...section, description: v })} /></Field>
+          </>
+        )}
+
+        {/* Image position (image-text) */}
+        {section.type === 'image-text' && (
+          <Field label="Posición de imagen">
+            <div className="flex gap-2">
+              {(['left', 'right'] as const).map(pos => (
+                <button
+                  key={pos}
+                  onClick={() => onUpdate({ ...section, imagePosition: pos })}
+                  className={`flex-1 py-2 text-xs font-medium rounded-lg border transition-colors ${section.imagePosition === pos ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-gray-200 hover:bg-gray-50 text-foreground/60'}`}
+                >
+                  {pos === 'left' ? '🖼️ Imagen izquierda' : 'Imagen derecha 🖼️'}
+                </button>
+              ))}
+            </div>
+          </Field>
+        )}
+
+        {/* Embed URL */}
+        {section.type === 'embed' && (
+          <>
+            <Field label="URL (YouTube, Maps, o cualquier web)">
+              <UrlInput value={section.embedUrl || ''} onChange={v => onUpdate({ ...section, embedUrl: v })} placeholder="https://www.youtube.com/watch?v=..." />
+            </Field>
+            {section.embedUrl && <EmbedPreview url={section.embedUrl} />}
+            <Field label="Descripción (opcional)"><TextInput value={section.description || ''} onChange={v => onUpdate({ ...section, description: v })} /></Field>
+          </>
+        )}
+
+        {/* Buttons (cta, text, image-text, banner) */}
+        {['cta', 'text', 'image-text', 'banner'].includes(section.type) && (
+          <ButtonEditor
+            buttons={section.buttons || []}
+            onChange={buttons => onUpdate({ ...section, buttons })}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---- CUSTOM SECTIONS LIST EDITOR ----
+function CustomSectionsEditor({ sections, onChange }: { sections: CustomSection[]; onChange: (s: CustomSection[]) => void }) {
+  const [showTypePicker, setShowTypePicker] = useState(false);
+
+  const addSection = (type: CustomSectionType) => {
+    onChange([...sections, createEmptySection(type)]);
+    setShowTypePicker(false);
+  };
+
+  const updateSection = (idx: number, s: CustomSection) => {
+    onChange(sections.map((sec, i) => i === idx ? s : sec));
+  };
+
+  const removeSection = (idx: number) => {
+    onChange(sections.filter((_, i) => i !== idx));
+  };
+
+  const moveUp = (idx: number) => {
+    if (idx === 0) return;
+    const arr = [...sections];
+    [arr[idx - 1], arr[idx]] = [arr[idx], arr[idx - 1]];
+    onChange(arr);
+  };
+
+  const moveDown = (idx: number) => {
+    if (idx >= sections.length - 1) return;
+    const arr = [...sections];
+    [arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]];
+    onChange(arr);
+  };
+
+  return (
+    <SectionCard title="➕ Secciones Personalizadas" defaultOpen={sections.length > 0}>
+      <div className="space-y-4 pt-3">
+        {sections.length === 0 && (
+          <p className="text-xs text-foreground/40 text-center py-2">No hay secciones personalizadas. Agrega una para extender esta página con textos, imágenes, videos, botones y más.</p>
+        )}
+        {sections.map((section, idx) => (
+          <CustomSectionItemEditor
+            key={section.id}
+            section={section}
+            onUpdate={s => updateSection(idx, s)}
+            onRemove={() => removeSection(idx)}
+            onMoveUp={() => moveUp(idx)}
+            onMoveDown={() => moveDown(idx)}
+            isFirst={idx === 0}
+            isLast={idx === sections.length - 1}
+          />
+        ))}
+
+        {/* Add section button / type picker */}
+        {showTypePicker ? (
+          <div className="border-2 border-dashed border-blue-300 rounded-xl p-4 bg-blue-50/20">
+            <p className="text-xs font-semibold text-foreground/60 mb-3">¿Qué tipo de sección querés agregar?</p>
+            <div className="grid grid-cols-2 gap-2">
+              {SECTION_TYPE_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => addSection(opt.value)}
+                  className="flex items-start gap-2 p-3 bg-white border border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors text-left"
+                >
+                  <span className="text-lg">{opt.emoji}</span>
+                  <div>
+                    <span className="text-xs font-semibold text-foreground/80 block">{opt.label}</span>
+                    <span className="text-[10px] text-foreground/40">{opt.description}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+            <button onClick={() => setShowTypePicker(false)} className="w-full mt-3 py-1.5 text-xs text-foreground/40 hover:text-foreground/70 transition-colors">
+              Cancelar
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowTypePicker(true)}
+            className="w-full py-3 border-2 border-dashed border-blue-300 rounded-xl text-sm text-blue-600 hover:border-blue-500 hover:bg-blue-50 transition-colors flex items-center justify-center gap-2 font-medium"
+          >
+            <Plus className="w-4 h-4" /> Agregar Sección
+          </button>
+        )}
+      </div>
+    </SectionCard>
+  );
+}
+
 // ============================================================
 // PAGE-SPECIFIC FORM EDITORS
 // ============================================================
@@ -125,7 +411,7 @@ function IndexEditor({ content, onChange }: { content: IndexContent; onChange: (
               <Field label="Subtítulo"><TextInput value={slide.subtitle} onChange={v => updateSlide(idx, { subtitle: v })} /></Field>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Texto del botón"><TextInput value={slide.ctaText} onChange={v => updateSlide(idx, { ctaText: v })} /></Field>
-                <Field label="Link del botón"><TextInput value={slide.ctaLink} onChange={v => updateSlide(idx, { ctaLink: v })} /></Field>
+                <Field label="Link del botón"><UrlInput value={slide.ctaLink} onChange={v => updateSlide(idx, { ctaLink: v })} /></Field>
               </div>
             </div>
           ))}
@@ -147,7 +433,7 @@ function IndexEditor({ content, onChange }: { content: IndexContent; onChange: (
                 <Field label="Subtítulo"><TextInput value={card.subtitle} onChange={v => updateCard(idx, { subtitle: v })} /></Field>
               </div>
               <Field label="Descripción"><TextArea value={card.description} onChange={v => updateCard(idx, { description: v })} /></Field>
-              <Field label="Link"><TextInput value={card.link} onChange={v => updateCard(idx, { link: v })} /></Field>
+              <Field label="Link"><UrlInput value={card.link} onChange={v => updateCard(idx, { link: v })} /></Field>
             </div>
           ))}
         </div>
@@ -160,7 +446,7 @@ function IndexEditor({ content, onChange }: { content: IndexContent; onChange: (
           <Field label="Descripción"><TextArea value={content.philosophySection.description} onChange={v => onChange({ ...content, philosophySection: { ...content.philosophySection, description: v } })} rows={4} /></Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Texto del botón"><TextInput value={content.philosophySection.ctaText} onChange={v => onChange({ ...content, philosophySection: { ...content.philosophySection, ctaText: v } })} /></Field>
-            <Field label="Link del botón"><TextInput value={content.philosophySection.ctaLink} onChange={v => onChange({ ...content, philosophySection: { ...content.philosophySection, ctaLink: v } })} /></Field>
+            <Field label="Link del botón"><UrlInput value={content.philosophySection.ctaLink} onChange={v => onChange({ ...content, philosophySection: { ...content.philosophySection, ctaLink: v } })} /></Field>
           </div>
         </div>
       </SectionCard>
@@ -195,13 +481,15 @@ function IndexEditor({ content, onChange }: { content: IndexContent; onChange: (
               <ImageInput value={item.image} onChange={v => updateGridItem(idx, { image: v })} />
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Título"><TextInput value={item.title} onChange={v => updateGridItem(idx, { title: v })} /></Field>
-                <Field label="Link"><TextInput value={item.link} onChange={v => updateGridItem(idx, { link: v })} /></Field>
+                <Field label="Link"><UrlInput value={item.link} onChange={v => updateGridItem(idx, { link: v })} /></Field>
               </div>
               <Field label="Descripción"><TextInput value={item.description} onChange={v => updateGridItem(idx, { description: v })} /></Field>
             </div>
           ))}
         </div>
       </SectionCard>
+
+      <CustomSectionsEditor sections={content.customSections || []} onChange={s => onChange({ ...content, customSections: s })} />
     </div>
   );
 }
@@ -270,10 +558,12 @@ function NosotrosEditor({ content, onChange }: { content: NosotrosContent; onCha
           <Field label="Descripción"><TextArea value={content.cta.description} onChange={v => onChange({ ...content, cta: { ...content.cta, description: v } })} /></Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Texto del botón"><TextInput value={content.cta.buttonText} onChange={v => onChange({ ...content, cta: { ...content.cta, buttonText: v } })} /></Field>
-            <Field label="Link"><TextInput value={content.cta.buttonLink} onChange={v => onChange({ ...content, cta: { ...content.cta, buttonLink: v } })} /></Field>
+            <Field label="Link"><UrlInput value={content.cta.buttonLink} onChange={v => onChange({ ...content, cta: { ...content.cta, buttonLink: v } })} /></Field>
           </div>
         </div>
       </SectionCard>
+
+      <CustomSectionsEditor sections={content.customSections || []} onChange={s => onChange({ ...content, customSections: s })} />
     </div>
   );
 }
@@ -320,6 +610,8 @@ function ProduccionEditor({ content, onChange }: { content: ProduccionContent; o
           </button>
         </div>
       </SectionCard>
+
+      <CustomSectionsEditor sections={content.customSections || []} onChange={s => onChange({ ...content, customSections: s })} />
     </div>
   );
 }
@@ -416,6 +708,8 @@ function EventosEditor({ content, onChange }: { content: EventosContent; onChang
           </button>
         </div>
       </SectionCard>
+
+      <CustomSectionsEditor sections={content.customSections || []} onChange={s => onChange({ ...content, customSections: s })} />
     </div>
   );
 }
@@ -448,6 +742,8 @@ function UbicacionesEditor({ content, onChange }: { content: UbicacionesContent;
           </div>
         </div>
       </SectionCard>
+
+      <CustomSectionsEditor sections={content.customSections || []} onChange={s => onChange({ ...content, customSections: s })} />
     </div>
   );
 }
@@ -488,6 +784,8 @@ function ContactoEditor({ content, onChange }: { content: ContactoContent; onCha
           <p className="text-xs text-foreground/40 mt-2">La información de contacto (email, teléfono, dirección, redes sociales) se configura en <Link href="/admin/configuracion" className="text-blue-600 hover:underline">Configuración del Sitio</Link>.</p>
         </div>
       </SectionCard>
+
+      <CustomSectionsEditor sections={content.customSections || []} onChange={s => onChange({ ...content, customSections: s })} />
     </div>
   );
 }

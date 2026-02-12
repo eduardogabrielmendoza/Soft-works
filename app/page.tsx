@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import HeroBannerSlideshow from '@/app/components/HeroBannerSlideshow';
+import CustomSectionsRenderer from '@/app/components/CustomSections';
 import { useIndexContent } from '@/lib/hooks/useIndexContent';
 
 export default function Home() {
@@ -192,6 +193,8 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      <CustomSectionsRenderer sections={content.customSections} />
     </div>
   );
 }

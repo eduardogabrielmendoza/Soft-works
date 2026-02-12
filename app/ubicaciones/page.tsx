@@ -1,6 +1,7 @@
 'use client';
 
 import { usePagesContent } from '@/lib/hooks/usePagesContent';
+import CustomSectionsRenderer from '@/app/components/CustomSections';
 import { Loader2 } from 'lucide-react';
 
 export default function UbicacionesPage() {
@@ -49,6 +50,8 @@ export default function UbicacionesPage() {
           </a>
         </div>
       </section>
+
+      <CustomSectionsRenderer sections={content.customSections} />
     </div>
   );
 }

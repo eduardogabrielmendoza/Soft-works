@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import type { CustomSection } from '@/lib/types/sections';
 
 // Tipos para el contenido del index
 export interface HeroSlide {
@@ -57,6 +58,7 @@ export interface IndexContent {
   lifestyleImages: LifestyleImage[];
   fullWidthBanner: BannerSection;
   contentGrid: ContentItem[];
+  customSections?: CustomSection[];
 }
 
 const defaultContent: IndexContent = {
@@ -137,6 +139,7 @@ const defaultContent: IndexContent = {
     { id: '2', title: 'Filantropía', description: 'Apoyando estilos de vida', image: '/images/filantropia.png', link: '/futuros-softworks' },
     { id: '3', title: 'Sostenibilidad', description: 'Moda consciente y responsable', image: '/images/sostenibilidad.png', link: '/produccion' },
   ],
+  customSections: [],
 };
 
 interface IndexContentContextType {

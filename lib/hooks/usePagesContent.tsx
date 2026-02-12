@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import type { CustomSection } from '@/lib/types/sections';
 
 // ============ TIPOS PARA CADA PÁGINA ============
 
@@ -32,6 +33,7 @@ export interface NosotrosContent {
     buttonText: string;
     buttonLink: string;
   };
+  customSections?: CustomSection[];
 }
 
 // Producción Page
@@ -45,6 +47,7 @@ export interface ProduccionContent {
     description: string;
     image: string;
   }>;
+  customSections?: CustomSection[];
 }
 
 // Eventos Page
@@ -71,6 +74,7 @@ export interface EventosContent {
   upcomingEvents: EventoItem[];
   pastTitle: string;
   pastEvents: EventoItem[];
+  customSections?: CustomSection[];
 }
 
 // Ubicaciones Page
@@ -87,6 +91,7 @@ export interface UbicacionesContent {
     buttonText: string;
     buttonEmail: string;
   };
+  customSections?: CustomSection[];
 }
 
 // Contacto Page
@@ -108,6 +113,7 @@ export interface ContactoContent {
   infoSection: {
     title: string;
   };
+  customSections?: CustomSection[];
 }
 
 // ============ DEFAULTS ============
@@ -139,7 +145,8 @@ const defaultNosotrosContent: NosotrosContent = {
     description: 'Descubre cómo estamos trabajando para crear un futuro más sostenible y equitativo',
     buttonText: 'Ver más',
     buttonLink: '/produccion'
-  }
+  },
+  customSections: []
 };
 
 const defaultProduccionContent: ProduccionContent = {
@@ -151,7 +158,8 @@ const defaultProduccionContent: ProduccionContent = {
     { title: 'Diseño Artesanal', description: 'Cada pieza diseñada con atención al detalle', image: '/images/impacto1.png' },
     { title: 'Calidad Premium', description: 'Materiales seleccionados y procesos cuidadosos', image: '/images/impacto2.png' },
     { title: 'Producción Local', description: 'Fabricado en Argentina con orgullo', image: '/images/impacto3.png' }
-  ]
+  ],
+  customSections: []
 };
 
 const defaultEventosContent: EventosContent = {
@@ -185,7 +193,8 @@ const defaultEventosContent: EventosContent = {
       title: 'Showroom Palermo Nº1',
       description: ''
     }
-  ]
+  ],
+  customSections: []
 };
 
 const defaultUbicacionesContent: UbicacionesContent = {
@@ -200,7 +209,8 @@ const defaultUbicacionesContent: UbicacionesContent = {
     note: 'Visítanos con cita previa',
     buttonText: 'Solicitar Cita',
     buttonEmail: 'contacto@softworks.com'
-  }
+  },
+  customSections: []
 };
 
 const defaultContactoContent: ContactoContent = {
@@ -220,7 +230,8 @@ const defaultContactoContent: ContactoContent = {
   },
   infoSection: {
     title: 'Otras Formas de Contacto'
-  }
+  },
+  customSections: []
 };
 
 // ============ CONTEXT ============
