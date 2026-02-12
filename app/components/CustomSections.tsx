@@ -9,28 +9,61 @@ import { toEmbedUrl } from '@/lib/types/sections';
 // ============================================================
 // Button Renderer
 // ============================================================
+const BTN_SIZE_CLASSES: Record<string, string> = {
+  sm: 'px-4 py-1.5',
+  md: 'px-8 py-3',
+  lg: 'px-12 py-4',
+};
+const BTN_RADIUS_CLASSES: Record<string, string> = {
+  none: 'rounded-none',
+  sm: 'rounded',
+  md: 'rounded-lg',
+  lg: 'rounded-xl',
+  full: 'rounded-full',
+};
+const BTN_FONT_MAP: Record<string, string> = {
+  xs: '0.75rem', sm: '0.875rem', base: '1rem', lg: '1.125rem', xl: '1.25rem',
+};
+
 export function SectionButton({ btn }: { btn: CustomButton }) {
   const isExternal = btn.link.startsWith('http');
-  const baseClasses = 'inline-flex items-center justify-center px-8 py-3 text-sm font-medium tracking-wider uppercase transition-all duration-300 rounded-full';
+  const sizeClass = BTN_SIZE_CLASSES[btn.size || 'md'] || BTN_SIZE_CLASSES.md;
+  const radiusClass = BTN_RADIUS_CLASSES[btn.borderRadius || 'full'] || BTN_RADIUS_CLASSES.full;
 
+  const baseClasses = `inline-flex items-center justify-center ${sizeClass} font-medium tracking-wider uppercase transition-all duration-300 ${radiusClass}`;
+
+  // Default style classes (overridden by custom colors via inline style)
   const styleClasses: Record<string, string> = {
-    filled: 'bg-foreground text-white hover:bg-foreground/90',
-    outlined: 'border-2 border-foreground text-foreground hover:bg-foreground hover:text-white',
-    text: 'text-foreground underline underline-offset-4 hover:text-foreground/70',
+    filled: 'bg-foreground text-white hover:opacity-90',
+    outlined: 'border-2 border-foreground text-foreground hover:opacity-80',
+    text: 'text-foreground underline underline-offset-4 hover:opacity-70',
   };
 
   const className = `${baseClasses} ${styleClasses[btn.style] || styleClasses.filled}`;
 
+  // Build inline styles from custom color props
+  const inlineStyle: React.CSSProperties = {};
+  if (btn.fontSize) inlineStyle.fontSize = BTN_FONT_MAP[btn.fontSize] || undefined;
+  if (btn.style === 'filled') {
+    if (btn.color) inlineStyle.backgroundColor = btn.color;
+    if (btn.textColor) inlineStyle.color = btn.textColor;
+  } else if (btn.style === 'outlined') {
+    if (btn.color) { inlineStyle.borderColor = btn.color; inlineStyle.color = btn.color; }
+    if (btn.textColor) inlineStyle.color = btn.textColor;
+  } else {
+    if (btn.color || btn.textColor) inlineStyle.color = btn.textColor || btn.color;
+  }
+
   if (isExternal) {
     return (
-      <a href={btn.link} target="_blank" rel="noopener noreferrer" className={className}>
+      <a href={btn.link} target="_blank" rel="noopener noreferrer" className={className} style={inlineStyle}>
         {btn.text}
       </a>
     );
   }
 
   return (
-    <Link href={btn.link} className={className}>
+    <Link href={btn.link} className={className} style={inlineStyle}>
       {btn.text}
     </Link>
   );

@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { getSupabaseClient } from '@/lib/supabase/client';
-import type { CustomSection, CustomButton } from '@/lib/types/sections';
+import type { CustomSection, CustomButton, TextStyle } from '@/lib/types/sections';
 
 // ============ TIPOS PARA CADA PÁGINA ============
 
@@ -38,6 +38,7 @@ export interface NosotrosContent {
     buttons?: CustomButton[];
   };
   customSections?: CustomSection[];
+  textStyles?: Record<string, TextStyle>;
 }
 
 // Producción Page
@@ -54,6 +55,7 @@ export interface ProduccionContent {
     buttons?: CustomButton[];
   }>;
   customSections?: CustomSection[];
+  textStyles?: Record<string, TextStyle>;
 }
 
 // Eventos Page
@@ -82,6 +84,7 @@ export interface EventosContent {
   pastTitle: string;
   pastEvents: EventoItem[];
   customSections?: CustomSection[];
+  textStyles?: Record<string, TextStyle>;
 }
 
 // Ubicaciones Page
@@ -101,6 +104,7 @@ export interface UbicacionesContent {
     buttons?: CustomButton[];
   };
   customSections?: CustomSection[];
+  textStyles?: Record<string, TextStyle>;
 }
 
 // Contacto Page
@@ -124,6 +128,7 @@ export interface ContactoContent {
     title: string;
   };
   customSections?: CustomSection[];
+  textStyles?: Record<string, TextStyle>;
 }
 
 // ============ DEFAULTS ============

@@ -2,6 +2,7 @@
 
 import { usePagesContent } from '@/lib/hooks/usePagesContent';
 import CustomSectionsRenderer, { SectionButton } from '@/app/components/CustomSections';
+import { textStyleCSS } from '@/lib/types/sections';
 import { Loader2 } from 'lucide-react';
 
 export default function UbicacionesPage() {
@@ -19,8 +20,8 @@ export default function UbicacionesPage() {
     <div className="pt-20">
       {/* Header */}
       <section className="px-4 py-16 max-w-4xl mx-auto text-center">
-        <h1 className="text-3xl lg:text-4xl font-medium mb-4">{content.hero.title}</h1>
-        <p className="text-foreground/70">{content.hero.description}</p>
+        <h1 className="text-3xl lg:text-4xl font-medium mb-4" style={textStyleCSS(content.textStyles, 'hero-title')}>{content.hero.title}</h1>
+        <p className="text-foreground/70" style={textStyleCSS(content.textStyles, 'hero-desc')}>{content.hero.description}</p>
         {content.hero.buttons && content.hero.buttons.length > 0 && (
           <div className="flex flex-wrap gap-3 justify-center mt-6">
             {content.hero.buttons.map(btn => <SectionButton key={btn.id} btn={btn} />)}
@@ -44,9 +45,9 @@ export default function UbicacionesPage() {
       {/* Location Info */}
       <section className="px-4 pb-16 max-w-4xl mx-auto text-center">
         <div className="p-8 border border-gray-200 rounded-lg">
-          <h3 className="text-2xl font-medium mb-4">{content.location.title}</h3>
-          <p className="text-foreground/70 mb-2">{content.location.address}</p>
-          <p className="text-foreground/70 mb-4">{content.location.note}</p>
+          <h3 className="text-2xl font-medium mb-4" style={textStyleCSS(content.textStyles, 'location-title')}>{content.location.title}</h3>
+          <p className="text-foreground/70 mb-2" style={textStyleCSS(content.textStyles, 'location-address')}>{content.location.address}</p>
+          <p className="text-foreground/70 mb-4" style={textStyleCSS(content.textStyles, 'location-note')}>{content.location.note}</p>
           <a 
             href={`mailto:${content.location.buttonEmail}`}
             className="inline-block px-6 py-3 bg-foreground text-white rounded-full hover:bg-foreground/90 transition-colors font-medium"

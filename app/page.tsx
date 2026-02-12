@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import HeroBannerSlideshow from '@/app/components/HeroBannerSlideshow';
 import CustomSectionsRenderer, { SectionButton } from '@/app/components/CustomSections';
 import { useIndexContent } from '@/lib/hooks/useIndexContent';
+import { textStyleCSS } from '@/lib/types/sections';
 
 export default function Home() {
   const { content } = useIndexContent();
@@ -48,12 +49,12 @@ export default function Home() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                   <div className="absolute bottom-6 left-6 z-10">
-                    <h3 className="text-2xl font-medium text-white mb-2">{largeCard.title}</h3>
-                    {largeCard.subtitle && <p className="text-sm text-white/90">{largeCard.subtitle}</p>}
+                    <h3 className="text-2xl font-medium text-white mb-2" style={textStyleCSS(content.textStyles, `card-${largeCard.id}-title`)}>{largeCard.title}</h3>
+                    {largeCard.subtitle && <p className="text-sm text-white/90" style={textStyleCSS(content.textStyles, `card-${largeCard.id}-subtitle`)}>{largeCard.subtitle}</p>}
                   </div>
                 </div>
               </Link>
-              <p className="text-base lg:text-lg text-foreground/50 text-center px-4 leading-relaxed">
+              <p className="text-base lg:text-lg text-foreground/50 text-center px-4 leading-relaxed" style={textStyleCSS(content.textStyles, `card-${largeCard.id}-desc`)}>
                 {largeCard.description}
               </p>
               {largeCard.buttons && largeCard.buttons.length > 0 && (
@@ -85,11 +86,11 @@ export default function Home() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                     <div className="absolute bottom-4 left-4 z-10">
-                      <h3 className="text-xl font-medium text-white">{card.title}</h3>
+                      <h3 className="text-xl font-medium text-white" style={textStyleCSS(content.textStyles, `card-${card.id}-title`)}>{card.title}</h3>
                     </div>
                   </div>
                 </Link>
-                <p className="text-base lg:text-lg text-foreground/50 text-center px-4 leading-relaxed">
+                <p className="text-base lg:text-lg text-foreground/50 text-center px-4 leading-relaxed" style={textStyleCSS(content.textStyles, `card-${card.id}-desc`)}>
                   {card.description}
                 </p>
                 {card.buttons && card.buttons.length > 0 && (
@@ -113,15 +114,16 @@ export default function Home() {
             transition={{ duration: 0.6 }}
             className="text-center mb-16"
           >
-            <h2 className="text-3xl lg:text-4xl font-medium mb-6 whitespace-pre-line">
+            <h2 className="text-3xl lg:text-4xl font-medium mb-6 whitespace-pre-line" style={textStyleCSS(content.textStyles, 'philosophy-title')}>
               {content.philosophySection.title}
             </h2>
-            <p className="max-w-2xl mx-auto text-foreground/70 leading-relaxed">
+            <p className="max-w-2xl mx-auto text-foreground/70 leading-relaxed" style={textStyleCSS(content.textStyles, 'philosophy-desc')}>
               {content.philosophySection.description}
             </p>
             <Link 
               href={content.philosophySection.ctaLink}
               className="inline-block mt-8 px-8 py-3 bg-foreground text-white rounded-full hover:bg-foreground/90 transition-all font-medium"
+              style={textStyleCSS(content.textStyles, 'philosophy-cta')}
             >
               {content.philosophySection.ctaText}
             </Link>
@@ -173,8 +175,8 @@ export default function Home() {
           <div className="absolute inset-0 bg-black/30" />
           <div className="absolute inset-0 flex items-center justify-center z-10">
             <div className="text-center text-white">
-              <h2 className="text-3xl lg:text-5xl font-medium mb-4">{content.fullWidthBanner.title}</h2>
-              <p className="text-white/90">{content.fullWidthBanner.subtitle}</p>
+              <h2 className="text-3xl lg:text-5xl font-medium mb-4" style={textStyleCSS(content.textStyles, 'banner-title')}>{content.fullWidthBanner.title}</h2>
+              <p className="text-white/90" style={textStyleCSS(content.textStyles, 'banner-subtitle')}>{content.fullWidthBanner.subtitle}</p>
               {content.fullWidthBanner.buttons && content.fullWidthBanner.buttons.length > 0 && (
                 <div className="flex flex-wrap justify-center gap-4 mt-6">
                   {content.fullWidthBanner.buttons.map(btn => <SectionButton key={btn.id} btn={{ ...btn, style: btn.style === 'filled' ? 'outlined' : btn.style }} />)}
@@ -207,8 +209,8 @@ export default function Home() {
                   />
                 </div>
               </Link>
-              <h3 className="text-xl font-medium mb-2">{item.title}</h3>
-              <p className="text-foreground/70">{item.description}</p>
+              <h3 className="text-xl font-medium mb-2" style={textStyleCSS(content.textStyles, `grid-${item.id}-title`)}>{item.title}</h3>
+              <p className="text-foreground/70" style={textStyleCSS(content.textStyles, `grid-${item.id}-desc`)}>{item.description}</p>
               {item.buttons && item.buttons.length > 0 && (
                 <div className="flex flex-wrap justify-center gap-3 mt-4">
                   {item.buttons.map(btn => <SectionButton key={btn.id} btn={btn} />)}

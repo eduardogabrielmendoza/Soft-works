@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useIndexContent } from '@/lib/hooks/useIndexContent';
 import { SectionButton } from '@/app/components/CustomSections';
 import type { CustomButton } from '@/lib/types/sections';
+import { textStyleCSS } from '@/lib/types/sections';
 
 interface Slide {
   id: string;
@@ -187,6 +188,7 @@ export default function HeroBannerSlideshow() {
                   <motion.h1 
                     variants={childVariants}
                     className="text-5xl sm:text-6xl lg:text-8xl font-medium text-white mb-8 tracking-tight"
+                    style={textStyleCSS(content.textStyles, `slide-${slides[currentSlide].id}-title`)}
                   >
                     {slides[currentSlide].title}
                   </motion.h1>
@@ -196,6 +198,7 @@ export default function HeroBannerSlideshow() {
                     <Link
                       href={slides[currentSlide].ctaLink}
                       className="inline-block px-12 py-4 bg-white text-black rounded-full font-medium text-lg shadow-xl hover:bg-white/95 hover:scale-105 active:scale-100 transition-all duration-200"
+                      style={textStyleCSS(content.textStyles, `slide-${slides[currentSlide].id}-cta`)}
                     >
                       {slides[currentSlide].ctaText}
                     </Link>
@@ -212,6 +215,7 @@ export default function HeroBannerSlideshow() {
                   <motion.p 
                     variants={childVariants}
                     className="text-base lg:text-lg text-white/60 mt-8 tracking-widest uppercase"
+                    style={textStyleCSS(content.textStyles, `slide-${slides[currentSlide].id}-subtitle`)}
                   >
                     {slides[currentSlide].subtitle}
                   </motion.p>

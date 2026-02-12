@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useSiteConfig } from '@/lib/hooks/useSiteConfig';
 import { usePagesContent } from '@/lib/hooks/usePagesContent';
 import CustomSectionsRenderer, { SectionButton } from '@/app/components/CustomSections';
+import { textStyleCSS } from '@/lib/types/sections';
 import { Loader2 } from 'lucide-react';
 
 export default function ContactoPage() {
@@ -43,9 +44,9 @@ export default function ContactoPage() {
   return (
     <div className="pt-20 px-4 py-12 max-w-4xl mx-auto">
       <div className="text-center mb-12">
-        <h1 className="text-3xl lg:text-4xl font-medium mb-4">{content.hero.title}</h1>
-        <p className="text-foreground/70">{content.hero.subtitle1}</p>
-        <p className="text-foreground/70">{content.hero.subtitle2}</p>
+        <h1 className="text-3xl lg:text-4xl font-medium mb-4" style={textStyleCSS(content.textStyles, 'hero-title')}>{content.hero.title}</h1>
+        <p className="text-foreground/70" style={textStyleCSS(content.textStyles, 'hero-subtitle1')}>{content.hero.subtitle1}</p>
+        <p className="text-foreground/70" style={textStyleCSS(content.textStyles, 'hero-subtitle2')}>{content.hero.subtitle2}</p>
         {content.hero.buttons && content.hero.buttons.length > 0 && (
           <div className="flex flex-wrap gap-3 justify-center mt-6">
             {content.hero.buttons.map(btn => <SectionButton key={btn.id} btn={btn} />)}

@@ -6,7 +6,7 @@ import {
   Home, Users, Factory, Calendar, MapPin, Phone,
   Plus, Trash2, ChevronDown, ChevronUp, Check, AlertCircle,
   GripVertical, Link as LinkIcon, ExternalLink, Globe, Youtube, MousePointerClick,
-  Layout, PanelTop, PanelBottom, Type
+  Layout, PanelTop, PanelBottom, Type, Palette, RotateCcw
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/hooks/useAuth';
@@ -14,7 +14,7 @@ import { useIndexContent, type IndexContent, type HeroSlide, type ProductCard, t
 import { usePagesContent, type NosotrosContent, type ProduccionContent, type EventosContent, type EventoItem, type UbicacionesContent, type ContactoContent } from '@/lib/hooks/usePagesContent';
 import { useLayoutContent, type LayoutContent, type NavLink, type FooterLinkColumn, defaultLayoutContent } from '@/lib/hooks/useLayoutContent';
 import { getSupabaseClient } from '@/lib/supabase/client';
-import { type CustomSection, type CustomButton, type CustomSectionType, SECTION_TYPE_OPTIONS, createEmptySection, toEmbedUrl } from '@/lib/types/sections';
+import { type CustomSection, type CustomButton, type TextStyle, type CustomSectionType, SECTION_TYPE_OPTIONS, createEmptySection, toEmbedUrl } from '@/lib/types/sections';
 
 // ============================================================
 // TYPES
@@ -48,11 +48,80 @@ function SectionCard({ title, children, defaultOpen = true }: { title: string; c
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children, styleKey, textStyles, onStyleChange }: { label: string; children: React.ReactNode; styleKey?: string; textStyles?: Record<string, TextStyle>; onStyleChange?: (key: string, style: TextStyle | undefined) => void }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-foreground/60 mb-1.5">{label}</label>
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <label className="block text-xs font-medium text-foreground/60">{label}</label>
+        {styleKey && onStyleChange && (
+          <TextStylePicker style={textStyles?.[styleKey]} onChange={s => onStyleChange(styleKey, s)} />
+        )}
+      </div>
       {children}
+    </div>
+  );
+}
+
+// ---- TEXT STYLE PICKER (compact popup) ----
+const FONT_SIZE_OPTIONS = [
+  { value: '', label: 'Por defecto' },
+  { value: 'xs', label: 'XS (0.75rem)' }, { value: 'sm', label: 'SM (0.875rem)' },
+  { value: 'base', label: 'Base (1rem)' }, { value: 'lg', label: 'LG (1.125rem)' },
+  { value: 'xl', label: 'XL (1.25rem)' }, { value: '2xl', label: '2XL (1.5rem)' },
+  { value: '3xl', label: '3XL (1.875rem)' }, { value: '4xl', label: '4XL (2.25rem)' },
+  { value: '5xl', label: '5XL (3rem)' }, { value: '6xl', label: '6XL (3.75rem)' },
+];
+const FONT_WEIGHT_OPTIONS = [
+  { value: '', label: 'Por defecto' },
+  { value: 'light', label: 'Light (300)' }, { value: 'normal', label: 'Normal (400)' },
+  { value: 'medium', label: 'Medium (500)' }, { value: 'semibold', label: 'Semibold (600)' },
+  { value: 'bold', label: 'Bold (700)' },
+];
+
+function TextStylePicker({ style, onChange }: { style?: TextStyle; onChange: (s: TextStyle | undefined) => void }) {
+  const [open, setOpen] = useState(false);
+  const hasStyle = style && (style.color || style.fontSize || style.fontWeight);
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className={`p-0.5 rounded transition-colors ${hasStyle ? 'text-blue-600 bg-blue-50 hover:bg-blue-100' : 'text-foreground/30 hover:text-foreground/60 hover:bg-gray-100'}`}
+        title="Estilo de texto"
+      >
+        <Palette className="w-3 h-3" />
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full mt-1 z-50 p-3 bg-white border border-gray-200 rounded-lg shadow-xl space-y-2.5 min-w-[220px]" onClick={e => e.stopPropagation()}>
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] font-semibold text-foreground/50 uppercase tracking-wider">Estilo de texto</span>
+            <div className="flex gap-1">
+              {hasStyle && <button onClick={() => { onChange(undefined); setOpen(false); }} className="p-0.5 text-red-400 hover:text-red-600 rounded" title="Resetear"><RotateCcw className="w-3 h-3" /></button>}
+              <button onClick={() => setOpen(false)} className="p-0.5 text-foreground/40 hover:text-foreground/70 rounded text-xs">✕</button>
+            </div>
+          </div>
+          <div>
+            <label className="text-[10px] text-foreground/50 block mb-1">Color</label>
+            <div className="flex items-center gap-2">
+              <input type="color" value={style?.color || '#000000'} onChange={e => onChange({ ...style, color: e.target.value })} className="w-7 h-7 rounded border border-gray-200 cursor-pointer" />
+              <input type="text" value={style?.color || ''} onChange={e => onChange({ ...style, color: e.target.value || undefined })} placeholder="#000000" className="flex-1 px-2 py-1 text-xs border border-gray-200 rounded" />
+              {style?.color && <button onClick={() => onChange({ ...style, color: undefined })} className="text-[10px] text-red-400 hover:text-red-600">✕</button>}
+            </div>
+          </div>
+          <div>
+            <label className="text-[10px] text-foreground/50 block mb-1">Tamaño</label>
+            <select value={style?.fontSize || ''} onChange={e => onChange({ ...style, fontSize: (e.target.value || undefined) as TextStyle['fontSize'] })} className="w-full px-2 py-1 text-xs border border-gray-200 rounded">
+              {FONT_SIZE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-[10px] text-foreground/50 block mb-1">Peso</label>
+            <select value={style?.fontWeight || ''} onChange={e => onChange({ ...style, fontWeight: (e.target.value || undefined) as TextStyle['fontWeight'] })} className="w-full px-2 py-1 text-xs border border-gray-200 rounded">
+              {FONT_WEIGHT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -124,6 +193,19 @@ function EmbedPreview({ url }: { url: string }) {
 }
 
 // ---- BUTTON EDITOR ----
+const BTN_SIZE_OPTIONS = [
+  { value: '', label: 'Mediano (default)' },
+  { value: 'sm', label: 'Pequeño' }, { value: 'md', label: 'Mediano' }, { value: 'lg', label: 'Grande' },
+];
+const BTN_RADIUS_OPTIONS = [
+  { value: '', label: 'Redondo (default)' },
+  { value: 'none', label: 'Sin radio' }, { value: 'sm', label: 'Sutil' }, { value: 'md', label: 'Medio' }, { value: 'lg', label: 'Grande' }, { value: 'full', label: 'Redondo' },
+];
+const BTN_FONT_SIZE_OPTIONS = [
+  { value: '', label: 'Por defecto' },
+  { value: 'xs', label: 'XS' }, { value: 'sm', label: 'SM' }, { value: 'base', label: 'Base' }, { value: 'lg', label: 'LG' }, { value: 'xl', label: 'XL' },
+];
+
 function ButtonEditor({ buttons, onChange }: { buttons: CustomButton[]; onChange: (b: CustomButton[]) => void }) {
   const update = (idx: number, updates: Partial<CustomButton>) => {
     onChange(buttons.map((b, i) => i === idx ? { ...b, ...updates } : b));
@@ -161,6 +243,45 @@ function ButtonEditor({ buttons, onChange }: { buttons: CustomButton[]; onChange
             </Field>
           </div>
           <Field label="URL del enlace"><UrlInput value={btn.link} onChange={v => update(idx, { link: v })} /></Field>
+
+          {/* ---- Style controls ---- */}
+          <details className="border-t pt-2 mt-2">
+            <summary className="text-[10px] font-medium text-foreground/40 cursor-pointer hover:text-foreground/60 flex items-center gap-1"><Palette className="w-3 h-3" /> Personalizar apariencia</summary>
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              <div>
+                <label className="text-[10px] text-foreground/50 block mb-1">Color del botón</label>
+                <div className="flex items-center gap-1.5">
+                  <input type="color" value={btn.color || '#000000'} onChange={e => update(idx, { color: e.target.value })} className="w-7 h-7 rounded border border-gray-200 cursor-pointer" />
+                  <input type="text" value={btn.color || ''} onChange={e => update(idx, { color: e.target.value || undefined })} placeholder="auto" className="flex-1 px-2 py-1 text-xs border border-gray-200 rounded min-w-0" />
+                </div>
+              </div>
+              <div>
+                <label className="text-[10px] text-foreground/50 block mb-1">Color del texto</label>
+                <div className="flex items-center gap-1.5">
+                  <input type="color" value={btn.textColor || '#ffffff'} onChange={e => update(idx, { textColor: e.target.value })} className="w-7 h-7 rounded border border-gray-200 cursor-pointer" />
+                  <input type="text" value={btn.textColor || ''} onChange={e => update(idx, { textColor: e.target.value || undefined })} placeholder="auto" className="flex-1 px-2 py-1 text-xs border border-gray-200 rounded min-w-0" />
+                </div>
+              </div>
+              <div>
+                <label className="text-[10px] text-foreground/50 block mb-1">Tamaño</label>
+                <select value={btn.size || ''} onChange={e => update(idx, { size: (e.target.value || undefined) as CustomButton['size'] })} className="w-full px-2 py-1 text-xs border border-gray-200 rounded">
+                  {BTN_SIZE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-[10px] text-foreground/50 block mb-1">Tamaño de texto</label>
+                <select value={btn.fontSize || ''} onChange={e => update(idx, { fontSize: (e.target.value || undefined) as CustomButton['fontSize'] })} className="w-full px-2 py-1 text-xs border border-gray-200 rounded">
+                  {BTN_FONT_SIZE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </div>
+              <div className="col-span-2">
+                <label className="text-[10px] text-foreground/50 block mb-1">Bordes</label>
+                <select value={btn.borderRadius || ''} onChange={e => update(idx, { borderRadius: (e.target.value || undefined) as CustomButton['borderRadius'] })} className="w-full px-2 py-1 text-xs border border-gray-200 rounded">
+                  {BTN_RADIUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </div>
+            </div>
+          </details>
         </div>
       ))}
       <button onClick={add} className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-xs text-foreground/50 hover:border-blue-400 hover:text-blue-600 transition-colors flex items-center justify-center gap-1.5">
@@ -370,6 +491,7 @@ function CustomSectionsEditor({ sections, onChange }: { sections: CustomSection[
 
 // ---- INDEX ----
 function IndexEditor({ content, onChange }: { content: IndexContent; onChange: (c: IndexContent) => void }) {
+  const ts = (key: string) => ({ styleKey: key, textStyles: content.textStyles, onStyleChange: (k: string, s: TextStyle | undefined) => { const next = { ...content.textStyles }; if (s) next[k] = s; else delete next[k]; onChange({ ...content, textStyles: next }); } });
   const updateSlide = (idx: number, updates: Partial<HeroSlide>) => {
     const slides = content.heroSlides.map((s, i) => i === idx ? { ...s, ...updates } : s);
     onChange({ ...content, heroSlides: slides });
@@ -410,10 +532,10 @@ function IndexEditor({ content, onChange }: { content: IndexContent; onChange: (
                 )}
               </div>
               <ImageInput value={slide.image} onChange={v => updateSlide(idx, { image: v })} />
-              <Field label="Título"><TextInput value={slide.title} onChange={v => updateSlide(idx, { title: v })} /></Field>
-              <Field label="Subtítulo"><TextInput value={slide.subtitle} onChange={v => updateSlide(idx, { subtitle: v })} /></Field>
+              <Field label="Título" {...ts(`slide-${slide.id}-title`)}><TextInput value={slide.title} onChange={v => updateSlide(idx, { title: v })} /></Field>
+              <Field label="Subtítulo" {...ts(`slide-${slide.id}-subtitle`)}><TextInput value={slide.subtitle} onChange={v => updateSlide(idx, { subtitle: v })} /></Field>
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Texto del botón"><TextInput value={slide.ctaText} onChange={v => updateSlide(idx, { ctaText: v })} /></Field>
+                <Field label="Texto del botón" {...ts(`slide-${slide.id}-cta`)}><TextInput value={slide.ctaText} onChange={v => updateSlide(idx, { ctaText: v })} /></Field>
                 <Field label="Link del botón"><UrlInput value={slide.ctaLink} onChange={v => updateSlide(idx, { ctaLink: v })} /></Field>
               </div>
               <ButtonEditor
@@ -436,10 +558,10 @@ function IndexEditor({ content, onChange }: { content: IndexContent; onChange: (
               <span className="text-xs font-semibold text-foreground/70">{card.size === 'large' ? '📐 Card Grande' : '📏 Card Mediana'} — {card.title}</span>
               <ImageInput value={card.image} onChange={v => updateCard(idx, { image: v })} />
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Título"><TextInput value={card.title} onChange={v => updateCard(idx, { title: v })} /></Field>
-                <Field label="Subtítulo"><TextInput value={card.subtitle} onChange={v => updateCard(idx, { subtitle: v })} /></Field>
+                <Field label="Título" {...ts(`card-${card.id}-title`)}><TextInput value={card.title} onChange={v => updateCard(idx, { title: v })} /></Field>
+                <Field label="Subtítulo" {...ts(`card-${card.id}-subtitle`)}><TextInput value={card.subtitle} onChange={v => updateCard(idx, { subtitle: v })} /></Field>
               </div>
-              <Field label="Descripción"><TextArea value={card.description} onChange={v => updateCard(idx, { description: v })} /></Field>
+              <Field label="Descripción" {...ts(`card-${card.id}-desc`)}><TextArea value={card.description} onChange={v => updateCard(idx, { description: v })} /></Field>
               <Field label="Link"><UrlInput value={card.link} onChange={v => updateCard(idx, { link: v })} /></Field>
               <ButtonEditor
                 buttons={card.buttons || []}
@@ -453,10 +575,10 @@ function IndexEditor({ content, onChange }: { content: IndexContent; onChange: (
       {/* Philosophy */}
       <SectionCard title="💡 Filosofía">
         <div className="space-y-3 pt-3">
-          <Field label="Título"><TextArea value={content.philosophySection.title} onChange={v => onChange({ ...content, philosophySection: { ...content.philosophySection, title: v } })} rows={2} /></Field>
-          <Field label="Descripción"><TextArea value={content.philosophySection.description} onChange={v => onChange({ ...content, philosophySection: { ...content.philosophySection, description: v } })} rows={4} /></Field>
+          <Field label="Título" {...ts('philosophy-title')}><TextArea value={content.philosophySection.title} onChange={v => onChange({ ...content, philosophySection: { ...content.philosophySection, title: v } })} rows={2} /></Field>
+          <Field label="Descripción" {...ts('philosophy-desc')}><TextArea value={content.philosophySection.description} onChange={v => onChange({ ...content, philosophySection: { ...content.philosophySection, description: v } })} rows={4} /></Field>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Texto del botón principal"><TextInput value={content.philosophySection.ctaText} onChange={v => onChange({ ...content, philosophySection: { ...content.philosophySection, ctaText: v } })} /></Field>
+            <Field label="Texto del botón principal" {...ts('philosophy-cta')}><TextInput value={content.philosophySection.ctaText} onChange={v => onChange({ ...content, philosophySection: { ...content.philosophySection, ctaText: v } })} /></Field>
             <Field label="Link del botón principal"><UrlInput value={content.philosophySection.ctaLink} onChange={v => onChange({ ...content, philosophySection: { ...content.philosophySection, ctaLink: v } })} /></Field>
           </div>
           <ButtonEditor
@@ -472,7 +594,7 @@ function IndexEditor({ content, onChange }: { content: IndexContent; onChange: (
           {content.lifestyleImages.map((img, idx) => (
             <div key={img.id} className="p-3 bg-gray-50 rounded-lg space-y-2">
               <ImageInput value={img.image} onChange={v => updateLifestyle(idx, { image: v })} />
-              <Field label="Etiqueta"><TextInput value={img.label} onChange={v => updateLifestyle(idx, { label: v })} /></Field>
+              <Field label="Etiqueta" {...ts(`lifestyle-${img.id}-label`)}><TextInput value={img.label} onChange={v => updateLifestyle(idx, { label: v })} /></Field>
             </div>
           ))}
         </div>
@@ -482,8 +604,8 @@ function IndexEditor({ content, onChange }: { content: IndexContent; onChange: (
       <SectionCard title="🖼️ Banner Full Width" defaultOpen={false}>
         <div className="space-y-3 pt-3">
           <ImageInput value={content.fullWidthBanner.image} onChange={v => onChange({ ...content, fullWidthBanner: { ...content.fullWidthBanner, image: v } })} label="Imagen" />
-          <Field label="Título"><TextInput value={content.fullWidthBanner.title} onChange={v => onChange({ ...content, fullWidthBanner: { ...content.fullWidthBanner, title: v } })} /></Field>
-          <Field label="Subtítulo"><TextInput value={content.fullWidthBanner.subtitle} onChange={v => onChange({ ...content, fullWidthBanner: { ...content.fullWidthBanner, subtitle: v } })} /></Field>
+          <Field label="Título" {...ts('banner-title')}><TextInput value={content.fullWidthBanner.title} onChange={v => onChange({ ...content, fullWidthBanner: { ...content.fullWidthBanner, title: v } })} /></Field>
+          <Field label="Subtítulo" {...ts('banner-subtitle')}><TextInput value={content.fullWidthBanner.subtitle} onChange={v => onChange({ ...content, fullWidthBanner: { ...content.fullWidthBanner, subtitle: v } })} /></Field>
           <ButtonEditor
             buttons={content.fullWidthBanner.buttons || []}
             onChange={buttons => onChange({ ...content, fullWidthBanner: { ...content.fullWidthBanner, buttons } })}
@@ -499,10 +621,10 @@ function IndexEditor({ content, onChange }: { content: IndexContent; onChange: (
               <span className="text-xs font-semibold text-foreground/70">Item {idx + 1}</span>
               <ImageInput value={item.image} onChange={v => updateGridItem(idx, { image: v })} />
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Título"><TextInput value={item.title} onChange={v => updateGridItem(idx, { title: v })} /></Field>
+                <Field label="Título" {...ts(`grid-${item.id}-title`)}><TextInput value={item.title} onChange={v => updateGridItem(idx, { title: v })} /></Field>
                 <Field label="Link"><UrlInput value={item.link} onChange={v => updateGridItem(idx, { link: v })} /></Field>
               </div>
-              <Field label="Descripción"><TextInput value={item.description} onChange={v => updateGridItem(idx, { description: v })} /></Field>
+              <Field label="Descripción" {...ts(`grid-${item.id}-desc`)}><TextInput value={item.description} onChange={v => updateGridItem(idx, { description: v })} /></Field>
               <ButtonEditor
                 buttons={item.buttons || []}
                 onChange={buttons => updateGridItem(idx, { buttons })}
@@ -519,6 +641,7 @@ function IndexEditor({ content, onChange }: { content: IndexContent; onChange: (
 
 // ---- NOSOTROS ----
 function NosotrosEditor({ content, onChange }: { content: NosotrosContent; onChange: (c: NosotrosContent) => void }) {
+  const ts = (key: string) => ({ styleKey: key, textStyles: content.textStyles, onStyleChange: (k: string, s: TextStyle | undefined) => { const next = { ...content.textStyles }; if (s) next[k] = s; else delete next[k]; onChange({ ...content, textStyles: next }); } });
   const updateValue = (idx: number, updates: Partial<{ title: string; description: string }>) => {
     const items = content.values.items.map((v, i) => i === idx ? { ...v, ...updates } : v);
     onChange({ ...content, values: { ...content.values, items } });
@@ -534,8 +657,8 @@ function NosotrosEditor({ content, onChange }: { content: NosotrosContent; onCha
     <div className="space-y-4">
       <SectionCard title="🏠 Hero">
         <div className="space-y-3 pt-3">
-          <Field label="Título"><TextInput value={content.hero.title} onChange={v => onChange({ ...content, hero: { ...content.hero, title: v } })} /></Field>
-          <Field label="Descripción"><TextArea value={content.hero.description} onChange={v => onChange({ ...content, hero: { ...content.hero, description: v } })} rows={4} /></Field>
+          <Field label="Título" {...ts('hero-title')}><TextInput value={content.hero.title} onChange={v => onChange({ ...content, hero: { ...content.hero, title: v } })} /></Field>
+          <Field label="Descripción" {...ts('hero-desc')}><TextArea value={content.hero.description} onChange={v => onChange({ ...content, hero: { ...content.hero, description: v } })} rows={4} /></Field>
           <ButtonEditor
             buttons={content.hero.buttons || []}
             onChange={buttons => onChange({ ...content, hero: { ...content.hero, buttons } })}
@@ -552,9 +675,9 @@ function NosotrosEditor({ content, onChange }: { content: NosotrosContent; onCha
       <SectionCard title="👁️ Visión">
         <div className="space-y-3 pt-3">
           <ImageInput value={content.vision.image} onChange={v => onChange({ ...content, vision: { ...content.vision, image: v } })} label="Imagen" />
-          <Field label="Título"><TextInput value={content.vision.title} onChange={v => onChange({ ...content, vision: { ...content.vision, title: v } })} /></Field>
-          <Field label="Párrafo 1"><TextArea value={content.vision.paragraph1} onChange={v => onChange({ ...content, vision: { ...content.vision, paragraph1: v } })} /></Field>
-          <Field label="Párrafo 2"><TextArea value={content.vision.paragraph2} onChange={v => onChange({ ...content, vision: { ...content.vision, paragraph2: v } })} /></Field>
+          <Field label="Título" {...ts('vision-title')}><TextInput value={content.vision.title} onChange={v => onChange({ ...content, vision: { ...content.vision, title: v } })} /></Field>
+          <Field label="Párrafo 1" {...ts('vision-p1')}><TextArea value={content.vision.paragraph1} onChange={v => onChange({ ...content, vision: { ...content.vision, paragraph1: v } })} /></Field>
+          <Field label="Párrafo 2" {...ts('vision-p2')}><TextArea value={content.vision.paragraph2} onChange={v => onChange({ ...content, vision: { ...content.vision, paragraph2: v } })} /></Field>
           <ButtonEditor
             buttons={content.vision.buttons || []}
             onChange={buttons => onChange({ ...content, vision: { ...content.vision, buttons } })}
@@ -565,12 +688,12 @@ function NosotrosEditor({ content, onChange }: { content: NosotrosContent; onCha
       <SectionCard title="⭐ Valores">
         <div className="space-y-3 pt-3">
           <ImageInput value={content.values.image} onChange={v => onChange({ ...content, values: { ...content.values, image: v } })} label="Imagen" />
-          <Field label="Título"><TextInput value={content.values.title} onChange={v => onChange({ ...content, values: { ...content.values, title: v } })} /></Field>
+          <Field label="Título" {...ts('values-title')}><TextInput value={content.values.title} onChange={v => onChange({ ...content, values: { ...content.values, title: v } })} /></Field>
           {content.values.items.map((item, idx) => (
             <div key={idx} className="flex gap-3 items-start p-3 bg-gray-50 rounded-lg">
               <div className="flex-1 space-y-2">
-                <Field label={`Valor ${idx + 1} — Título`}><TextInput value={item.title} onChange={v => updateValue(idx, { title: v })} /></Field>
-                <Field label="Descripción"><TextInput value={item.description} onChange={v => updateValue(idx, { description: v })} /></Field>
+                <Field label={`Valor ${idx + 1} — Título`} {...ts(`value-${idx}-title`)}><TextInput value={item.title} onChange={v => updateValue(idx, { title: v })} /></Field>
+                <Field label="Descripción" {...ts(`value-${idx}-desc`)}><TextInput value={item.description} onChange={v => updateValue(idx, { description: v })} /></Field>
               </div>
               {content.values.items.length > 1 && (
                 <button onClick={() => removeValue(idx)} className="p-1 mt-5 text-red-400 hover:text-red-600 rounded"><Trash2 className="w-3.5 h-3.5" /></button>
@@ -589,10 +712,10 @@ function NosotrosEditor({ content, onChange }: { content: NosotrosContent; onCha
 
       <SectionCard title="📢 CTA" defaultOpen={false}>
         <div className="space-y-3 pt-3">
-          <Field label="Título"><TextInput value={content.cta.title} onChange={v => onChange({ ...content, cta: { ...content.cta, title: v } })} /></Field>
-          <Field label="Descripción"><TextArea value={content.cta.description} onChange={v => onChange({ ...content, cta: { ...content.cta, description: v } })} /></Field>
+          <Field label="Título" {...ts('cta-title')}><TextInput value={content.cta.title} onChange={v => onChange({ ...content, cta: { ...content.cta, title: v } })} /></Field>
+          <Field label="Descripción" {...ts('cta-desc')}><TextArea value={content.cta.description} onChange={v => onChange({ ...content, cta: { ...content.cta, description: v } })} /></Field>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Texto del botón principal"><TextInput value={content.cta.buttonText} onChange={v => onChange({ ...content, cta: { ...content.cta, buttonText: v } })} /></Field>
+            <Field label="Texto del botón principal" {...ts('cta-btntext')}><TextInput value={content.cta.buttonText} onChange={v => onChange({ ...content, cta: { ...content.cta, buttonText: v } })} /></Field>
             <Field label="Link"><UrlInput value={content.cta.buttonLink} onChange={v => onChange({ ...content, cta: { ...content.cta, buttonLink: v } })} /></Field>
           </div>
           <ButtonEditor
@@ -609,6 +732,7 @@ function NosotrosEditor({ content, onChange }: { content: NosotrosContent; onCha
 
 // ---- PRODUCCIÓN ----
 function ProduccionEditor({ content, onChange }: { content: ProduccionContent; onChange: (c: ProduccionContent) => void }) {
+  const ts = (key: string) => ({ styleKey: key, textStyles: content.textStyles, onStyleChange: (k: string, s: TextStyle | undefined) => { const next = { ...content.textStyles }; if (s) next[k] = s; else delete next[k]; onChange({ ...content, textStyles: next }); } });
   const updatePillar = (idx: number, updates: Partial<{ title: string; description: string; image: string; buttons: CustomButton[] }>) => {
     const pillars = content.pillars.map((p, i) => i === idx ? { ...p, ...updates } : p);
     onChange({ ...content, pillars });
@@ -624,8 +748,8 @@ function ProduccionEditor({ content, onChange }: { content: ProduccionContent; o
     <div className="space-y-4">
       <SectionCard title="🏠 Hero">
         <div className="space-y-3 pt-3">
-          <Field label="Título"><TextInput value={content.hero.title} onChange={v => onChange({ ...content, hero: { ...content.hero, title: v } })} /></Field>
-          <Field label="Descripción"><TextArea value={content.hero.description} onChange={v => onChange({ ...content, hero: { ...content.hero, description: v } })} /></Field>
+          <Field label="Título" {...ts('hero-title')}><TextInput value={content.hero.title} onChange={v => onChange({ ...content, hero: { ...content.hero, title: v } })} /></Field>
+          <Field label="Descripción" {...ts('hero-desc')}><TextArea value={content.hero.description} onChange={v => onChange({ ...content, hero: { ...content.hero, description: v } })} /></Field>
           <ButtonEditor
             buttons={content.hero.buttons || []}
             onChange={buttons => onChange({ ...content, hero: { ...content.hero, buttons } })}
@@ -644,8 +768,8 @@ function ProduccionEditor({ content, onChange }: { content: ProduccionContent; o
                 )}
               </div>
               <ImageInput value={pillar.image} onChange={v => updatePillar(idx, { image: v })} />
-              <Field label="Título"><TextInput value={pillar.title} onChange={v => updatePillar(idx, { title: v })} /></Field>
-              <Field label="Descripción"><TextArea value={pillar.description} onChange={v => updatePillar(idx, { description: v })} /></Field>
+              <Field label="Título" {...ts(`pillar-${idx}-title`)}><TextInput value={pillar.title} onChange={v => updatePillar(idx, { title: v })} /></Field>
+              <Field label="Descripción" {...ts(`pillar-${idx}-desc`)}><TextArea value={pillar.description} onChange={v => updatePillar(idx, { description: v })} /></Field>
               <ButtonEditor
                 buttons={pillar.buttons || []}
                 onChange={buttons => updatePillar(idx, { buttons })}
@@ -665,6 +789,7 @@ function ProduccionEditor({ content, onChange }: { content: ProduccionContent; o
 
 // ---- EVENTOS ----
 function EventosEditor({ content, onChange }: { content: EventosContent; onChange: (c: EventosContent) => void }) {
+  const ts = (key: string) => ({ styleKey: key, textStyles: content.textStyles, onStyleChange: (k: string, s: TextStyle | undefined) => { const next = { ...content.textStyles }; if (s) next[k] = s; else delete next[k]; onChange({ ...content, textStyles: next }); } });
   const updateUpcoming = (idx: number, updates: Partial<EventoItem>) => {
     const events = content.upcomingEvents.map((e, i) => i === idx ? { ...e, ...updates } : e);
     onChange({ ...content, upcomingEvents: events });
@@ -691,8 +816,8 @@ function EventosEditor({ content, onChange }: { content: EventosContent; onChang
     <div className="space-y-4">
       <SectionCard title="📋 Encabezado">
         <div className="space-y-3 pt-3">
-          <Field label="Título"><TextInput value={content.title} onChange={v => onChange({ ...content, title: v })} /></Field>
-          <Field label="Subtítulo"><TextInput value={content.subtitle} onChange={v => onChange({ ...content, subtitle: v })} /></Field>
+          <Field label="Título" {...ts('header-title')}><TextInput value={content.title} onChange={v => onChange({ ...content, title: v })} /></Field>
+          <Field label="Subtítulo" {...ts('header-subtitle')}><TextInput value={content.subtitle} onChange={v => onChange({ ...content, subtitle: v })} /></Field>
           <ButtonEditor
             buttons={content.buttons || []}
             onChange={buttons => onChange({ ...content, buttons })}
@@ -702,7 +827,7 @@ function EventosEditor({ content, onChange }: { content: EventosContent; onChang
 
       <SectionCard title="📅 Próximos Eventos">
         <div className="space-y-4 pt-3">
-          <Field label="Título de sección"><TextInput value={content.upcomingTitle} onChange={v => onChange({ ...content, upcomingTitle: v })} /></Field>
+          <Field label="Título de sección" {...ts('upcoming-title')}><TextInput value={content.upcomingTitle} onChange={v => onChange({ ...content, upcomingTitle: v })} /></Field>
           {content.upcomingEvents.map((evt, idx) => (
             <div key={evt.id} className="p-4 bg-gray-50 rounded-lg space-y-3">
               <div className="flex items-center justify-between">
@@ -710,12 +835,12 @@ function EventosEditor({ content, onChange }: { content: EventosContent; onChang
                 <button onClick={() => removeUpcoming(idx)} className="p-1 text-red-400 hover:text-red-600 rounded"><Trash2 className="w-3.5 h-3.5" /></button>
               </div>
               <ImageInput value={evt.image} onChange={v => updateUpcoming(idx, { image: v })} />
-              <Field label="Título"><TextInput value={evt.title} onChange={v => updateUpcoming(idx, { title: v })} /></Field>
+              <Field label="Título" {...ts(`upcoming-${evt.id}-title`)}><TextInput value={evt.title} onChange={v => updateUpcoming(idx, { title: v })} /></Field>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Fecha"><TextInput value={evt.date} onChange={v => updateUpcoming(idx, { date: v })} placeholder="DD/MM/AAAA" /></Field>
                 <Field label="Ubicación"><TextInput value={evt.location} onChange={v => updateUpcoming(idx, { location: v })} /></Field>
               </div>
-              <Field label="Descripción"><TextArea value={evt.description} onChange={v => updateUpcoming(idx, { description: v })} /></Field>
+              <Field label="Descripción" {...ts(`upcoming-${evt.id}-desc`)}><TextArea value={evt.description} onChange={v => updateUpcoming(idx, { description: v })} /></Field>
               {/* Modal info */}
               <details className="border-t pt-3 mt-3">
                 <summary className="text-xs font-medium text-foreground/50 cursor-pointer hover:text-foreground/70">Info del Modal (opcional)</summary>
@@ -739,7 +864,7 @@ function EventosEditor({ content, onChange }: { content: EventosContent; onChang
 
       <SectionCard title="📜 Eventos Pasados" defaultOpen={false}>
         <div className="space-y-4 pt-3">
-          <Field label="Título de sección"><TextInput value={content.pastTitle} onChange={v => onChange({ ...content, pastTitle: v })} /></Field>
+          <Field label="Título de sección" {...ts('past-title')}><TextInput value={content.pastTitle} onChange={v => onChange({ ...content, pastTitle: v })} /></Field>
           {content.pastEvents.map((evt, idx) => (
             <div key={evt.id} className="p-4 bg-gray-50 rounded-lg space-y-3">
               <div className="flex items-center justify-between">
@@ -747,7 +872,7 @@ function EventosEditor({ content, onChange }: { content: EventosContent; onChang
                 <button onClick={() => removePast(idx)} className="p-1 text-red-400 hover:text-red-600 rounded"><Trash2 className="w-3.5 h-3.5" /></button>
               </div>
               <ImageInput value={evt.image} onChange={v => updatePast(idx, { image: v })} />
-              <Field label="Título"><TextInput value={evt.title} onChange={v => updatePast(idx, { title: v })} /></Field>
+              <Field label="Título" {...ts(`past-${evt.id}-title`)}><TextInput value={evt.title} onChange={v => updatePast(idx, { title: v })} /></Field>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Fecha"><TextInput value={evt.date} onChange={v => updatePast(idx, { date: v })} placeholder="DD/MM/AAAA" /></Field>
                 <Field label="Ubicación"><TextInput value={evt.location} onChange={v => updatePast(idx, { location: v })} /></Field>
@@ -767,12 +892,13 @@ function EventosEditor({ content, onChange }: { content: EventosContent; onChang
 
 // ---- UBICACIONES ----
 function UbicacionesEditor({ content, onChange }: { content: UbicacionesContent; onChange: (c: UbicacionesContent) => void }) {
+  const ts = (key: string) => ({ styleKey: key, textStyles: content.textStyles, onStyleChange: (k: string, s: TextStyle | undefined) => { const next = { ...content.textStyles }; if (s) next[k] = s; else delete next[k]; onChange({ ...content, textStyles: next }); } });
   return (
     <div className="space-y-4">
       <SectionCard title="🏠 Encabezado">
         <div className="space-y-3 pt-3">
-          <Field label="Título"><TextInput value={content.hero.title} onChange={v => onChange({ ...content, hero: { ...content.hero, title: v } })} /></Field>
-          <Field label="Descripción"><TextArea value={content.hero.description} onChange={v => onChange({ ...content, hero: { ...content.hero, description: v } })} /></Field>
+          <Field label="Título" {...ts('hero-title')}><TextInput value={content.hero.title} onChange={v => onChange({ ...content, hero: { ...content.hero, title: v } })} /></Field>
+          <Field label="Descripción" {...ts('hero-desc')}><TextArea value={content.hero.description} onChange={v => onChange({ ...content, hero: { ...content.hero, description: v } })} /></Field>
           <ButtonEditor
             buttons={content.hero.buttons || []}
             onChange={buttons => onChange({ ...content, hero: { ...content.hero, buttons } })}
@@ -788,9 +914,9 @@ function UbicacionesEditor({ content, onChange }: { content: UbicacionesContent;
 
       <SectionCard title="📍 Información de Ubicación">
         <div className="space-y-3 pt-3">
-          <Field label="Título"><TextInput value={content.location.title} onChange={v => onChange({ ...content, location: { ...content.location, title: v } })} /></Field>
-          <Field label="Dirección"><TextInput value={content.location.address} onChange={v => onChange({ ...content, location: { ...content.location, address: v } })} /></Field>
-          <Field label="Nota"><TextInput value={content.location.note} onChange={v => onChange({ ...content, location: { ...content.location, note: v } })} /></Field>
+          <Field label="Título" {...ts('location-title')}><TextInput value={content.location.title} onChange={v => onChange({ ...content, location: { ...content.location, title: v } })} /></Field>
+          <Field label="Dirección" {...ts('location-address')}><TextInput value={content.location.address} onChange={v => onChange({ ...content, location: { ...content.location, address: v } })} /></Field>
+          <Field label="Nota" {...ts('location-note')}><TextInput value={content.location.note} onChange={v => onChange({ ...content, location: { ...content.location, note: v } })} /></Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Texto del botón"><TextInput value={content.location.buttonText} onChange={v => onChange({ ...content, location: { ...content.location, buttonText: v } })} /></Field>
             <Field label="Email"><TextInput value={content.location.buttonEmail} onChange={v => onChange({ ...content, location: { ...content.location, buttonEmail: v } })} /></Field>
@@ -809,13 +935,14 @@ function UbicacionesEditor({ content, onChange }: { content: UbicacionesContent;
 
 // ---- CONTACTO ----
 function ContactoEditor({ content, onChange }: { content: ContactoContent; onChange: (c: ContactoContent) => void }) {
+  const ts = (key: string) => ({ styleKey: key, textStyles: content.textStyles, onStyleChange: (k: string, s: TextStyle | undefined) => { const next = { ...content.textStyles }; if (s) next[k] = s; else delete next[k]; onChange({ ...content, textStyles: next }); } });
   return (
     <div className="space-y-4">
       <SectionCard title="🏠 Encabezado">
         <div className="space-y-3 pt-3">
-          <Field label="Título"><TextInput value={content.hero.title} onChange={v => onChange({ ...content, hero: { ...content.hero, title: v } })} /></Field>
-          <Field label="Subtítulo 1"><TextInput value={content.hero.subtitle1} onChange={v => onChange({ ...content, hero: { ...content.hero, subtitle1: v } })} /></Field>
-          <Field label="Subtítulo 2"><TextInput value={content.hero.subtitle2} onChange={v => onChange({ ...content, hero: { ...content.hero, subtitle2: v } })} /></Field>
+          <Field label="Título" {...ts('hero-title')}><TextInput value={content.hero.title} onChange={v => onChange({ ...content, hero: { ...content.hero, title: v } })} /></Field>
+          <Field label="Subtítulo 1" {...ts('hero-subtitle1')}><TextInput value={content.hero.subtitle1} onChange={v => onChange({ ...content, hero: { ...content.hero, subtitle1: v } })} /></Field>
+          <Field label="Subtítulo 2" {...ts('hero-subtitle2')}><TextInput value={content.hero.subtitle2} onChange={v => onChange({ ...content, hero: { ...content.hero, subtitle2: v } })} /></Field>
           <ButtonEditor
             buttons={content.hero.buttons || []}
             onChange={buttons => onChange({ ...content, hero: { ...content.hero, buttons } })}
@@ -843,7 +970,7 @@ function ContactoEditor({ content, onChange }: { content: ContactoContent; onCha
 
       <SectionCard title="ℹ️ Sección de Información">
         <div className="pt-3">
-          <Field label="Título"><TextInput value={content.infoSection.title} onChange={v => onChange({ ...content, infoSection: { ...content.infoSection, title: v } })} /></Field>
+          <Field label="Título" {...ts('info-title')}><TextInput value={content.infoSection.title} onChange={v => onChange({ ...content, infoSection: { ...content.infoSection, title: v } })} /></Field>
           <p className="text-xs text-foreground/40 mt-2">La información de contacto (email, teléfono, dirección, redes sociales) se configura en <Link href="/admin/configuracion" className="text-blue-600 hover:underline">Configuración del Sitio</Link>.</p>
         </div>
       </SectionCard>

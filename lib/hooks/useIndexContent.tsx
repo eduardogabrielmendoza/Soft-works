@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { getSupabaseClient } from '@/lib/supabase/client';
-import type { CustomSection, CustomButton } from '@/lib/types/sections';
+import type { CustomSection, CustomButton, TextStyle } from '@/lib/types/sections';
 
 // Tipos para el contenido del index
 export interface HeroSlide {
@@ -64,6 +64,7 @@ export interface IndexContent {
   fullWidthBanner: BannerSection;
   contentGrid: ContentItem[];
   customSections?: CustomSection[];
+  textStyles?: Record<string, TextStyle>;
 }
 
 const defaultContent: IndexContent = {

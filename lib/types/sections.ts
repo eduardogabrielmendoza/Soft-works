@@ -2,11 +2,45 @@
 // Custom Section Types — shared between hooks, editor, and renderers
 // ============================================================
 
+// ---- Shared styling types ----
+export interface TextStyle {
+  color?: string;
+  fontSize?: 'xs' | 'sm' | 'base' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl';
+  fontWeight?: 'light' | 'normal' | 'medium' | 'semibold' | 'bold';
+}
+
 export interface CustomButton {
   id: string;
   text: string;
   link: string;
   style: 'filled' | 'outlined' | 'text';
+  color?: string;
+  textColor?: string;
+  size?: 'sm' | 'md' | 'lg';
+  fontSize?: 'xs' | 'sm' | 'base' | 'lg' | 'xl';
+  borderRadius?: 'none' | 'sm' | 'md' | 'lg' | 'full';
+}
+
+// ---- Helpers for rendering styles ----
+const FONT_SIZE_MAP: Record<string, string> = {
+  xs: '0.75rem', sm: '0.875rem', base: '1rem', lg: '1.125rem',
+  xl: '1.25rem', '2xl': '1.5rem', '3xl': '1.875rem', '4xl': '2.25rem',
+  '5xl': '3rem', '6xl': '3.75rem',
+};
+
+const FONT_WEIGHT_MAP: Record<string, number> = {
+  light: 300, normal: 400, medium: 500, semibold: 600, bold: 700,
+};
+
+/** Convert a TextStyle record entry to inline CSSProperties */
+export function textStyleCSS(textStyles?: Record<string, TextStyle>, key?: string): Record<string, string | number | undefined> {
+  if (!textStyles || !key || !textStyles[key]) return {};
+  const s = textStyles[key];
+  return {
+    ...(s.color ? { color: s.color } : {}),
+    ...(s.fontSize ? { fontSize: FONT_SIZE_MAP[s.fontSize] || undefined } : {}),
+    ...(s.fontWeight ? { fontWeight: FONT_WEIGHT_MAP[s.fontWeight] || undefined } : {}),
+  };
 }
 
 export type CustomSectionType = 'text' | 'image' | 'banner' | 'cta' | 'embed' | 'image-text';

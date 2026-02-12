@@ -6,6 +6,7 @@ import { X, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePagesContent } from '@/lib/hooks/usePagesContent';
 import CustomSectionsRenderer, { SectionButton } from '@/app/components/CustomSections';
+import { textStyleCSS } from '@/lib/types/sections';
 
 export default function EventosPage() {
   const { eventos: content, isLoading } = usePagesContent();
@@ -23,8 +24,8 @@ export default function EventosPage() {
 
   return (
     <div className="pt-20 px-4 py-12 max-w-6xl mx-auto">
-      <h1 className="text-3xl lg:text-4xl font-medium mb-4">{content.title}</h1>
-      <p className="text-foreground/70 mb-12">{content.subtitle}</p>
+      <h1 className="text-3xl lg:text-4xl font-medium mb-4" style={textStyleCSS(content.textStyles, 'header-title')}>{content.title}</h1>
+      <p className="text-foreground/70 mb-12" style={textStyleCSS(content.textStyles, 'header-subtitle')}>{content.subtitle}</p>
 
       {content.buttons && content.buttons.length > 0 && (
         <div className="flex flex-wrap gap-3 mb-12">

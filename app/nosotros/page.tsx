@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePagesContent } from '@/lib/hooks/usePagesContent';
 import CustomSectionsRenderer, { SectionButton } from '@/app/components/CustomSections';
+import { textStyleCSS } from '@/lib/types/sections';
 import { Loader2 } from 'lucide-react';
 
 export default function NosotrosPage() {
@@ -27,8 +28,8 @@ export default function NosotrosPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <h1 className="text-4xl lg:text-6xl font-medium mb-6">{content.hero.title}</h1>
-          <p className="text-lg lg:text-xl text-foreground/70 leading-relaxed">
+          <h1 className="text-4xl lg:text-6xl font-medium mb-6" style={textStyleCSS(content.textStyles, 'hero-title')}>{content.hero.title}</h1>
+          <p className="text-lg lg:text-xl text-foreground/70 leading-relaxed" style={textStyleCSS(content.textStyles, 'hero-desc')}>
             {content.hero.description}
           </p>
           {content.hero.buttons && content.hero.buttons.length > 0 && (
@@ -78,11 +79,11 @@ export default function NosotrosPage() {
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <h2 className="text-3xl lg:text-4xl font-medium mb-6">{content.vision.title}</h2>
-            <p className="text-foreground/70 leading-relaxed mb-4">
+            <h2 className="text-3xl lg:text-4xl font-medium mb-6" style={textStyleCSS(content.textStyles, 'vision-title')}>{content.vision.title}</h2>
+            <p className="text-foreground/70 leading-relaxed mb-4" style={textStyleCSS(content.textStyles, 'vision-p1')}>
               {content.vision.paragraph1}
             </p>
-            <p className="text-foreground/70 leading-relaxed">
+            <p className="text-foreground/70 leading-relaxed" style={textStyleCSS(content.textStyles, 'vision-p2')}>
               {content.vision.paragraph2}
             </p>
             {content.vision.buttons && content.vision.buttons.length > 0 && (
@@ -102,7 +103,7 @@ export default function NosotrosPage() {
             transition={{ duration: 0.6 }}
             className="order-2 lg:order-1"
           >
-            <h2 className="text-3xl lg:text-4xl font-medium mb-6">{content.values.title}</h2>
+            <h2 className="text-3xl lg:text-4xl font-medium mb-6" style={textStyleCSS(content.textStyles, 'values-title')}>{content.values.title}</h2>
             <ul className="space-y-4">
               {content.values.items.map((value, i) => (
                 <motion.li
@@ -113,8 +114,8 @@ export default function NosotrosPage() {
                   transition={{ duration: 0.4, delay: i * 0.1 }}
                   className="border-l-2 border-foreground pl-4"
                 >
-                  <h3 className="font-medium mb-1">{value.title}</h3>
-                  <p className="text-sm text-foreground/70">{value.description}</p>
+                  <h3 className="font-medium mb-1" style={textStyleCSS(content.textStyles, `value-${i}-title`)}>{value.title}</h3>
+                  <p className="text-sm text-foreground/70" style={textStyleCSS(content.textStyles, `value-${i}-desc`)}>{value.description}</p>
                 </motion.li>
               ))}
             </ul>
@@ -150,13 +151,14 @@ export default function NosotrosPage() {
           transition={{ duration: 0.6 }}
           className="max-w-3xl mx-auto text-center px-4"
         >
-          <h2 className="text-3xl lg:text-4xl font-medium mb-6">{content.cta.title}</h2>
-          <p className="text-foreground/70 mb-8">
+          <h2 className="text-3xl lg:text-4xl font-medium mb-6" style={textStyleCSS(content.textStyles, 'cta-title')}>{content.cta.title}</h2>
+          <p className="text-foreground/70 mb-8" style={textStyleCSS(content.textStyles, 'cta-desc')}>
             {content.cta.description}
           </p>
           <Link
             href={content.cta.buttonLink}
             className="inline-block px-8 py-3 border-2 border-foreground rounded-full hover:bg-foreground hover:text-white transition-all font-medium"
+            style={textStyleCSS(content.textStyles, 'cta-btntext')}
           >
             {content.cta.buttonText}
           </Link>
