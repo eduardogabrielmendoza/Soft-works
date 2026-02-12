@@ -128,6 +128,7 @@ export interface EditorState {
   showSectionLibrary: boolean;
   zoom: number;
   hasUnsavedChanges: boolean;
+  animPreviewKey: number;
 }
 
 // History for undo/redo

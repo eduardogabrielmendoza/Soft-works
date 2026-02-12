@@ -1,9 +1,9 @@
 import type { AnimationConfig, AnimationType, EasingType } from './types';
-import type { Variant, Transition } from 'framer-motion';
+import type { TargetAndTransition, Transition } from 'framer-motion';
 
 // Convert AnimationType to framer-motion variants
-export function getAnimationVariants(type: AnimationType): { initial: Variant; animate: Variant } {
-  const map: Record<AnimationType, { initial: Variant; animate: Variant }> = {
+export function getAnimationVariants(type: AnimationType): { initial: TargetAndTransition; animate: TargetAndTransition } {
+  const map: Record<AnimationType, { initial: TargetAndTransition; animate: TargetAndTransition }> = {
     none: { initial: {}, animate: {} },
     fadeIn: { initial: { opacity: 0 }, animate: { opacity: 1 } },
     fadeInUp: { initial: { opacity: 0, y: 30 }, animate: { opacity: 1, y: 0 } },

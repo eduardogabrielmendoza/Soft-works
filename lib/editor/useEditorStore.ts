@@ -18,6 +18,7 @@ export function useEditorStore(initialPages: Record<string, PageConfig>) {
     showSectionLibrary: false,
     zoom: 100,
     hasUnsavedChanges: false,
+    animPreviewKey: 0,
   });
 
   const historyRef = useRef<HistoryEntry[]>([{ pages: deepClone(initialPages), timestamp: Date.now(), description: 'Initial' }]);
@@ -381,6 +382,11 @@ export function useEditorStore(initialPages: Record<string, PageConfig>) {
     pushHistory(description);
   }, [pushHistory]);
 
+  // Trigger animation preview replay
+  const triggerAnimPreview = useCallback(() => {
+    setState(prev => ({ ...prev, animPreviewKey: prev.animPreviewKey + 1 }));
+  }, []);
+
   return {
     state,
     activePage,
@@ -406,6 +412,7 @@ export function useEditorStore(initialPages: Record<string, PageConfig>) {
     markSaved,
     setPages,
     recordSnapshot,
+    triggerAnimPreview,
     undo,
     redo,
     canUndo,

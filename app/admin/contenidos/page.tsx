@@ -22,7 +22,7 @@ import { getSupabaseClient } from '@/lib/supabase/client';
 import { useEditorStore } from '@/lib/editor/useEditorStore';
 import type { EditorSection, EditorElement, AnimationConfig, DevicePreview, EasingType } from '@/lib/editor/types';
 import { ANIMATION_TYPES, EASING_TYPES } from '@/lib/editor/types';
-import { generateId } from '@/lib/editor/animations';
+import { generateId, getAnimationVariants, getTransition } from '@/lib/editor/animations';
 import { sectionTemplates, getAllCategories } from '@/lib/editor/templates';
 import { convertAllPages } from '@/lib/editor/converters';
 
@@ -173,7 +173,24 @@ function ElementPreview({
 
   return (
     <ElementWrapper element={element} isSelected={isSelected} isPreview={isPreview} onClick={onClick}>
-      <div onDoubleClick={handleDoubleClick} className="mb-2">{renderEl()}</div>
+      {element.animation && element.animation.type !== 'none' ? (
+        <motion.div
+          key={`${element.id}-anim-${element.animation.type}-${store.state.animPreviewKey}`}
+          initial={getAnimationVariants(element.animation.type).initial}
+          {...(element.animation.trigger === 'onScroll'
+            ? { whileInView: getAnimationVariants(element.animation.type).animate, viewport: { once: true, margin: '-50px' } }
+            : element.animation.trigger === 'onHover'
+            ? { whileHover: getAnimationVariants(element.animation.type).animate }
+            : { animate: getAnimationVariants(element.animation.type).animate })}
+          transition={getTransition(element.animation)}
+          onDoubleClick={handleDoubleClick}
+          className="mb-2"
+        >
+          {renderEl()}
+        </motion.div>
+      ) : (
+        <div onDoubleClick={handleDoubleClick} className="mb-2">{renderEl()}</div>
+      )}
     </ElementWrapper>
   );
 }
@@ -217,16 +234,16 @@ function SectionPreview({
       const cur = slides[0];
       if (!cur) return null;
       return (
-        <div className="px-4 lg:px-8 pb-4">
-          <div className="relative overflow-hidden rounded-2xl lg:rounded-3xl shadow-2xl">
-            <div className="relative aspect-[9/16] sm:aspect-[4/5] md:aspect-[16/10] lg:aspect-[21/9]">
+        <div className="px-4 @5xl:px-8 pb-4">
+          <div className="relative overflow-hidden rounded-2xl @5xl:rounded-3xl shadow-2xl">
+            <div className="relative aspect-[9/16] @2xl:aspect-[4/5] @3xl:aspect-[16/10] @5xl:aspect-[21/9]">
               <img src={cur.image} alt={cur.title} className="absolute inset-0 w-full h-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/10" />
               <div className="absolute inset-0 flex items-center justify-center z-10">
                 <div className="text-center px-6 max-w-4xl mx-auto">
-                  <h1 className="text-5xl sm:text-6xl lg:text-8xl font-medium text-white mb-8 tracking-tight">{cur.title}</h1>
+                  <h1 className="text-5xl @2xl:text-6xl @5xl:text-8xl font-medium text-white mb-8 tracking-tight">{cur.title}</h1>
                   <div className="inline-block px-12 py-4 bg-white text-black rounded-full font-medium text-lg shadow-xl">{cur.ctaText}</div>
-                  <p className="text-base lg:text-lg text-white/60 mt-8 tracking-widest uppercase">{cur.subtitle}</p>
+                  <p className="text-base @5xl:text-lg text-white/60 mt-8 tracking-widest uppercase">{cur.subtitle}</p>
                 </div>
               </div>
               {slides.length > 1 && (
@@ -256,7 +273,7 @@ function SectionPreview({
     if (section.type === 'banner-full' && section.background.type === 'image') {
       return (
         <div className="relative">
-          <div className="relative aspect-[9/12] lg:aspect-[21/9]">
+          <div className="relative aspect-[9/12] @5xl:aspect-[21/9]">
             <img src={section.background.value} alt="Banner" className="absolute inset-0 w-full h-full object-cover" />
             {section.background.overlay && <div className="absolute inset-0" style={{ backgroundColor: section.background.overlay }} />}
             {section.elements.length > 0 && (
@@ -273,7 +290,7 @@ function SectionPreview({
     if (section.type === 'map-embed') {
       const embedEl = section.elements.find(e => e.type === 'embed');
       if (embedEl) return (
-        <div className="aspect-[16/9] lg:aspect-[21/9] overflow-hidden">
+        <div className="aspect-[16/9] @5xl:aspect-[21/9] overflow-hidden">
           <iframe src={embedEl.content} width="100%" height="100%" style={{ border: 0 }} allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
         </div>
       );
@@ -285,7 +302,7 @@ function SectionPreview({
       return (
         <div className={`px-4 ${mwCls}`} style={padStyle}>
           {section.elements.filter(e => e.type !== 'form').map(el => <ElementPreview {...elProps(el)} />)}
-          <div className="grid lg:grid-cols-2 gap-12 mt-8">
+          <div className="grid @5xl:grid-cols-2 gap-12 mt-8">
             <div className="space-y-6">
               {['nombre', 'email', 'asunto'].map(f => (
                 <div key={f}><label className="block text-sm font-medium mb-2">{labels[f] || f}</label><input type="text" className="w-full px-4 py-3 border border-gray-300 rounded-md bg-white" readOnly /></div>
@@ -307,7 +324,7 @@ function SectionPreview({
           {section.elements.map(el => <ElementPreview {...elProps(el)} />)}
           <div className="space-y-6 mt-6">
             {evts.map(evt => (
-              <div key={evt.id} className="grid lg:grid-cols-[300px_1fr] gap-6 p-6 border border-gray-200 rounded-lg">
+              <div key={evt.id} className="grid @5xl:grid-cols-[300px_1fr] gap-6 p-6 border border-gray-200 rounded-lg">
                 <div className="aspect-square rounded-lg relative overflow-hidden"><img src={evt.image} alt={evt.title} className="w-full h-full object-cover" /></div>
                 <div>
                   <div className="text-sm text-foreground/70 mb-1">{evt.date} · {evt.location}</div>
@@ -328,7 +345,7 @@ function SectionPreview({
       return (
         <div className={`px-4 ${mwCls}`} style={padStyle}>
           {section.elements.map(el => <ElementPreview {...elProps(el)} />)}
-          <div className="grid md:grid-cols-3 gap-6 mt-6">
+          <div className="grid @3xl:grid-cols-3 gap-6 mt-6">
             {evts.map(evt => (
               <div key={evt.id}>
                 <div className="aspect-[4/3] rounded-lg mb-3 relative overflow-hidden"><img src={evt.image} alt={evt.title} className="w-full h-full object-cover" /></div>
@@ -350,7 +367,7 @@ function SectionPreview({
       const first = cards[0], rest = cards.slice(1);
       return (
         <div className={`px-4 ${mwCls}`} style={padStyle}>
-          <div className="grid lg:grid-cols-2 gap-4 lg:gap-6">
+          <div className="grid @5xl:grid-cols-2 gap-4 @5xl:gap-6">
             {first && (
               <div className="group cursor-pointer">
                 <div className="aspect-[3/4] rounded-lg mb-4 relative overflow-hidden">
@@ -361,18 +378,18 @@ function SectionPreview({
                     {first[2]?.content && <p className="text-sm text-white/90">{first[2]?.content}</p>}
                   </div>
                 </div>
-                <p className="text-base lg:text-lg text-foreground/50 text-center px-4 leading-relaxed">{first[3]?.content || ''}</p>
+                <p className="text-base @5xl:text-lg text-foreground/50 text-center px-4 leading-relaxed">{first[3]?.content || ''}</p>
               </div>
             )}
-            <div className="grid grid-rows-2 gap-4 lg:gap-6">
+            <div className="grid grid-rows-2 gap-4 @5xl:gap-6">
               {rest.map((card, idx) => (
                 <div key={idx} className="group cursor-pointer">
-                  <div className="aspect-[16/9] lg:aspect-[21/9] rounded-lg mb-3 relative overflow-hidden">
+                  <div className="aspect-[16/9] @5xl:aspect-[21/9] rounded-lg mb-3 relative overflow-hidden">
                     <img src={card[0]?.content || ''} alt={card[1]?.content || ''} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                     <div className="absolute bottom-4 left-4 z-10"><h3 className="text-xl font-medium text-white">{card[1]?.content || ''}</h3></div>
                   </div>
-                  <p className="text-base lg:text-lg text-foreground/50 text-center px-4 leading-relaxed">{card[3]?.content || ''}</p>
+                  <p className="text-base @5xl:text-lg text-foreground/50 text-center px-4 leading-relaxed">{card[3]?.content || ''}</p>
                 </div>
               ))}
             </div>
@@ -389,7 +406,7 @@ function SectionPreview({
       for (let i = 0; i < section.elements.length; i += perCard) cards.push(section.elements.slice(i, i + perCard));
       return (
         <div className={`px-4 ${mwCls}`} style={padStyle}>
-          <div className="grid gap-8 lg:gap-12" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
+          <div className="grid gap-8 @5xl:gap-12" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
             {cards.map((card, idx) => (
               <div key={idx} className="text-center">{card.map(el => <ElementPreview {...elProps(el)} />)}</div>
             ))}
@@ -417,9 +434,9 @@ function SectionPreview({
       const imgFirst = section.type === 'image-text' || section.type === 'hero-split';
       return (
         <div className={`px-4 ${mwCls}`} style={padStyle}>
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            <div className={imgFirst ? 'order-1' : 'order-2 lg:order-1'}>{(imgFirst ? imgEls : txtEls).map(el => <ElementPreview {...elProps(el)} />)}</div>
-            <div className={imgFirst ? 'order-2' : 'order-1 lg:order-2'}>{(imgFirst ? txtEls : imgEls).map(el => <ElementPreview {...elProps(el)} />)}</div>
+          <div className="grid @5xl:grid-cols-2 gap-12 @5xl:gap-16 items-center">
+            <div className={imgFirst ? 'order-1' : 'order-2 @5xl:order-1'}>{(imgFirst ? imgEls : txtEls).map(el => <ElementPreview {...elProps(el)} />)}</div>
+            <div className={imgFirst ? 'order-2' : 'order-1 @5xl:order-2'}>{(imgFirst ? txtEls : imgEls).map(el => <ElementPreview {...elProps(el)} />)}</div>
           </div>
         </div>
       );
@@ -437,8 +454,22 @@ function SectionPreview({
     );
   };
 
+  const secAnim = section.animation;
+  const hasSecAnim = secAnim && secAnim.type !== 'none';
+  const secMotionProps = hasSecAnim ? {
+    initial: getAnimationVariants(secAnim.type).initial,
+    ...(secAnim.trigger === 'onScroll'
+      ? { whileInView: getAnimationVariants(secAnim.type).animate, viewport: { once: true, margin: '-50px' } }
+      : secAnim.trigger === 'onHover'
+      ? { whileHover: getAnimationVariants(secAnim.type).animate }
+      : { animate: getAnimationVariants(secAnim.type).animate }),
+    transition: getTransition(secAnim),
+  } : {};
+
   return (
-    <div
+    <motion.div
+      key={`${section.id}-${secAnim?.type || 'none'}-${store.state.animPreviewKey}`}
+      {...secMotionProps}
       className={`relative group transition-all ${isSelected && !isPreview ? 'ring-2 ring-blue-500 ring-offset-2' : ''} ${!isPreview ? 'cursor-pointer' : ''}`}
       style={bgStyle}
       onClick={(e) => { if (!isPreview) { e.stopPropagation(); onSelect(); } }}
@@ -477,7 +508,7 @@ function SectionPreview({
           </button>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
 
@@ -761,7 +792,7 @@ function PropertiesPanel({ store }: { store: ReturnType<typeof useEditorStore> }
                 <option value="onLoad">Al cargar</option><option value="onScroll">Al hacer scroll</option><option value="onHover">Al pasar el mouse</option>
               </select>
             </div>
-            <button onClick={() => { const orig = animation.type; updateAnim({ type: 'none' }); setTimeout(() => updateAnim({ type: orig }), 50); }} className="w-full py-2 text-sm border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors flex items-center justify-center gap-2">
+            <button onClick={() => { store.triggerAnimPreview(); }} className="w-full py-2 text-sm border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors flex items-center justify-center gap-2">
               <Play className="w-3.5 h-3.5" /> Preview Animación
             </button>
           </>
@@ -1192,7 +1223,7 @@ export default function AdminContenidosPage() {
         <div className="flex-1 overflow-y-auto" onClick={() => { store.selectSection(null); store.selectElement(null); }}>
           <div className="min-h-full flex justify-center py-6">
             <div
-              className="bg-white shadow-2xl overflow-hidden transition-all duration-300"
+              className="@container bg-white shadow-2xl overflow-hidden transition-all duration-300"
               style={{
                 width: `${deviceWidths[state.devicePreview]}px`,
                 maxWidth: '100%',
@@ -1241,7 +1272,7 @@ export default function AdminContenidosPage() {
         {/* Right Properties Panel */}
         <AnimatePresence>
           {showRightPanel && !state.isPreviewMode && (
-            <motion.div initial={{ width: 0, opacity: 0 }} animate={{ width: 300, opacity: 1 }} exit={{ width: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="bg-white border-l border-gray-200 overflow-hidden shrink-0">
+            <motion.div initial={{ width: 0, opacity: 0 }} animate={{ width: 380, opacity: 1 }} exit={{ width: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="bg-white border-l border-gray-200 overflow-hidden shrink-0">
               <PropertiesPanel store={store} />
             </motion.div>
           )}
