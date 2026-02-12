@@ -56,6 +56,11 @@ export default function Home() {
               <p className="text-base lg:text-lg text-foreground/50 text-center px-4 leading-relaxed">
                 {largeCard.description}
               </p>
+              {largeCard.buttons && largeCard.buttons.length > 0 && (
+                <div className="flex flex-wrap gap-3 justify-center mt-4">
+                  {largeCard.buttons.map(btn => <SectionButton key={btn.id} btn={btn} />)}
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -87,6 +92,11 @@ export default function Home() {
                 <p className="text-base lg:text-lg text-foreground/50 text-center px-4 leading-relaxed">
                   {card.description}
                 </p>
+                {card.buttons && card.buttons.length > 0 && (
+                  <div className="flex flex-wrap gap-3 justify-center mt-4">
+                    {card.buttons.map(btn => <SectionButton key={btn.id} btn={btn} />)}
+                  </div>
+                )}
               </motion.div>
             ))}
           </div>

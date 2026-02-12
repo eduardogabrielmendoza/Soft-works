@@ -11,6 +11,7 @@ export interface NosotrosContent {
   hero: {
     title: string;
     description: string;
+    buttons?: CustomButton[];
   };
   headerImage: string;
   vision: {
@@ -18,6 +19,7 @@ export interface NosotrosContent {
     title: string;
     paragraph1: string;
     paragraph2: string;
+    buttons?: CustomButton[];
   };
   values: {
     image: string;
@@ -26,6 +28,7 @@ export interface NosotrosContent {
       title: string;
       description: string;
     }>;
+    buttons?: CustomButton[];
   };
   cta: {
     title: string;
@@ -42,6 +45,7 @@ export interface ProduccionContent {
   hero: {
     title: string;
     description: string;
+    buttons?: CustomButton[];
   };
   pillars: Array<{
     title: string;
@@ -72,6 +76,7 @@ export interface EventoItem {
 export interface EventosContent {
   title: string;
   subtitle: string;
+  buttons?: CustomButton[];
   upcomingTitle: string;
   upcomingEvents: EventoItem[];
   pastTitle: string;
@@ -84,6 +89,7 @@ export interface UbicacionesContent {
   hero: {
     title: string;
     description: string;
+    buttons?: CustomButton[];
   };
   mapEmbedUrl: string;
   location: {
@@ -92,6 +98,7 @@ export interface UbicacionesContent {
     note: string;
     buttonText: string;
     buttonEmail: string;
+    buttons?: CustomButton[];
   };
   customSections?: CustomSection[];
 }
@@ -102,6 +109,7 @@ export interface ContactoContent {
     title: string;
     subtitle1: string;
     subtitle2: string;
+    buttons?: CustomButton[];
   };
   formLabels: {
     nombre: string;

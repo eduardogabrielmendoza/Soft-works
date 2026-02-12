@@ -31,6 +31,11 @@ export default function NosotrosPage() {
           <p className="text-lg lg:text-xl text-foreground/70 leading-relaxed">
             {content.hero.description}
           </p>
+          {content.hero.buttons && content.hero.buttons.length > 0 && (
+            <div className="flex flex-wrap gap-3 justify-center mt-6">
+              {content.hero.buttons.map(btn => <SectionButton key={btn.id} btn={btn} />)}
+            </div>
+          )}
         </motion.div>
       </section>
 
@@ -80,6 +85,11 @@ export default function NosotrosPage() {
             <p className="text-foreground/70 leading-relaxed">
               {content.vision.paragraph2}
             </p>
+            {content.vision.buttons && content.vision.buttons.length > 0 && (
+              <div className="flex flex-wrap gap-3 mt-6">
+                {content.vision.buttons.map(btn => <SectionButton key={btn.id} btn={btn} />)}
+              </div>
+            )}
           </motion.div>
         </div>
 
@@ -108,6 +118,11 @@ export default function NosotrosPage() {
                 </motion.li>
               ))}
             </ul>
+            {content.values.buttons && content.values.buttons.length > 0 && (
+              <div className="flex flex-wrap gap-3 mt-6">
+                {content.values.buttons.map(btn => <SectionButton key={btn.id} btn={btn} />)}
+              </div>
+            )}
           </motion.div>
           <motion.div
             initial={{ opacity: 0, x: 20 }}

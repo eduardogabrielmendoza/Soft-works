@@ -6,6 +6,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useIndexContent } from '@/lib/hooks/useIndexContent';
+import { SectionButton } from '@/app/components/CustomSections';
+import type { CustomButton } from '@/lib/types/sections';
 
 interface Slide {
   id: string;
@@ -14,6 +16,7 @@ interface Slide {
   subtitle: string;
   ctaText: string;
   ctaLink: string;
+  buttons?: CustomButton[];
 }
 
 // Variantes para transición horizontal suave sin parpadeos
@@ -197,6 +200,13 @@ export default function HeroBannerSlideshow() {
                       {slides[currentSlide].ctaText}
                     </Link>
                   </motion.div>
+
+                  {/* Botones adicionales del slide */}
+                  {slides[currentSlide].buttons && slides[currentSlide].buttons!.length > 0 && (
+                    <motion.div variants={childVariants} className="flex flex-wrap gap-3 justify-center mt-4">
+                      {slides[currentSlide].buttons!.map(btn => <SectionButton key={btn.id} btn={btn} />)}
+                    </motion.div>
+                  )}
                   
                   {/* Subtítulo - sincronizado con stagger */}
                   <motion.p 

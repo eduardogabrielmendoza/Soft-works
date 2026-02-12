@@ -416,6 +416,10 @@ function IndexEditor({ content, onChange }: { content: IndexContent; onChange: (
                 <Field label="Texto del botón"><TextInput value={slide.ctaText} onChange={v => updateSlide(idx, { ctaText: v })} /></Field>
                 <Field label="Link del botón"><UrlInput value={slide.ctaLink} onChange={v => updateSlide(idx, { ctaLink: v })} /></Field>
               </div>
+              <ButtonEditor
+                buttons={slide.buttons || []}
+                onChange={buttons => updateSlide(idx, { buttons })}
+              />
             </div>
           ))}
           <button onClick={addSlide} className="w-full py-2.5 border-2 border-dashed border-gray-300 rounded-lg text-sm text-foreground/50 hover:border-blue-400 hover:text-blue-600 transition-colors flex items-center justify-center gap-2">
@@ -437,6 +441,10 @@ function IndexEditor({ content, onChange }: { content: IndexContent; onChange: (
               </div>
               <Field label="Descripción"><TextArea value={card.description} onChange={v => updateCard(idx, { description: v })} /></Field>
               <Field label="Link"><UrlInput value={card.link} onChange={v => updateCard(idx, { link: v })} /></Field>
+              <ButtonEditor
+                buttons={card.buttons || []}
+                onChange={buttons => updateCard(idx, { buttons })}
+              />
             </div>
           ))}
         </div>
@@ -528,6 +536,10 @@ function NosotrosEditor({ content, onChange }: { content: NosotrosContent; onCha
         <div className="space-y-3 pt-3">
           <Field label="Título"><TextInput value={content.hero.title} onChange={v => onChange({ ...content, hero: { ...content.hero, title: v } })} /></Field>
           <Field label="Descripción"><TextArea value={content.hero.description} onChange={v => onChange({ ...content, hero: { ...content.hero, description: v } })} rows={4} /></Field>
+          <ButtonEditor
+            buttons={content.hero.buttons || []}
+            onChange={buttons => onChange({ ...content, hero: { ...content.hero, buttons } })}
+          />
         </div>
       </SectionCard>
 
@@ -543,6 +555,10 @@ function NosotrosEditor({ content, onChange }: { content: NosotrosContent; onCha
           <Field label="Título"><TextInput value={content.vision.title} onChange={v => onChange({ ...content, vision: { ...content.vision, title: v } })} /></Field>
           <Field label="Párrafo 1"><TextArea value={content.vision.paragraph1} onChange={v => onChange({ ...content, vision: { ...content.vision, paragraph1: v } })} /></Field>
           <Field label="Párrafo 2"><TextArea value={content.vision.paragraph2} onChange={v => onChange({ ...content, vision: { ...content.vision, paragraph2: v } })} /></Field>
+          <ButtonEditor
+            buttons={content.vision.buttons || []}
+            onChange={buttons => onChange({ ...content, vision: { ...content.vision, buttons } })}
+          />
         </div>
       </SectionCard>
 
@@ -564,6 +580,10 @@ function NosotrosEditor({ content, onChange }: { content: NosotrosContent; onCha
           <button onClick={addValue} className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-sm text-foreground/50 hover:border-blue-400 hover:text-blue-600 transition-colors flex items-center justify-center gap-2">
             <Plus className="w-4 h-4" /> Agregar Valor
           </button>
+          <ButtonEditor
+            buttons={content.values.buttons || []}
+            onChange={buttons => onChange({ ...content, values: { ...content.values, buttons } })}
+          />
         </div>
       </SectionCard>
 
@@ -606,6 +626,10 @@ function ProduccionEditor({ content, onChange }: { content: ProduccionContent; o
         <div className="space-y-3 pt-3">
           <Field label="Título"><TextInput value={content.hero.title} onChange={v => onChange({ ...content, hero: { ...content.hero, title: v } })} /></Field>
           <Field label="Descripción"><TextArea value={content.hero.description} onChange={v => onChange({ ...content, hero: { ...content.hero, description: v } })} /></Field>
+          <ButtonEditor
+            buttons={content.hero.buttons || []}
+            onChange={buttons => onChange({ ...content, hero: { ...content.hero, buttons } })}
+          />
         </div>
       </SectionCard>
 
@@ -669,6 +693,10 @@ function EventosEditor({ content, onChange }: { content: EventosContent; onChang
         <div className="space-y-3 pt-3">
           <Field label="Título"><TextInput value={content.title} onChange={v => onChange({ ...content, title: v })} /></Field>
           <Field label="Subtítulo"><TextInput value={content.subtitle} onChange={v => onChange({ ...content, subtitle: v })} /></Field>
+          <ButtonEditor
+            buttons={content.buttons || []}
+            onChange={buttons => onChange({ ...content, buttons })}
+          />
         </div>
       </SectionCard>
 
@@ -745,6 +773,10 @@ function UbicacionesEditor({ content, onChange }: { content: UbicacionesContent;
         <div className="space-y-3 pt-3">
           <Field label="Título"><TextInput value={content.hero.title} onChange={v => onChange({ ...content, hero: { ...content.hero, title: v } })} /></Field>
           <Field label="Descripción"><TextArea value={content.hero.description} onChange={v => onChange({ ...content, hero: { ...content.hero, description: v } })} /></Field>
+          <ButtonEditor
+            buttons={content.hero.buttons || []}
+            onChange={buttons => onChange({ ...content, hero: { ...content.hero, buttons } })}
+          />
         </div>
       </SectionCard>
 
@@ -763,6 +795,10 @@ function UbicacionesEditor({ content, onChange }: { content: UbicacionesContent;
             <Field label="Texto del botón"><TextInput value={content.location.buttonText} onChange={v => onChange({ ...content, location: { ...content.location, buttonText: v } })} /></Field>
             <Field label="Email"><TextInput value={content.location.buttonEmail} onChange={v => onChange({ ...content, location: { ...content.location, buttonEmail: v } })} /></Field>
           </div>
+          <ButtonEditor
+            buttons={content.location.buttons || []}
+            onChange={buttons => onChange({ ...content, location: { ...content.location, buttons } })}
+          />
         </div>
       </SectionCard>
 
@@ -780,6 +816,10 @@ function ContactoEditor({ content, onChange }: { content: ContactoContent; onCha
           <Field label="Título"><TextInput value={content.hero.title} onChange={v => onChange({ ...content, hero: { ...content.hero, title: v } })} /></Field>
           <Field label="Subtítulo 1"><TextInput value={content.hero.subtitle1} onChange={v => onChange({ ...content, hero: { ...content.hero, subtitle1: v } })} /></Field>
           <Field label="Subtítulo 2"><TextInput value={content.hero.subtitle2} onChange={v => onChange({ ...content, hero: { ...content.hero, subtitle2: v } })} /></Field>
+          <ButtonEditor
+            buttons={content.hero.buttons || []}
+            onChange={buttons => onChange({ ...content, hero: { ...content.hero, buttons } })}
+          />
         </div>
       </SectionCard>
 

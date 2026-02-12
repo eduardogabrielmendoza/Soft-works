@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { X, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePagesContent } from '@/lib/hooks/usePagesContent';
-import CustomSectionsRenderer from '@/app/components/CustomSections';
+import CustomSectionsRenderer, { SectionButton } from '@/app/components/CustomSections';
 
 export default function EventosPage() {
   const { eventos: content, isLoading } = usePagesContent();
@@ -25,6 +25,12 @@ export default function EventosPage() {
     <div className="pt-20 px-4 py-12 max-w-6xl mx-auto">
       <h1 className="text-3xl lg:text-4xl font-medium mb-4">{content.title}</h1>
       <p className="text-foreground/70 mb-12">{content.subtitle}</p>
+
+      {content.buttons && content.buttons.length > 0 && (
+        <div className="flex flex-wrap gap-3 mb-12">
+          {content.buttons.map(btn => <SectionButton key={btn.id} btn={btn} />)}
+        </div>
+      )}
 
       {/* Upcoming Events */}
       {content.upcomingEvents.length > 0 && (

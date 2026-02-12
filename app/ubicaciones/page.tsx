@@ -1,7 +1,7 @@
 'use client';
 
 import { usePagesContent } from '@/lib/hooks/usePagesContent';
-import CustomSectionsRenderer from '@/app/components/CustomSections';
+import CustomSectionsRenderer, { SectionButton } from '@/app/components/CustomSections';
 import { Loader2 } from 'lucide-react';
 
 export default function UbicacionesPage() {
@@ -21,6 +21,11 @@ export default function UbicacionesPage() {
       <section className="px-4 py-16 max-w-4xl mx-auto text-center">
         <h1 className="text-3xl lg:text-4xl font-medium mb-4">{content.hero.title}</h1>
         <p className="text-foreground/70">{content.hero.description}</p>
+        {content.hero.buttons && content.hero.buttons.length > 0 && (
+          <div className="flex flex-wrap gap-3 justify-center mt-6">
+            {content.hero.buttons.map(btn => <SectionButton key={btn.id} btn={btn} />)}
+          </div>
+        )}
       </section>
 
       {/* Google Maps */}
@@ -48,6 +53,11 @@ export default function UbicacionesPage() {
           >
             {content.location.buttonText}
           </a>
+          {content.location.buttons && content.location.buttons.length > 0 && (
+            <div className="flex flex-wrap gap-3 justify-center mt-4">
+              {content.location.buttons.map(btn => <SectionButton key={btn.id} btn={btn} />)}
+            </div>
+          )}
         </div>
       </section>
 

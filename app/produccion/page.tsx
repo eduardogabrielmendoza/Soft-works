@@ -24,6 +24,11 @@ export default function ProduccionPage() {
         <p className="text-lg text-foreground/70 leading-relaxed">
           {content.hero.description}
         </p>
+        {content.hero.buttons && content.hero.buttons.length > 0 && (
+          <div className="flex flex-wrap gap-3 justify-center mt-6">
+            {content.hero.buttons.map(btn => <SectionButton key={btn.id} btn={btn} />)}
+          </div>
+        )}
       </section>
 
       {/* Production Pillars */}

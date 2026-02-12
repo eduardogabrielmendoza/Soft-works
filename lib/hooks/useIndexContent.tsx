@@ -12,6 +12,7 @@ export interface HeroSlide {
   subtitle: string;
   ctaText: string;
   ctaLink: string;
+  buttons?: CustomButton[];
 }
 
 export interface ProductCard {
@@ -22,6 +23,7 @@ export interface ProductCard {
   image: string;
   link: string;
   size: 'large' | 'medium' | 'small';
+  buttons?: CustomButton[];
 }
 
 export interface LifestyleImage {
