@@ -345,7 +345,7 @@ export default function AdminDashboardPage() {
                 </Link>
                 <Link
                   href="/admin/contenidos"
-                  className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+                  className="hidden lg:flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
                 >
                   <FileText className="w-5 h-5 text-gray-600" />
                   <span>Editar Contenido Web</span>

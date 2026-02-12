@@ -38,7 +38,7 @@ const PAGE_TABS: { id: PageId; label: string; icon: React.ReactNode; path: strin
 function SectionCard({ title, children, defaultOpen = true }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="border border-gray-200 rounded-xl bg-white overflow-hidden">
+    <div className="border border-gray-200 rounded-xl bg-white">
       <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between px-5 py-3.5 text-sm font-semibold text-foreground hover:bg-gray-50 transition-colors">
         {title}
         {open ? <ChevronUp className="w-4 h-4 text-foreground/40" /> : <ChevronDown className="w-4 h-4 text-foreground/40" />}
@@ -80,19 +80,53 @@ const FONT_WEIGHT_OPTIONS = [
 
 function TextStylePicker({ style, onChange }: { style?: TextStyle; onChange: (s: TextStyle | undefined) => void }) {
   const [open, setOpen] = useState(false);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
   const hasStyle = style && (style.color || style.fontSize || style.fontWeight);
+
+  const handleToggle = () => {
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setPos({
+        top: rect.bottom + 4,
+        left: Math.min(rect.left, window.innerWidth - 270),
+      });
+    }
+    setOpen(!open);
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (popupRef.current && !popupRef.current.contains(e.target as Node) &&
+          btnRef.current && !btnRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    const handleScroll = () => setOpen(false);
+    document.addEventListener('mousedown', handleClickOutside);
+    const scrollParent = btnRef.current?.closest('.overflow-y-auto');
+    scrollParent?.addEventListener('scroll', handleScroll);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      scrollParent?.removeEventListener('scroll', handleScroll);
+    };
+  }, [open]);
+
   return (
     <div className="relative">
       <button
+        ref={btnRef}
         type="button"
-        onClick={() => setOpen(!open)}
+        onClick={handleToggle}
         className={`p-0.5 rounded transition-colors ${hasStyle ? 'text-blue-600 bg-blue-50 hover:bg-blue-100' : 'text-foreground/30 hover:text-foreground/60 hover:bg-gray-100'}`}
         title="Estilo de texto"
       >
         <Palette className="w-3 h-3" />
       </button>
       {open && (
-        <div className="absolute left-0 top-full mt-1 z-50 p-3 bg-white border border-gray-200 rounded-lg shadow-xl space-y-2.5 min-w-[220px]" onClick={e => e.stopPropagation()}>
+        <div ref={popupRef} className="fixed z-[9999] p-3 bg-white border border-gray-200 rounded-lg shadow-xl space-y-2.5 w-[260px]" style={{ top: pos.top, left: pos.left }} onClick={e => e.stopPropagation()}>
           <div className="flex items-center justify-between mb-1">
             <span className="text-[10px] font-semibold text-foreground/50 uppercase tracking-wider">Estilo de texto</span>
             <div className="flex gap-1">
@@ -1404,8 +1438,8 @@ export default function AdminContenidosPage() {
       {/* ===== MAIN CONTENT ===== */}
       <div className="flex-1 flex overflow-hidden">
         {/* LEFT PANEL - Form editor */}
-        <div className="w-[440px] shrink-0 bg-gray-50 border-r border-gray-200 overflow-y-auto">
-          <div className="p-4 space-y-1">
+        <div className="w-[520px] shrink-0 bg-gray-50 border-r border-gray-200 overflow-y-auto">
+          <div className="p-5 space-y-1.5">
             <div className="flex items-center gap-2 mb-4 px-1">
               {activeTab.icon}
               <h2 className="text-sm font-semibold">{activeTab.label}</h2>
