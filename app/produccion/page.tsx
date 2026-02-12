@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { usePagesContent } from '@/lib/hooks/usePagesContent';
 import CustomSectionsRenderer, { SectionButton } from '@/app/components/CustomSections';
-import { textStyleCSS } from '@/lib/types/sections';
+import { textStyleCSS, BTN_ALIGN_CLASS } from '@/lib/types/sections';
 import { Loader2 } from 'lucide-react';
 
 export default function ProduccionPage() {
@@ -26,7 +26,7 @@ export default function ProduccionPage() {
           {content.hero.description}
         </p>
         {content.hero.buttons && content.hero.buttons.length > 0 && (
-          <div className="flex flex-wrap gap-3 justify-center mt-6">
+          <div className={`flex flex-wrap gap-3 mt-6 ${BTN_ALIGN_CLASS[content.hero.buttonAlignment || 'center']}`}>
             {content.hero.buttons.map(btn => <SectionButton key={btn.id} btn={btn} />)}
           </div>
         )}
@@ -48,7 +48,7 @@ export default function ProduccionPage() {
               <h3 className="text-xl font-medium mb-2" style={textStyleCSS(content.textStyles, `pillar-${i}-title`)}>{pillar.title}</h3>
               <p className="text-foreground/70" style={textStyleCSS(content.textStyles, `pillar-${i}-desc`)}>{pillar.description}</p>
               {pillar.buttons && pillar.buttons.length > 0 && (
-                <div className="flex flex-wrap justify-center gap-3 mt-4">
+                <div className={`flex flex-wrap gap-3 mt-4 ${BTN_ALIGN_CLASS[pillar.buttonAlignment || 'center']}`}>
                   {pillar.buttons.map(btn => <SectionButton key={btn.id} btn={btn} />)}
                 </div>
               )}

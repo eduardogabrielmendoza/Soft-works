@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import HeroBannerSlideshow from '@/app/components/HeroBannerSlideshow';
 import CustomSectionsRenderer, { SectionButton } from '@/app/components/CustomSections';
 import { useIndexContent } from '@/lib/hooks/useIndexContent';
-import { textStyleCSS } from '@/lib/types/sections';
+import { textStyleCSS, BTN_ALIGN_CLASS } from '@/lib/types/sections';
 
 export default function Home() {
   const { content } = useIndexContent();
@@ -58,7 +58,7 @@ export default function Home() {
                 {largeCard.description}
               </p>
               {largeCard.buttons && largeCard.buttons.length > 0 && (
-                <div className="flex flex-wrap gap-3 justify-center mt-4">
+                <div className={`flex flex-wrap gap-3 mt-4 ${BTN_ALIGN_CLASS[largeCard.buttonAlignment || 'center']}`}>
                   {largeCard.buttons.map(btn => <SectionButton key={btn.id} btn={btn} />)}
                 </div>
               )}
@@ -94,7 +94,7 @@ export default function Home() {
                   {card.description}
                 </p>
                 {card.buttons && card.buttons.length > 0 && (
-                  <div className="flex flex-wrap gap-3 justify-center mt-4">
+                  <div className={`flex flex-wrap gap-3 mt-4 ${BTN_ALIGN_CLASS[card.buttonAlignment || 'center']}`}>
                     {card.buttons.map(btn => <SectionButton key={btn.id} btn={btn} />)}
                   </div>
                 )}
@@ -128,7 +128,7 @@ export default function Home() {
               {content.philosophySection.ctaText}
             </Link>
             {content.philosophySection.buttons && content.philosophySection.buttons.length > 0 && (
-              <div className="flex flex-wrap justify-center gap-4 mt-4">
+              <div className={`flex flex-wrap gap-4 mt-4 ${BTN_ALIGN_CLASS[content.philosophySection.buttonAlignment || 'center']}`}>
                 {content.philosophySection.buttons.map(btn => <SectionButton key={btn.id} btn={btn} />)}
               </div>
             )}
@@ -178,7 +178,7 @@ export default function Home() {
               <h2 className="text-3xl lg:text-5xl font-medium mb-4" style={textStyleCSS(content.textStyles, 'banner-title')}>{content.fullWidthBanner.title}</h2>
               <p className="text-white/90" style={textStyleCSS(content.textStyles, 'banner-subtitle')}>{content.fullWidthBanner.subtitle}</p>
               {content.fullWidthBanner.buttons && content.fullWidthBanner.buttons.length > 0 && (
-                <div className="flex flex-wrap justify-center gap-4 mt-6">
+                <div className={`flex flex-wrap gap-4 mt-6 ${BTN_ALIGN_CLASS[content.fullWidthBanner.buttonAlignment || 'center']}`}>
                   {content.fullWidthBanner.buttons.map(btn => <SectionButton key={btn.id} btn={{ ...btn, style: btn.style === 'filled' ? 'outlined' : btn.style }} />)}
                 </div>
               )}
@@ -212,7 +212,7 @@ export default function Home() {
               <h3 className="text-xl font-medium mb-2" style={textStyleCSS(content.textStyles, `grid-${item.id}-title`)}>{item.title}</h3>
               <p className="text-foreground/70" style={textStyleCSS(content.textStyles, `grid-${item.id}-desc`)}>{item.description}</p>
               {item.buttons && item.buttons.length > 0 && (
-                <div className="flex flex-wrap justify-center gap-3 mt-4">
+                <div className={`flex flex-wrap gap-3 mt-4 ${BTN_ALIGN_CLASS[item.buttonAlignment || 'center']}`}>
                   {item.buttons.map(btn => <SectionButton key={btn.id} btn={btn} />)}
                 </div>
               )}

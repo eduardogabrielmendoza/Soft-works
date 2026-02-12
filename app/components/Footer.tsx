@@ -5,6 +5,8 @@ import { Instagram, Youtube, Twitter, Facebook, Mail } from 'lucide-react';
 import { useState } from 'react';
 import { useSiteConfig } from '@/lib/hooks/useSiteConfig';
 import { useLayoutContent } from '@/lib/hooks/useLayoutContent';
+import { textStyleCSS, BTN_ALIGN_CLASS } from '@/lib/types/sections';
+import { SectionButton } from './CustomSections';
 
 // Icono de TikTok (no viene con lucide-react)
 const TikTokIcon = () => (
@@ -34,10 +36,10 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
         {/* Newsletter Section */}
         <div className="mb-12 lg:mb-16 max-w-2xl">
-          <h3 className="text-2xl lg:text-3xl font-medium mb-4">
+          <h3 className="text-2xl lg:text-3xl font-medium mb-4" style={textStyleCSS(layout.textStyles, 'footer-newsletter-title')}>
             {layout.footer.newsletterTitle.replace('{site_name}', config.site_name)}
           </h3>
-          <p className="text-sm text-foreground/70 mb-6">
+          <p className="text-sm text-foreground/70 mb-6" style={textStyleCSS(layout.textStyles, 'footer-newsletter-desc')}>
             {layout.footer.newsletterDescription}
           </p>
           {subscribeMessage && (
@@ -74,7 +76,7 @@ export default function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
           {layout.footer.linkColumns.map(col => (
             <div key={col.id}>
-              <h4 className="font-medium mb-4 text-sm">{col.title}</h4>
+              <h4 className="font-medium mb-4 text-sm" style={textStyleCSS(layout.textStyles, `footer-col-${col.id}-title`)}>{col.title}</h4>
               <ul className="space-y-3 text-sm text-foreground/70">
                 {col.links.map(link => (
                   <li key={link.id}>
@@ -87,6 +89,13 @@ export default function Footer() {
             </div>
           ))}
         </div>
+
+        {/* Footer CTA Buttons */}
+        {layout.footer.buttons && layout.footer.buttons.length > 0 && (
+          <div className={`flex flex-wrap gap-4 mb-12 ${BTN_ALIGN_CLASS[layout.footer.buttonAlignment || 'center']}`}>
+            {layout.footer.buttons.map(btn => <SectionButton key={btn.id} btn={btn} />)}
+          </div>
+        )}
 
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-gray-200">

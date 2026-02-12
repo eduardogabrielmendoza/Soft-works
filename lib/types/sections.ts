@@ -9,6 +9,8 @@ export interface TextStyle {
   fontWeight?: 'light' | 'normal' | 'medium' | 'semibold' | 'bold';
 }
 
+export type ButtonAlignment = 'left' | 'center' | 'right';
+
 export interface CustomButton {
   id: string;
   text: string;
@@ -20,6 +22,13 @@ export interface CustomButton {
   fontSize?: 'xs' | 'sm' | 'base' | 'lg' | 'xl';
   borderRadius?: 'none' | 'sm' | 'md' | 'lg' | 'full';
 }
+
+/** Alignment helper for button groups */
+export const BTN_ALIGN_CLASS: Record<ButtonAlignment, string> = {
+  left: 'justify-start',
+  center: 'justify-center',
+  right: 'justify-end',
+};
 
 // ---- Helpers for rendering styles ----
 const FONT_SIZE_MAP: Record<string, string> = {
@@ -58,6 +67,7 @@ export interface CustomSection {
   embedUrl?: string;
   // Buttons (used in CTA and standalone)
   buttons?: CustomButton[];
+  buttonAlignment?: ButtonAlignment;
 }
 
 // Labels for the section type picker in the editor

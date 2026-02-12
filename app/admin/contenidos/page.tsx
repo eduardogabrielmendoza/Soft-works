@@ -14,7 +14,7 @@ import { useIndexContent, type IndexContent, type HeroSlide, type ProductCard, t
 import { usePagesContent, type NosotrosContent, type ProduccionContent, type EventosContent, type EventoItem, type UbicacionesContent, type ContactoContent } from '@/lib/hooks/usePagesContent';
 import { useLayoutContent, type LayoutContent, type NavLink, type FooterLinkColumn, defaultLayoutContent } from '@/lib/hooks/useLayoutContent';
 import { getSupabaseClient } from '@/lib/supabase/client';
-import { type CustomSection, type CustomButton, type TextStyle, type CustomSectionType, SECTION_TYPE_OPTIONS, createEmptySection, toEmbedUrl } from '@/lib/types/sections';
+import { type CustomSection, type CustomButton, type TextStyle, type ButtonAlignment, type CustomSectionType, SECTION_TYPE_OPTIONS, BTN_ALIGN_CLASS, createEmptySection, toEmbedUrl } from '@/lib/types/sections';
 
 // ============================================================
 // TYPES
@@ -206,7 +206,7 @@ const BTN_FONT_SIZE_OPTIONS = [
   { value: 'xs', label: 'XS' }, { value: 'sm', label: 'SM' }, { value: 'base', label: 'Base' }, { value: 'lg', label: 'LG' }, { value: 'xl', label: 'XL' },
 ];
 
-function ButtonEditor({ buttons, onChange }: { buttons: CustomButton[]; onChange: (b: CustomButton[]) => void }) {
+function ButtonEditor({ buttons, onChange, alignment, onAlignmentChange }: { buttons: CustomButton[]; onChange: (b: CustomButton[]) => void; alignment?: ButtonAlignment; onAlignmentChange?: (a: ButtonAlignment) => void }) {
   const update = (idx: number, updates: Partial<CustomButton>) => {
     onChange(buttons.map((b, i) => i === idx ? { ...b, ...updates } : b));
   };
@@ -222,6 +222,21 @@ function ButtonEditor({ buttons, onChange }: { buttons: CustomButton[]; onChange
       <label className="flex items-center gap-1.5 text-xs font-medium text-foreground/60">
         <MousePointerClick className="w-3.5 h-3.5" /> Botones
       </label>
+      {/* Alignment picker */}
+      {onAlignmentChange && (
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-foreground/50">Alineación:</span>
+          {(['left', 'center', 'right'] as const).map(a => (
+            <button
+              key={a}
+              onClick={() => onAlignmentChange(a)}
+              className={`px-2.5 py-1 text-[10px] font-medium rounded border transition-colors ${(alignment || 'center') === a ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-gray-200 text-foreground/50 hover:bg-gray-50'}`}
+            >
+              {a === 'left' ? '← Izquierda' : a === 'center' ? 'Centro' : 'Derecha →'}
+            </button>
+          ))}
+        </div>
+      )}
       {buttons.map((btn, idx) => (
         <div key={btn.id} className="p-3 bg-white border border-gray-200 rounded-lg space-y-2">
           <div className="flex items-center justify-between">
@@ -392,6 +407,8 @@ function CustomSectionItemEditor({ section, onUpdate, onRemove, onMoveUp, onMove
           <ButtonEditor
             buttons={section.buttons || []}
             onChange={buttons => onUpdate({ ...section, buttons })}
+            alignment={section.buttonAlignment}
+            onAlignmentChange={a => onUpdate({ ...section, buttonAlignment: a })}
           />
         )}
       </div>
@@ -541,6 +558,8 @@ function IndexEditor({ content, onChange }: { content: IndexContent; onChange: (
               <ButtonEditor
                 buttons={slide.buttons || []}
                 onChange={buttons => updateSlide(idx, { buttons })}
+                alignment={slide.buttonAlignment}
+                onAlignmentChange={a => updateSlide(idx, { buttonAlignment: a })}
               />
             </div>
           ))}
@@ -566,6 +585,8 @@ function IndexEditor({ content, onChange }: { content: IndexContent; onChange: (
               <ButtonEditor
                 buttons={card.buttons || []}
                 onChange={buttons => updateCard(idx, { buttons })}
+                alignment={card.buttonAlignment}
+                onAlignmentChange={a => updateCard(idx, { buttonAlignment: a })}
               />
             </div>
           ))}
@@ -584,6 +605,8 @@ function IndexEditor({ content, onChange }: { content: IndexContent; onChange: (
           <ButtonEditor
             buttons={content.philosophySection.buttons || []}
             onChange={buttons => onChange({ ...content, philosophySection: { ...content.philosophySection, buttons } })}
+            alignment={content.philosophySection.buttonAlignment}
+            onAlignmentChange={a => onChange({ ...content, philosophySection: { ...content.philosophySection, buttonAlignment: a } })}
           />
         </div>
       </SectionCard>
@@ -609,6 +632,8 @@ function IndexEditor({ content, onChange }: { content: IndexContent; onChange: (
           <ButtonEditor
             buttons={content.fullWidthBanner.buttons || []}
             onChange={buttons => onChange({ ...content, fullWidthBanner: { ...content.fullWidthBanner, buttons } })}
+            alignment={content.fullWidthBanner.buttonAlignment}
+            onAlignmentChange={a => onChange({ ...content, fullWidthBanner: { ...content.fullWidthBanner, buttonAlignment: a } })}
           />
         </div>
       </SectionCard>
@@ -628,6 +653,8 @@ function IndexEditor({ content, onChange }: { content: IndexContent; onChange: (
               <ButtonEditor
                 buttons={item.buttons || []}
                 onChange={buttons => updateGridItem(idx, { buttons })}
+                alignment={item.buttonAlignment}
+                onAlignmentChange={a => updateGridItem(idx, { buttonAlignment: a })}
               />
             </div>
           ))}
@@ -662,6 +689,8 @@ function NosotrosEditor({ content, onChange }: { content: NosotrosContent; onCha
           <ButtonEditor
             buttons={content.hero.buttons || []}
             onChange={buttons => onChange({ ...content, hero: { ...content.hero, buttons } })}
+            alignment={content.hero.buttonAlignment}
+            onAlignmentChange={a => onChange({ ...content, hero: { ...content.hero, buttonAlignment: a } })}
           />
         </div>
       </SectionCard>
@@ -681,6 +710,8 @@ function NosotrosEditor({ content, onChange }: { content: NosotrosContent; onCha
           <ButtonEditor
             buttons={content.vision.buttons || []}
             onChange={buttons => onChange({ ...content, vision: { ...content.vision, buttons } })}
+            alignment={content.vision.buttonAlignment}
+            onAlignmentChange={a => onChange({ ...content, vision: { ...content.vision, buttonAlignment: a } })}
           />
         </div>
       </SectionCard>
@@ -706,6 +737,8 @@ function NosotrosEditor({ content, onChange }: { content: NosotrosContent; onCha
           <ButtonEditor
             buttons={content.values.buttons || []}
             onChange={buttons => onChange({ ...content, values: { ...content.values, buttons } })}
+            alignment={content.values.buttonAlignment}
+            onAlignmentChange={a => onChange({ ...content, values: { ...content.values, buttonAlignment: a } })}
           />
         </div>
       </SectionCard>
@@ -721,6 +754,8 @@ function NosotrosEditor({ content, onChange }: { content: NosotrosContent; onCha
           <ButtonEditor
             buttons={content.cta.buttons || []}
             onChange={buttons => onChange({ ...content, cta: { ...content.cta, buttons } })}
+            alignment={content.cta.buttonAlignment}
+            onAlignmentChange={a => onChange({ ...content, cta: { ...content.cta, buttonAlignment: a } })}
           />
         </div>
       </SectionCard>
@@ -733,7 +768,7 @@ function NosotrosEditor({ content, onChange }: { content: NosotrosContent; onCha
 // ---- PRODUCCIÓN ----
 function ProduccionEditor({ content, onChange }: { content: ProduccionContent; onChange: (c: ProduccionContent) => void }) {
   const ts = (key: string) => ({ styleKey: key, textStyles: content.textStyles, onStyleChange: (k: string, s: TextStyle | undefined) => { const next = { ...content.textStyles }; if (s) next[k] = s; else delete next[k]; onChange({ ...content, textStyles: next }); } });
-  const updatePillar = (idx: number, updates: Partial<{ title: string; description: string; image: string; buttons: CustomButton[] }>) => {
+  const updatePillar = (idx: number, updates: Partial<{ title: string; description: string; image: string; buttons: CustomButton[]; buttonAlignment: ButtonAlignment }>) => {
     const pillars = content.pillars.map((p, i) => i === idx ? { ...p, ...updates } : p);
     onChange({ ...content, pillars });
   };
@@ -753,6 +788,8 @@ function ProduccionEditor({ content, onChange }: { content: ProduccionContent; o
           <ButtonEditor
             buttons={content.hero.buttons || []}
             onChange={buttons => onChange({ ...content, hero: { ...content.hero, buttons } })}
+            alignment={content.hero.buttonAlignment}
+            onAlignmentChange={a => onChange({ ...content, hero: { ...content.hero, buttonAlignment: a } })}
           />
         </div>
       </SectionCard>
@@ -773,6 +810,8 @@ function ProduccionEditor({ content, onChange }: { content: ProduccionContent; o
               <ButtonEditor
                 buttons={pillar.buttons || []}
                 onChange={buttons => updatePillar(idx, { buttons })}
+                alignment={pillar.buttonAlignment}
+                onAlignmentChange={a => updatePillar(idx, { buttonAlignment: a })}
               />
             </div>
           ))}
@@ -821,6 +860,8 @@ function EventosEditor({ content, onChange }: { content: EventosContent; onChang
           <ButtonEditor
             buttons={content.buttons || []}
             onChange={buttons => onChange({ ...content, buttons })}
+            alignment={content.buttonAlignment}
+            onAlignmentChange={a => onChange({ ...content, buttonAlignment: a })}
           />
         </div>
       </SectionCard>
@@ -902,6 +943,8 @@ function UbicacionesEditor({ content, onChange }: { content: UbicacionesContent;
           <ButtonEditor
             buttons={content.hero.buttons || []}
             onChange={buttons => onChange({ ...content, hero: { ...content.hero, buttons } })}
+            alignment={content.hero.buttonAlignment}
+            onAlignmentChange={a => onChange({ ...content, hero: { ...content.hero, buttonAlignment: a } })}
           />
         </div>
       </SectionCard>
@@ -924,6 +967,8 @@ function UbicacionesEditor({ content, onChange }: { content: UbicacionesContent;
           <ButtonEditor
             buttons={content.location.buttons || []}
             onChange={buttons => onChange({ ...content, location: { ...content.location, buttons } })}
+            alignment={content.location.buttonAlignment}
+            onAlignmentChange={a => onChange({ ...content, location: { ...content.location, buttonAlignment: a } })}
           />
         </div>
       </SectionCard>
@@ -946,6 +991,8 @@ function ContactoEditor({ content, onChange }: { content: ContactoContent; onCha
           <ButtonEditor
             buttons={content.hero.buttons || []}
             onChange={buttons => onChange({ ...content, hero: { ...content.hero, buttons } })}
+            alignment={content.hero.buttonAlignment}
+            onAlignmentChange={a => onChange({ ...content, hero: { ...content.hero, buttonAlignment: a } })}
           />
         </div>
       </SectionCard>
@@ -982,6 +1029,8 @@ function ContactoEditor({ content, onChange }: { content: ContactoContent; onCha
 
 // ---- LAYOUT (Header / Footer / BrandSection) ----
 function LayoutEditor({ content, onChange }: { content: LayoutContent; onChange: (c: LayoutContent) => void }) {
+  const ts = (key: string) => ({ styleKey: key, textStyles: content.textStyles, onStyleChange: (k: string, s: TextStyle | undefined) => { const next = { ...content.textStyles }; if (s) next[k] = s; else delete next[k]; onChange({ ...content, textStyles: next }); } });
+
   // ---- Header nav links ----
   const updateNavLink = (idx: number, updates: Partial<NavLink>) => {
     const links = content.header.navLinks.map((l, i) => i === idx ? { ...l, ...updates } : l);
@@ -1041,7 +1090,7 @@ function LayoutEditor({ content, onChange }: { content: LayoutContent; onChange:
                 <button onClick={() => moveNavLink(idx, 1)} disabled={idx === content.header.navLinks.length - 1} className="p-0.5 text-foreground/30 hover:text-foreground/60 disabled:opacity-20"><ChevronDown className="w-3 h-3" /></button>
               </div>
               <div className="flex-1 grid grid-cols-2 gap-2">
-                <TextInput value={link.label} onChange={v => updateNavLink(idx, { label: v })} placeholder="Etiqueta" />
+                <Field label="" {...ts(`nav-${link.id}`)}><TextInput value={link.label} onChange={v => updateNavLink(idx, { label: v })} placeholder="Etiqueta" /></Field>
                 <UrlInput value={link.href} onChange={v => updateNavLink(idx, { href: v })} placeholder="/ruta" />
               </div>
               <button onClick={() => removeNavLink(idx)} className="p-1 text-red-400 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>
@@ -1050,6 +1099,13 @@ function LayoutEditor({ content, onChange }: { content: LayoutContent; onChange:
           <button onClick={addNavLink} className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-xs text-foreground/50 hover:border-blue-400 hover:text-blue-600 transition-colors flex items-center justify-center gap-1.5">
             <Plus className="w-3.5 h-3.5" /> Agregar Link
           </button>
+
+          <ButtonEditor
+            buttons={content.header.buttons || []}
+            onChange={buttons => onChange({ ...content, header: { ...content.header, buttons } })}
+            alignment={content.header.buttonAlignment}
+            onAlignmentChange={a => onChange({ ...content, header: { ...content.header, buttonAlignment: a } })}
+          />
         </div>
       </SectionCard>
 
@@ -1065,19 +1121,19 @@ function LayoutEditor({ content, onChange }: { content: LayoutContent; onChange:
               <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${content.brandSection.enabled ? 'translate-x-5' : ''}`} />
             </button>
           </div>
-          <Field label="Texto"><TextInput value={content.brandSection.text} onChange={v => onChange({ ...content, brandSection: { ...content.brandSection, text: v } })} placeholder="Softworks" /></Field>
+          <Field label="Texto" {...ts('brand-text')}><TextInput value={content.brandSection.text} onChange={v => onChange({ ...content, brandSection: { ...content.brandSection, text: v } })} placeholder="Softworks" /></Field>
         </div>
       </SectionCard>
 
       {/* ===== FOOTER ===== */}
       <SectionCard title="📄 Footer — Newsletter">
         <div className="space-y-3 pt-3">
-          <Field label="Título del Newsletter">
+          <Field label="Título del Newsletter" {...ts('footer-newsletter-title')}>
             <TextInput value={content.footer.newsletterTitle} onChange={v => onChange({ ...content, footer: { ...content.footer, newsletterTitle: v } })} placeholder="Unite a la comunidad {site_name}" />
           </Field>
           <p className="text-[10px] text-foreground/40">Usa <code className="bg-gray-100 px-1 rounded">{'{site_name}'}</code> para insertar el nombre del sitio.</p>
-          <Field label="Descripción"><TextArea value={content.footer.newsletterDescription} onChange={v => onChange({ ...content, footer: { ...content.footer, newsletterDescription: v } })} /></Field>
-          <Field label="Nota de privacidad"><TextInput value={content.footer.privacyNote} onChange={v => onChange({ ...content, footer: { ...content.footer, privacyNote: v } })} /></Field>
+          <Field label="Descripción" {...ts('footer-newsletter-desc')}><TextArea value={content.footer.newsletterDescription} onChange={v => onChange({ ...content, footer: { ...content.footer, newsletterDescription: v } })} /></Field>
+          <Field label="Nota de privacidad" {...ts('footer-privacy-note')}><TextInput value={content.footer.privacyNote} onChange={v => onChange({ ...content, footer: { ...content.footer, privacyNote: v } })} /></Field>
           <Field label="Email de contacto"><TextInput value={content.footer.contactEmail} onChange={v => onChange({ ...content, footer: { ...content.footer, contactEmail: v } })} /></Field>
         </div>
       </SectionCard>
@@ -1087,7 +1143,7 @@ function LayoutEditor({ content, onChange }: { content: LayoutContent; onChange:
           {content.footer.linkColumns.map((col, colIdx) => (
             <div key={col.id} className="border border-gray-200 rounded-lg overflow-hidden">
               <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border-b border-gray-200">
-                <TextInput value={col.title} onChange={v => updateColumn(colIdx, { title: v })} placeholder="Título de columna" />
+                <Field label="" {...ts(`footer-col-${col.id}-title`)}><TextInput value={col.title} onChange={v => updateColumn(colIdx, { title: v })} placeholder="Título de columna" /></Field>
                 <button onClick={() => removeColumn(colIdx)} className="p-1 text-red-400 hover:text-red-600 shrink-0"><Trash2 className="w-3.5 h-3.5" /></button>
               </div>
               <div className="p-3 space-y-2">
@@ -1111,6 +1167,18 @@ function LayoutEditor({ content, onChange }: { content: LayoutContent; onChange:
               <Plus className="w-3.5 h-3.5" /> Agregar Columna
             </button>
           )}
+        </div>
+      </SectionCard>
+
+      <SectionCard title="📄 Footer — Botones">
+        <div className="space-y-3 pt-3">
+          <p className="text-[10px] text-foreground/40">Agrega botones CTA al footer (se muestran debajo de las columnas de links).</p>
+          <ButtonEditor
+            buttons={content.footer.buttons || []}
+            onChange={buttons => onChange({ ...content, footer: { ...content.footer, buttons } })}
+            alignment={content.footer.buttonAlignment}
+            onAlignmentChange={a => onChange({ ...content, footer: { ...content.footer, buttonAlignment: a } })}
+          />
         </div>
       </SectionCard>
     </div>

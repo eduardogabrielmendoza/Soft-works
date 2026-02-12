@@ -2,7 +2,7 @@
 
 import { usePagesContent } from '@/lib/hooks/usePagesContent';
 import CustomSectionsRenderer, { SectionButton } from '@/app/components/CustomSections';
-import { textStyleCSS } from '@/lib/types/sections';
+import { textStyleCSS, BTN_ALIGN_CLASS } from '@/lib/types/sections';
 import { Loader2 } from 'lucide-react';
 
 export default function UbicacionesPage() {
@@ -23,7 +23,7 @@ export default function UbicacionesPage() {
         <h1 className="text-3xl lg:text-4xl font-medium mb-4" style={textStyleCSS(content.textStyles, 'hero-title')}>{content.hero.title}</h1>
         <p className="text-foreground/70" style={textStyleCSS(content.textStyles, 'hero-desc')}>{content.hero.description}</p>
         {content.hero.buttons && content.hero.buttons.length > 0 && (
-          <div className="flex flex-wrap gap-3 justify-center mt-6">
+          <div className={`flex flex-wrap gap-3 mt-6 ${BTN_ALIGN_CLASS[content.hero.buttonAlignment || 'center']}`}>
             {content.hero.buttons.map(btn => <SectionButton key={btn.id} btn={btn} />)}
           </div>
         )}
@@ -55,7 +55,7 @@ export default function UbicacionesPage() {
             {content.location.buttonText}
           </a>
           {content.location.buttons && content.location.buttons.length > 0 && (
-            <div className="flex flex-wrap gap-3 justify-center mt-4">
+            <div className={`flex flex-wrap gap-3 mt-4 ${BTN_ALIGN_CLASS[content.location.buttonAlignment || 'center']}`}>
               {content.location.buttons.map(btn => <SectionButton key={btn.id} btn={btn} />)}
             </div>
           )}

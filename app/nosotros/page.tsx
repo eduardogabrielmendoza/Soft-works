@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePagesContent } from '@/lib/hooks/usePagesContent';
 import CustomSectionsRenderer, { SectionButton } from '@/app/components/CustomSections';
-import { textStyleCSS } from '@/lib/types/sections';
+import { textStyleCSS, BTN_ALIGN_CLASS } from '@/lib/types/sections';
 import { Loader2 } from 'lucide-react';
 
 export default function NosotrosPage() {
@@ -33,7 +33,7 @@ export default function NosotrosPage() {
             {content.hero.description}
           </p>
           {content.hero.buttons && content.hero.buttons.length > 0 && (
-            <div className="flex flex-wrap gap-3 justify-center mt-6">
+            <div className={`flex flex-wrap gap-3 mt-6 ${BTN_ALIGN_CLASS[content.hero.buttonAlignment || 'center']}`}>
               {content.hero.buttons.map(btn => <SectionButton key={btn.id} btn={btn} />)}
             </div>
           )}
@@ -87,7 +87,7 @@ export default function NosotrosPage() {
               {content.vision.paragraph2}
             </p>
             {content.vision.buttons && content.vision.buttons.length > 0 && (
-              <div className="flex flex-wrap gap-3 mt-6">
+              <div className={`flex flex-wrap gap-3 mt-6 ${BTN_ALIGN_CLASS[content.vision.buttonAlignment || 'left']}`}>
                 {content.vision.buttons.map(btn => <SectionButton key={btn.id} btn={btn} />)}
               </div>
             )}
@@ -120,7 +120,7 @@ export default function NosotrosPage() {
               ))}
             </ul>
             {content.values.buttons && content.values.buttons.length > 0 && (
-              <div className="flex flex-wrap gap-3 mt-6">
+              <div className={`flex flex-wrap gap-3 mt-6 ${BTN_ALIGN_CLASS[content.values.buttonAlignment || 'left']}`}>
                 {content.values.buttons.map(btn => <SectionButton key={btn.id} btn={btn} />)}
               </div>
             )}
@@ -163,7 +163,7 @@ export default function NosotrosPage() {
             {content.cta.buttonText}
           </Link>
           {content.cta.buttons && content.cta.buttons.length > 0 && (
-            <div className="flex flex-wrap justify-center gap-4 mt-4">
+            <div className={`flex flex-wrap gap-4 mt-4 ${BTN_ALIGN_CLASS[content.cta.buttonAlignment || 'center']}`}>
               {content.cta.buttons.map(btn => <SectionButton key={btn.id} btn={btn} />)}
             </div>
           )}

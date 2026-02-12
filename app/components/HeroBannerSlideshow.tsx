@@ -8,7 +8,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useIndexContent } from '@/lib/hooks/useIndexContent';
 import { SectionButton } from '@/app/components/CustomSections';
 import type { CustomButton } from '@/lib/types/sections';
-import { textStyleCSS } from '@/lib/types/sections';
+import { textStyleCSS, BTN_ALIGN_CLASS } from '@/lib/types/sections';
 
 interface Slide {
   id: string;
@@ -206,7 +206,7 @@ export default function HeroBannerSlideshow() {
 
                   {/* Botones adicionales del slide */}
                   {slides[currentSlide].buttons && slides[currentSlide].buttons!.length > 0 && (
-                    <motion.div variants={childVariants} className="flex flex-wrap gap-3 justify-center mt-4">
+                    <motion.div variants={childVariants} className={`flex flex-wrap gap-3 mt-4 ${BTN_ALIGN_CLASS[slides[currentSlide].buttonAlignment || 'center']}`}>
                       {slides[currentSlide].buttons!.map(btn => <SectionButton key={btn.id} btn={btn} />)}
                     </motion.div>
                   )}

@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { getSupabaseClient } from '@/lib/supabase/client';
-import type { CustomSection, CustomButton, TextStyle } from '@/lib/types/sections';
+import type { CustomSection, CustomButton, TextStyle, ButtonAlignment } from '@/lib/types/sections';
 
 // ============ TIPOS PARA CADA PÁGINA ============
 
@@ -12,6 +12,7 @@ export interface NosotrosContent {
     title: string;
     description: string;
     buttons?: CustomButton[];
+    buttonAlignment?: ButtonAlignment;
   };
   headerImage: string;
   vision: {
@@ -20,6 +21,7 @@ export interface NosotrosContent {
     paragraph1: string;
     paragraph2: string;
     buttons?: CustomButton[];
+    buttonAlignment?: ButtonAlignment;
   };
   values: {
     image: string;
@@ -29,6 +31,7 @@ export interface NosotrosContent {
       description: string;
     }>;
     buttons?: CustomButton[];
+    buttonAlignment?: ButtonAlignment;
   };
   cta: {
     title: string;
@@ -36,6 +39,7 @@ export interface NosotrosContent {
     buttonText: string;
     buttonLink: string;
     buttons?: CustomButton[];
+    buttonAlignment?: ButtonAlignment;
   };
   customSections?: CustomSection[];
   textStyles?: Record<string, TextStyle>;
@@ -47,12 +51,14 @@ export interface ProduccionContent {
     title: string;
     description: string;
     buttons?: CustomButton[];
+    buttonAlignment?: ButtonAlignment;
   };
   pillars: Array<{
     title: string;
     description: string;
     image: string;
     buttons?: CustomButton[];
+    buttonAlignment?: ButtonAlignment;
   }>;
   customSections?: CustomSection[];
   textStyles?: Record<string, TextStyle>;
@@ -79,6 +85,7 @@ export interface EventosContent {
   title: string;
   subtitle: string;
   buttons?: CustomButton[];
+  buttonAlignment?: ButtonAlignment;
   upcomingTitle: string;
   upcomingEvents: EventoItem[];
   pastTitle: string;
@@ -93,6 +100,7 @@ export interface UbicacionesContent {
     title: string;
     description: string;
     buttons?: CustomButton[];
+    buttonAlignment?: ButtonAlignment;
   };
   mapEmbedUrl: string;
   location: {
@@ -102,6 +110,7 @@ export interface UbicacionesContent {
     buttonText: string;
     buttonEmail: string;
     buttons?: CustomButton[];
+    buttonAlignment?: ButtonAlignment;
   };
   customSections?: CustomSection[];
   textStyles?: Record<string, TextStyle>;
@@ -114,6 +123,7 @@ export interface ContactoContent {
     subtitle1: string;
     subtitle2: string;
     buttons?: CustomButton[];
+    buttonAlignment?: ButtonAlignment;
   };
   formLabels: {
     nombre: string;

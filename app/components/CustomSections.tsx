@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import type { CustomSection, CustomButton } from '@/lib/types/sections';
-import { toEmbedUrl } from '@/lib/types/sections';
+import { toEmbedUrl, BTN_ALIGN_CLASS } from '@/lib/types/sections';
 
 // ============================================================
 // Button Renderer
@@ -93,7 +93,7 @@ function TextSection({ section }: { section: CustomSection }) {
         </p>
       )}
       {section.buttons && section.buttons.length > 0 && (
-        <div className="flex flex-wrap justify-center gap-4 mt-8">
+        <div className={`flex flex-wrap gap-4 mt-8 ${BTN_ALIGN_CLASS[section.buttonAlignment || 'center']}`}>
           {section.buttons.map(btn => <SectionButton key={btn.id} btn={btn} />)}
         </div>
       )}
@@ -160,7 +160,7 @@ function BannerSection({ section }: { section: CustomSection }) {
           </p>
         )}
         {section.buttons && section.buttons.length > 0 && (
-          <div className="flex flex-wrap justify-center gap-4 mt-6">
+          <div className={`flex flex-wrap gap-4 mt-6 ${BTN_ALIGN_CLASS[section.buttonAlignment || 'center']}`}>
             {section.buttons.map(btn => (
               <SectionButton key={btn.id} btn={{ ...btn, style: btn.style === 'filled' ? 'outlined' : btn.style }} />
             ))}
@@ -192,7 +192,7 @@ function CTASection({ section }: { section: CustomSection }) {
           </p>
         )}
         {section.buttons && section.buttons.length > 0 && (
-          <div className="flex flex-wrap justify-center gap-4">
+          <div className={`flex flex-wrap gap-4 ${BTN_ALIGN_CLASS[section.buttonAlignment || 'center']}`}>
             {section.buttons.map(btn => <SectionButton key={btn.id} btn={btn} />)}
           </div>
         )}
@@ -272,7 +272,7 @@ function ImageTextSection({ section }: { section: CustomSection }) {
               </p>
             )}
             {section.buttons && section.buttons.length > 0 && (
-              <div className="flex flex-wrap gap-4 pt-2">
+              <div className={`flex flex-wrap gap-4 pt-2 ${BTN_ALIGN_CLASS[section.buttonAlignment || 'left']}`}>
                 {section.buttons.map(btn => <SectionButton key={btn.id} btn={btn} />)}
               </div>
             )}

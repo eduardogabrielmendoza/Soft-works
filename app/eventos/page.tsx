@@ -6,7 +6,7 @@ import { X, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePagesContent } from '@/lib/hooks/usePagesContent';
 import CustomSectionsRenderer, { SectionButton } from '@/app/components/CustomSections';
-import { textStyleCSS } from '@/lib/types/sections';
+import { textStyleCSS, BTN_ALIGN_CLASS } from '@/lib/types/sections';
 
 export default function EventosPage() {
   const { eventos: content, isLoading } = usePagesContent();
@@ -28,7 +28,7 @@ export default function EventosPage() {
       <p className="text-foreground/70 mb-12" style={textStyleCSS(content.textStyles, 'header-subtitle')}>{content.subtitle}</p>
 
       {content.buttons && content.buttons.length > 0 && (
-        <div className="flex flex-wrap gap-3 mb-12">
+        <div className={`flex flex-wrap gap-3 mb-12 ${BTN_ALIGN_CLASS[content.buttonAlignment || 'left']}`}>
           {content.buttons.map(btn => <SectionButton key={btn.id} btn={btn} />)}
         </div>
       )}

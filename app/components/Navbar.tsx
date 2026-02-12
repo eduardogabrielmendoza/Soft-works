@@ -9,6 +9,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '@/lib/hooks/useCart';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useLayoutContent } from '@/lib/hooks/useLayoutContent';
+import { textStyleCSS, BTN_ALIGN_CLASS } from '@/lib/types/sections';
+import { SectionButton } from './CustomSections';
 import SearchDrawer from './SearchDrawer';
 import CartDrawer from './CartDrawer';
 import AnnouncementBar from './AnnouncementBar';
@@ -97,7 +99,7 @@ export default function Navbar() {
   const accountButton = getAccountButtonConfig();
 
   // Navigation links from layout config
-  const leftLinks = layout.header.navLinks.map(l => ({ href: l.href, label: l.label }));
+  const leftLinks = layout.header.navLinks.map(l => ({ href: l.href, label: l.label, id: l.id }));
 
   // Determinar estilos basados en el estado
   const isTransparent = isHomePage && headerState === 'transparent';
@@ -143,10 +145,17 @@ export default function Navbar() {
                   key={link.href}
                   href={link.href}
                   className={`text-sm font-medium transition-colors uppercase tracking-wide ${textColorClass}`}
+                  style={textStyleCSS(layout.textStyles, `nav-${link.id}`)}
                 >
                   {link.label}
                 </Link>
               ))}
+              {/* Header CTA buttons */}
+              {layout.header.buttons && layout.header.buttons.length > 0 && (
+                <div className={`flex items-center gap-3 ${BTN_ALIGN_CLASS[layout.header.buttonAlignment || 'left']}`}>
+                  {layout.header.buttons.map(btn => <SectionButton key={btn.id} btn={btn} />)}
+                </div>
+              )}
             </nav>
 
             {/* Mobile Menu Button */}
@@ -277,10 +286,17 @@ export default function Navbar() {
                     href={link.href}
                     onClick={() => setIsMenuOpen(false)}
                     className="block py-3 text-base font-medium text-[#545454] hover:text-black transition-colors uppercase tracking-wide"
+                    style={textStyleCSS(layout.textStyles, `nav-${link.id}`)}
                   >
                     {link.label}
                   </Link>
                 ))}
+                {/* Header CTA buttons - mobile */}
+                {layout.header.buttons && layout.header.buttons.length > 0 && (
+                  <div className="flex flex-wrap gap-3 pt-4 border-t border-[#E8DED3] mt-4">
+                    {layout.header.buttons.map(btn => <SectionButton key={btn.id} btn={btn} />)}
+                  </div>
+                )}
                 <div className="pt-4 border-t border-[#E8DED3] mt-4">
                   <Link
                     href={accountButton.href}

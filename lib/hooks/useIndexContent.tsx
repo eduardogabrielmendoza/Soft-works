@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { getSupabaseClient } from '@/lib/supabase/client';
-import type { CustomSection, CustomButton, TextStyle } from '@/lib/types/sections';
+import type { CustomSection, CustomButton, TextStyle, ButtonAlignment } from '@/lib/types/sections';
 
 // Tipos para el contenido del index
 export interface HeroSlide {
@@ -13,6 +13,7 @@ export interface HeroSlide {
   ctaText: string;
   ctaLink: string;
   buttons?: CustomButton[];
+  buttonAlignment?: ButtonAlignment;
 }
 
 export interface ProductCard {
@@ -24,6 +25,7 @@ export interface ProductCard {
   link: string;
   size: 'large' | 'medium' | 'small';
   buttons?: CustomButton[];
+  buttonAlignment?: ButtonAlignment;
 }
 
 export interface LifestyleImage {
@@ -39,6 +41,7 @@ export interface ContentItem {
   image: string;
   link: string;
   buttons?: CustomButton[];
+  buttonAlignment?: ButtonAlignment;
 }
 
 export interface BannerSection {
@@ -46,6 +49,7 @@ export interface BannerSection {
   title: string;
   subtitle: string;
   buttons?: CustomButton[];
+  buttonAlignment?: ButtonAlignment;
 }
 
 export interface PhilosophySection {
@@ -54,6 +58,7 @@ export interface PhilosophySection {
   ctaText: string;
   ctaLink: string;
   buttons?: CustomButton[];
+  buttonAlignment?: ButtonAlignment;
 }
 
 export interface IndexContent {

@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import type { CustomButton, TextStyle, ButtonAlignment } from '@/lib/types/sections';
 
 // ============================================================
 // Types for editable layout sections (Header, Footer, BrandSection)
@@ -22,6 +23,8 @@ export interface FooterLinkColumn {
 export interface HeaderContent {
   navLinks: NavLink[];
   logoUrl: string;
+  buttons?: CustomButton[];
+  buttonAlignment?: ButtonAlignment;
 }
 
 export interface FooterContent {
@@ -30,6 +33,8 @@ export interface FooterContent {
   privacyNote: string;
   linkColumns: FooterLinkColumn[];
   contactEmail: string;
+  buttons?: CustomButton[];
+  buttonAlignment?: ButtonAlignment;
 }
 
 export interface BrandSectionContent {
@@ -41,6 +46,7 @@ export interface LayoutContent {
   header: HeaderContent;
   footer: FooterContent;
   brandSection: BrandSectionContent;
+  textStyles?: Record<string, TextStyle>;
 }
 
 // ============================================================
