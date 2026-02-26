@@ -178,7 +178,7 @@ export default function Navbar() {
               href="/" 
               className="absolute left-1/2 -translate-x-1/2 flex items-center"
             >
-              <div className="relative w-32 h-10 lg:w-40 lg:h-12">
+              <div className="relative w-40 h-12 lg:w-52 lg:h-16">
                 {!layoutLoading && (
                   <Image
                     src={layout.header.logoUrl || '/images/logosoftworks.png'}
