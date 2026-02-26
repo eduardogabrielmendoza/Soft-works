@@ -1180,7 +1180,33 @@ function LayoutEditor({ content, onChange }: { content: LayoutContent; onChange:
       {/* ===== HEADER ===== */}
       <SectionCard title="🔝 Header / Navegación">
         <div className="space-y-4 pt-3">
-          <ImageInput value={content.header.logoUrl} onChange={v => onChange({ ...content, header: { ...content.header, logoUrl: v } })} label="URL del Logo" />
+          <ImageInput value={content.header.logoUrl} onChange={v => onChange({ ...content, header: { ...content.header, logoUrl: v } })} label="Logo" />
+
+          <div className="flex items-center gap-3">
+            <label className="text-xs font-medium text-foreground/60">Variante del logo:</label>
+            <div className="flex gap-1.5">
+              {(['dark', 'light'] as const).map(v => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => onChange({ ...content, header: { ...content.header, logoVariant: v } })}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                    (content.header.logoVariant || 'dark') === v
+                      ? 'border-blue-400 bg-blue-50 text-blue-700'
+                      : 'border-gray-200 text-foreground/50 hover:bg-gray-50'
+                  }`}
+                >
+                  {v === 'dark' ? '🌑 Oscuro' : '☀️ Claro'}
+                </button>
+              ))}
+            </div>
+            <span className="text-[10px] text-foreground/40">
+              {(content.header.logoVariant || 'dark') === 'dark'
+                ? 'Logo oscuro → se aclara en hero'
+                : 'Logo claro → se oscurece en navbar sólido'
+              }
+            </span>
+          </div>
 
           <label className="block text-xs font-medium text-foreground/60 mt-4">Links de Navegación</label>
           {content.header.navLinks.map((link, idx) => (

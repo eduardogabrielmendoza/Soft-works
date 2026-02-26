@@ -23,6 +23,7 @@ export interface FooterLinkColumn {
 export interface HeaderContent {
   navLinks: NavLink[];
   logoUrl: string;
+  logoVariant?: 'dark' | 'light';
   buttons?: CustomButton[];
   buttonAlignment?: ButtonAlignment;
 }

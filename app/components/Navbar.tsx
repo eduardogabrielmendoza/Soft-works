@@ -43,7 +43,7 @@ export default function Navbar() {
   );
   const { itemCount } = useCart();
   const { user, isAdmin } = useAuth();
-  const { layout } = useLayoutContent();
+  const { layout, isLoading: layoutLoading } = useLayoutContent();
 
   // Smart sticky behavior con AnnouncementBar
   const handleScroll = useCallback(() => {
@@ -179,15 +179,19 @@ export default function Navbar() {
               className="absolute left-1/2 -translate-x-1/2 flex items-center"
             >
               <div className="relative w-32 h-10 lg:w-40 lg:h-12">
-                <Image
-                  src={layout.header.logoUrl || '/images/logosoftworks.png'}
-                  alt="Softworks"
-                  fill
-                  className={`object-contain transition-all duration-300 ${
-                    isTransparent ? 'brightness-0 invert' : ''
-                  }`}
-                  priority
-                />
+                {!layoutLoading && (
+                  <Image
+                    src={layout.header.logoUrl || '/images/logosoftworks.png'}
+                    alt="Softworks"
+                    fill
+                    className={`object-contain transition-all duration-300 ${
+                      layout.header.logoVariant === 'light'
+                        ? (isTransparent ? '' : 'brightness-0')
+                        : (isTransparent ? 'brightness-0 invert' : '')
+                    }`}
+                    priority
+                  />
+                )}
               </div>
             </Link>
 
