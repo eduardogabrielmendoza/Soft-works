@@ -27,6 +27,9 @@ export interface HeaderContent {
   logoOffsetX?: number;
   logoOffsetY?: number;
   logoScale?: number;
+  mobileLogoOffsetX?: number;
+  mobileLogoOffsetY?: number;
+  mobileLogoScale?: number;
   buttons?: CustomButton[];
   buttonAlignment?: ButtonAlignment;
 }

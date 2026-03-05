@@ -1129,6 +1129,7 @@ function ContactoEditor({ content, onChange }: { content: ContactoContent; onCha
 
 // ---- LAYOUT (Header / Footer / BrandSection) ----
 function LayoutEditor({ content, onChange }: { content: LayoutContent; onChange: (c: LayoutContent) => void }) {
+  const [logoDevice, setLogoDevice] = useState<'desktop' | 'mobile'>('desktop');
   const ts = (key: string) => ({ styleKey: key, textStyles: content.textStyles, onStyleChange: (k: string, s: TextStyle | undefined) => { const next = { ...content.textStyles }; if (s) next[k] = s; else delete next[k]; onChange({ ...content, textStyles: next }); } });
 
   // ---- Header nav links ----
@@ -1182,19 +1183,43 @@ function LayoutEditor({ content, onChange }: { content: LayoutContent; onChange:
         <div className="space-y-4 pt-3">
           <ImageInput value={content.header.logoUrl} onChange={v => onChange({ ...content, header: { ...content.header, logoUrl: v } })} label="Logo" />
 
+          {/* Device toggle for logo controls */}
+          <div className="flex items-center gap-2 p-2 bg-gray-100 rounded-lg">
+            <span className="text-[10px] font-medium text-foreground/50">Configurar para:</span>
+            {(['desktop', 'mobile'] as const).map(d => (
+              <button
+                key={d}
+                type="button"
+                onClick={() => setLogoDevice(d)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  logoDevice === d
+                    ? 'bg-white shadow-sm text-blue-700 border border-blue-200'
+                    : 'text-foreground/50 hover:bg-gray-50'
+                }`}
+              >
+                {d === 'desktop' ? <Monitor className="w-3.5 h-3.5" /> : <Smartphone className="w-3.5 h-3.5" />}
+                {d === 'desktop' ? 'Escritorio' : 'Móvil'}
+              </button>
+            ))}
+          </div>
+
           {/* Logo size slider */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-medium text-foreground/60">Tamaño del logo</label>
-              <span className="text-[10px] text-foreground/40 tabular-nums">{content.header.logoScale ?? 100}%</span>
+              <label className="text-xs font-medium text-foreground/60">Tamaño del logo{logoDevice === 'mobile' ? ' (móvil)' : ' (escritorio)'}</label>
+              <span className="text-[10px] text-foreground/40 tabular-nums">{(logoDevice === 'mobile' ? content.header.mobileLogoScale : content.header.logoScale) ?? 100}%</span>
             </div>
             <input
               type="range"
               min={40}
               max={200}
               step={1}
-              value={content.header.logoScale ?? 100}
-              onChange={e => onChange({ ...content, header: { ...content.header, logoScale: Number(e.target.value) } })}
+              value={(logoDevice === 'mobile' ? content.header.mobileLogoScale : content.header.logoScale) ?? 100}
+              onChange={e => {
+                const val = Number(e.target.value);
+                const key = logoDevice === 'mobile' ? 'mobileLogoScale' : 'logoScale';
+                onChange({ ...content, header: { ...content.header, [key]: val } });
+              }}
               className="w-full h-1.5 bg-gray-200 rounded-full appearance-none cursor-pointer accent-blue-600"
             />
             <div className="flex justify-between text-[9px] text-foreground/30"><span>40%</span><span>100%</span><span>200%</span></div>
@@ -1202,28 +1227,36 @@ function LayoutEditor({ content, onChange }: { content: LayoutContent; onChange:
 
           {/* Logo position controls */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-foreground/60">Posición del logo</label>
+            <label className="text-xs font-medium text-foreground/60">Posición del logo{logoDevice === 'mobile' ? ' (móvil)' : ' (escritorio)'}</label>
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="text-[10px] text-foreground/40 block mb-1">Horizontal (px)</label>
                 <div className="flex items-center gap-1.5">
-                  <button type="button" onClick={() => onChange({ ...content, header: { ...content.header, logoOffsetX: (content.header.logoOffsetX ?? 0) - 1 } })} className="p-1 border border-gray-200 rounded hover:bg-gray-50 text-xs">←</button>
-                  <input type="number" value={content.header.logoOffsetX ?? 0} onChange={e => onChange({ ...content, header: { ...content.header, logoOffsetX: Number(e.target.value) } })} className="flex-1 min-w-0 px-2 py-1 text-xs text-center border border-gray-200 rounded tabular-nums" />
-                  <button type="button" onClick={() => onChange({ ...content, header: { ...content.header, logoOffsetX: (content.header.logoOffsetX ?? 0) + 1 } })} className="p-1 border border-gray-200 rounded hover:bg-gray-50 text-xs">→</button>
+                  <button type="button" onClick={() => { const key = logoDevice === 'mobile' ? 'mobileLogoOffsetX' : 'logoOffsetX'; onChange({ ...content, header: { ...content.header, [key]: (content.header[key] ?? 0) - 1 } }); }} className="p-1 border border-gray-200 rounded hover:bg-gray-50 text-xs">←</button>
+                  <input type="number" value={(logoDevice === 'mobile' ? content.header.mobileLogoOffsetX : content.header.logoOffsetX) ?? 0} onChange={e => { const key = logoDevice === 'mobile' ? 'mobileLogoOffsetX' : 'logoOffsetX'; onChange({ ...content, header: { ...content.header, [key]: Number(e.target.value) } }); }} className="flex-1 min-w-0 px-2 py-1 text-xs text-center border border-gray-200 rounded tabular-nums" />
+                  <button type="button" onClick={() => { const key = logoDevice === 'mobile' ? 'mobileLogoOffsetX' : 'logoOffsetX'; onChange({ ...content, header: { ...content.header, [key]: (content.header[key] ?? 0) + 1 } }); }} className="p-1 border border-gray-200 rounded hover:bg-gray-50 text-xs">→</button>
                 </div>
               </div>
               <div>
                 <label className="text-[10px] text-foreground/40 block mb-1">Vertical (px)</label>
                 <div className="flex items-center gap-1.5">
-                  <button type="button" onClick={() => onChange({ ...content, header: { ...content.header, logoOffsetY: (content.header.logoOffsetY ?? 0) - 1 } })} className="p-1 border border-gray-200 rounded hover:bg-gray-50 text-xs">↑</button>
-                  <input type="number" value={content.header.logoOffsetY ?? 0} onChange={e => onChange({ ...content, header: { ...content.header, logoOffsetY: Number(e.target.value) } })} className="flex-1 min-w-0 px-2 py-1 text-xs text-center border border-gray-200 rounded tabular-nums" />
-                  <button type="button" onClick={() => onChange({ ...content, header: { ...content.header, logoOffsetY: (content.header.logoOffsetY ?? 0) + 1 } })} className="p-1 border border-gray-200 rounded hover:bg-gray-50 text-xs">↓</button>
+                  <button type="button" onClick={() => { const key = logoDevice === 'mobile' ? 'mobileLogoOffsetY' : 'logoOffsetY'; onChange({ ...content, header: { ...content.header, [key]: (content.header[key] ?? 0) - 1 } }); }} className="p-1 border border-gray-200 rounded hover:bg-gray-50 text-xs">↑</button>
+                  <input type="number" value={(logoDevice === 'mobile' ? content.header.mobileLogoOffsetY : content.header.logoOffsetY) ?? 0} onChange={e => { const key = logoDevice === 'mobile' ? 'mobileLogoOffsetY' : 'logoOffsetY'; onChange({ ...content, header: { ...content.header, [key]: Number(e.target.value) } }); }} className="flex-1 min-w-0 px-2 py-1 text-xs text-center border border-gray-200 rounded tabular-nums" />
+                  <button type="button" onClick={() => { const key = logoDevice === 'mobile' ? 'mobileLogoOffsetY' : 'logoOffsetY'; onChange({ ...content, header: { ...content.header, [key]: (content.header[key] ?? 0) + 1 } }); }} className="p-1 border border-gray-200 rounded hover:bg-gray-50 text-xs">↓</button>
                 </div>
               </div>
             </div>
-            {(content.header.logoOffsetX || content.header.logoOffsetY) ? (
-              <button type="button" onClick={() => onChange({ ...content, header: { ...content.header, logoOffsetX: 0, logoOffsetY: 0 } })} className="text-[10px] text-red-400 hover:text-red-600 flex items-center gap-1"><RotateCcw className="w-2.5 h-2.5" /> Centrar</button>
-            ) : null}
+            {(() => {
+              const ox = logoDevice === 'mobile' ? content.header.mobileLogoOffsetX : content.header.logoOffsetX;
+              const oy = logoDevice === 'mobile' ? content.header.mobileLogoOffsetY : content.header.logoOffsetY;
+              if (!ox && !oy) return null;
+              return (
+                <button type="button" onClick={() => {
+                  if (logoDevice === 'mobile') onChange({ ...content, header: { ...content.header, mobileLogoOffsetX: 0, mobileLogoOffsetY: 0 } });
+                  else onChange({ ...content, header: { ...content.header, logoOffsetX: 0, logoOffsetY: 0 } });
+                }} className="text-[10px] text-red-400 hover:text-red-600 flex items-center gap-1"><RotateCcw className="w-2.5 h-2.5" /> Centrar</button>
+              );
+            })()}
           </div>
 
           <div className="flex items-center gap-3">

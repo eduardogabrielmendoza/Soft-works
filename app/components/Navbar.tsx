@@ -174,35 +174,66 @@ export default function Navbar() {
             </button>
 
             {/* Center Logo */}
-            <Link 
-              href="/" 
-              className="absolute left-1/2 -translate-x-1/2 flex items-center"
-              style={{
-                transform: `translateX(calc(-50% + ${layout.header.logoOffsetX ?? 0}px)) translateY(${layout.header.logoOffsetY ?? 0}px)`,
-              }}
-            >
-              <div
-                className="relative"
-                style={{
-                  width: `${(layout.header.logoScale ?? 100) * 2.08}px`,
-                  height: `${(layout.header.logoScale ?? 100) * 0.64}px`,
-                }}
-              >
-                {!layoutLoading && (
-                  <Image
-                    src={layout.header.logoUrl || '/images/logosoftworks.png'}
-                    alt="Softworks"
-                    fill
-                    className={`object-contain transition-all duration-300 ${
-                      layout.header.logoVariant === 'light'
-                        ? (isTransparent ? '' : 'brightness-0')
-                        : (isTransparent ? 'brightness-0 invert' : '')
-                    }`}
-                    priority
-                  />
-                )}
-              </div>
-            </Link>
+            {!layoutLoading && (
+              <>
+                {/* Desktop logo */}
+                <Link
+                  href="/"
+                  className="absolute left-1/2 hidden lg:flex items-center"
+                  style={{
+                    transform: `translateX(calc(-50% + ${layout.header.logoOffsetX ?? 0}px)) translateY(${layout.header.logoOffsetY ?? 0}px)`,
+                  }}
+                >
+                  <div
+                    className="relative"
+                    style={{
+                      width: `${(layout.header.logoScale ?? 100) * 2.08}px`,
+                      height: `${(layout.header.logoScale ?? 100) * 0.64}px`,
+                    }}
+                  >
+                    <Image
+                      src={layout.header.logoUrl || '/images/logosoftworks.png'}
+                      alt="Softworks"
+                      fill
+                      className={`object-contain transition-all duration-300 ${
+                        layout.header.logoVariant === 'light'
+                          ? (isTransparent ? '' : 'brightness-0')
+                          : (isTransparent ? 'brightness-0 invert' : '')
+                      }`}
+                      priority
+                    />
+                  </div>
+                </Link>
+                {/* Mobile logo */}
+                <Link
+                  href="/"
+                  className="absolute left-1/2 flex lg:hidden items-center"
+                  style={{
+                    transform: `translateX(calc(-50% + ${layout.header.mobileLogoOffsetX ?? 0}px)) translateY(${layout.header.mobileLogoOffsetY ?? 0}px)`,
+                  }}
+                >
+                  <div
+                    className="relative"
+                    style={{
+                      width: `${(layout.header.mobileLogoScale ?? 100) * 2.08}px`,
+                      height: `${(layout.header.mobileLogoScale ?? 100) * 0.64}px`,
+                    }}
+                  >
+                    <Image
+                      src={layout.header.logoUrl || '/images/logosoftworks.png'}
+                      alt="Softworks"
+                      fill
+                      className={`object-contain transition-all duration-300 ${
+                        layout.header.logoVariant === 'light'
+                          ? (isTransparent ? '' : 'brightness-0')
+                          : (isTransparent ? 'brightness-0 invert' : '')
+                      }`}
+                      priority
+                    />
+                  </div>
+                </Link>
+              </>
+            )}
 
             {/* Right Navigation - Desktop (Grupo B: acciones) */}
             <div className="hidden lg:flex items-center justify-end space-x-8 flex-1">
