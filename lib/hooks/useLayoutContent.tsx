@@ -24,6 +24,9 @@ export interface HeaderContent {
   navLinks: NavLink[];
   logoUrl: string;
   logoVariant?: 'dark' | 'light';
+  logoOffsetX?: number;
+  logoOffsetY?: number;
+  logoScale?: number;
   buttons?: CustomButton[];
   buttonAlignment?: ButtonAlignment;
 }

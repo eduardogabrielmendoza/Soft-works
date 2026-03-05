@@ -1182,6 +1182,50 @@ function LayoutEditor({ content, onChange }: { content: LayoutContent; onChange:
         <div className="space-y-4 pt-3">
           <ImageInput value={content.header.logoUrl} onChange={v => onChange({ ...content, header: { ...content.header, logoUrl: v } })} label="Logo" />
 
+          {/* Logo size slider */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-medium text-foreground/60">Tamaño del logo</label>
+              <span className="text-[10px] text-foreground/40 tabular-nums">{content.header.logoScale ?? 100}%</span>
+            </div>
+            <input
+              type="range"
+              min={40}
+              max={200}
+              step={1}
+              value={content.header.logoScale ?? 100}
+              onChange={e => onChange({ ...content, header: { ...content.header, logoScale: Number(e.target.value) } })}
+              className="w-full h-1.5 bg-gray-200 rounded-full appearance-none cursor-pointer accent-blue-600"
+            />
+            <div className="flex justify-between text-[9px] text-foreground/30"><span>40%</span><span>100%</span><span>200%</span></div>
+          </div>
+
+          {/* Logo position controls */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground/60">Posición del logo</label>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-[10px] text-foreground/40 block mb-1">Horizontal (px)</label>
+                <div className="flex items-center gap-1.5">
+                  <button type="button" onClick={() => onChange({ ...content, header: { ...content.header, logoOffsetX: (content.header.logoOffsetX ?? 0) - 1 } })} className="p-1 border border-gray-200 rounded hover:bg-gray-50 text-xs">←</button>
+                  <input type="number" value={content.header.logoOffsetX ?? 0} onChange={e => onChange({ ...content, header: { ...content.header, logoOffsetX: Number(e.target.value) } })} className="flex-1 min-w-0 px-2 py-1 text-xs text-center border border-gray-200 rounded tabular-nums" />
+                  <button type="button" onClick={() => onChange({ ...content, header: { ...content.header, logoOffsetX: (content.header.logoOffsetX ?? 0) + 1 } })} className="p-1 border border-gray-200 rounded hover:bg-gray-50 text-xs">→</button>
+                </div>
+              </div>
+              <div>
+                <label className="text-[10px] text-foreground/40 block mb-1">Vertical (px)</label>
+                <div className="flex items-center gap-1.5">
+                  <button type="button" onClick={() => onChange({ ...content, header: { ...content.header, logoOffsetY: (content.header.logoOffsetY ?? 0) - 1 } })} className="p-1 border border-gray-200 rounded hover:bg-gray-50 text-xs">↑</button>
+                  <input type="number" value={content.header.logoOffsetY ?? 0} onChange={e => onChange({ ...content, header: { ...content.header, logoOffsetY: Number(e.target.value) } })} className="flex-1 min-w-0 px-2 py-1 text-xs text-center border border-gray-200 rounded tabular-nums" />
+                  <button type="button" onClick={() => onChange({ ...content, header: { ...content.header, logoOffsetY: (content.header.logoOffsetY ?? 0) + 1 } })} className="p-1 border border-gray-200 rounded hover:bg-gray-50 text-xs">↓</button>
+                </div>
+              </div>
+            </div>
+            {(content.header.logoOffsetX || content.header.logoOffsetY) ? (
+              <button type="button" onClick={() => onChange({ ...content, header: { ...content.header, logoOffsetX: 0, logoOffsetY: 0 } })} className="text-[10px] text-red-400 hover:text-red-600 flex items-center gap-1"><RotateCcw className="w-2.5 h-2.5" /> Centrar</button>
+            ) : null}
+          </div>
+
           <div className="flex items-center gap-3">
             <label className="text-xs font-medium text-foreground/60">Variante del logo:</label>
             <div className="flex gap-1.5">
