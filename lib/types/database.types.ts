@@ -120,6 +120,8 @@ export interface ZonaEnvio {
   fecha_creacion: string
 }
 
+export type MetodoPago = 'transferencia' | 'mercadopago'
+
 export interface Pedido {
   id: string
   numero_pedido: string
@@ -140,6 +142,9 @@ export interface Pedido {
   entregado_el: string | null
   cancelado_el: string | null
   motivo_cancelacion: string | null
+  metodo_pago: MetodoPago
+  mp_preference_id: string | null
+  mp_payment_id: string | null
   fecha_creacion: string
   fecha_actualizacion: string
 }

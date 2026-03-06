@@ -175,6 +175,11 @@ CREATE TABLE pedidos (
   cancelado_el TIMESTAMPTZ,
   motivo_cancelacion TEXT,
   
+  -- MercadoPago
+  metodo_pago TEXT DEFAULT 'transferencia',
+  mp_preference_id TEXT,
+  mp_payment_id TEXT,
+  
   fecha_creacion TIMESTAMPTZ DEFAULT NOW() NOT NULL,
   fecha_actualizacion TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
@@ -184,6 +189,7 @@ CREATE INDEX idx_pedidos_usuario ON pedidos(usuario_id);
 CREATE INDEX idx_pedidos_estado ON pedidos(estado);
 CREATE INDEX idx_pedidos_numero ON pedidos(numero_pedido);
 CREATE INDEX idx_pedidos_fecha ON pedidos(fecha_creacion DESC);
+CREATE INDEX idx_pedidos_mp_payment ON pedidos(mp_payment_id);
 
 -- =============================================
 -- TABLA: items_pedido (Items del pedido)

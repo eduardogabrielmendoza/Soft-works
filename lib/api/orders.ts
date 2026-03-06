@@ -5,7 +5,8 @@ import type {
   VerificacionPago,
   InfoEnvio,
   EstadoPedido,
-  Transportista
+  Transportista,
+  MetodoPago
 } from '@/lib/types/database.types'
 
 // Cliente sin tipado estricto hasta que el schema exista
@@ -43,6 +44,7 @@ interface CreateOrderData {
   total: number
   notas_cliente?: string
   zona_envio_id?: string
+  metodo_pago?: MetodoPago
 }
 
 // =============================================
@@ -94,7 +96,8 @@ export async function createOrder(orderData: CreateOrderData): Promise<Pedido | 
     total: orderData.total,
     notas_cliente: orderData.notas_cliente || null,
     estado: 'pendiente_pago',
-    numero_pedido: numeroPedido
+    numero_pedido: numeroPedido,
+    metodo_pago: orderData.metodo_pago || 'transferencia'
   }
   
   console.log('Creating order with payload:', JSON.stringify(orderPayload, null, 2))

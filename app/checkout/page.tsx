@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronLeft, Loader2, Minus, Plus, Trash2, MapPin, Truck, CreditCard, ShoppingBag } from 'lucide-react';
+import { ChevronLeft, Loader2, Minus, Plus, Trash2, MapPin, Truck, CreditCard, ShoppingBag, Building2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/useAuth';
@@ -11,7 +11,7 @@ import { getUserAddresses } from '@/lib/api/addresses';
 import { getActiveShippingZones } from '@/lib/api/settings';
 import { createOrder } from '@/lib/api/orders';
 import { formatPrice } from '@/lib/utils/helpers';
-import type { Address, ShippingZone } from '@/lib/types/database.types';
+import type { Address, ShippingZone, MetodoPago } from '@/lib/types/database.types';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -23,6 +23,7 @@ export default function CheckoutPage() {
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [selectedShippingZone, setSelectedShippingZone] = useState<ShippingZone | null>(null);
   const [customerNotes, setCustomerNotes] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<MetodoPago>('mercadopago');
   const [isLoading, setIsLoading] = useState(true);
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -118,16 +119,54 @@ export default function CheckoutPage() {
         total,
         customer_notes: customerNotes || undefined,
         shipping_zone_id: selectedShippingZone?.id,
+        metodo_pago: paymentMethod,
       };
 
       const order = await createOrder(orderData);
 
-      if (order) {
-        clearCart();
-        router.push(`/checkout/confirmacion?order=${order.id}`);
-      } else {
+      if (!order) {
         setError('Error al crear el pedido. Por favor intentá de nuevo.');
+        return;
       }
+
+      // If MercadoPago, create preference and redirect to MP checkout
+      if (paymentMethod === 'mercadopago') {
+        const mpResponse = await fetch('/api/mercadopago/create-preference', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: order.id,
+            orderNumber: order.numero_pedido,
+            items: items.map((item) => ({
+              title: item.nombre,
+              quantity: item.cantidad,
+              unit_price: item.precio,
+              picture_url: item.imagen || undefined,
+            })),
+            shipping: finalShippingCost,
+            total,
+            payerEmail: profile?.email || user?.email || '',
+            payerName: profile ? `${profile.nombre || ''} ${profile.apellido || ''}`.trim() : '',
+          }),
+        });
+
+        const mpData = await mpResponse.json();
+
+        if (!mpResponse.ok || !mpData.id) {
+          setError('Error al conectar con MercadoPago. Intentá de nuevo.');
+          return;
+        }
+
+        // Clear cart and redirect to MercadoPago
+        clearCart();
+        // Use sandbox_init_point for test mode, init_point for production
+        window.location.href = mpData.sandbox_init_point || mpData.init_point;
+        return;
+      }
+
+      // For bank transfer, redirect to confirmation
+      clearCart();
+      router.push(`/checkout/confirmacion?order=${order.id}`);
     } catch (err) {
       console.error('Error creating order:', err);
       setError('Error al crear el pedido. Por favor intentá de nuevo.');
@@ -397,15 +436,71 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                {/* Payment Method Info */}
-                <div className="bg-gray-50 rounded-md p-4 mb-6">
-                  <div className="flex items-center gap-2 mb-2">
+                {/* Payment Method Selector */}
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-3">
                     <CreditCard className="w-4 h-4 text-gray-500" />
                     <span className="text-sm font-medium">Método de Pago</span>
                   </div>
-                  <p className="text-sm text-gray-600">
-                    Transferencia Bancaria. Después de confirmar tu pedido, te mostraremos los datos para realizar la transferencia.
-                  </p>
+                  <div className="space-y-2">
+                    <label
+                      className={`block p-3 border rounded-lg cursor-pointer transition-colors ${
+                        paymentMethod === 'mercadopago'
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="radio"
+                          name="paymentMethod"
+                          value="mercadopago"
+                          checked={paymentMethod === 'mercadopago'}
+                          onChange={() => setPaymentMethod('mercadopago')}
+                          className="accent-blue-500"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-sm">Tarjeta de Crédito / Débito</span>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            Pagá de forma segura con MercadoPago
+                          </p>
+                        </div>
+                        <img
+                          src="https://http2.mlstatic.com/frontend-assets/mp-web-navigation/ui-navigation/6.6.92/mercadopago/logo__small@2x.png"
+                          alt="MercadoPago"
+                          className="h-5 object-contain"
+                        />
+                      </div>
+                    </label>
+                    <label
+                      className={`block p-3 border rounded-lg cursor-pointer transition-colors ${
+                        paymentMethod === 'transferencia'
+                          ? 'border-foreground bg-gray-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="radio"
+                          name="paymentMethod"
+                          value="transferencia"
+                          checked={paymentMethod === 'transferencia'}
+                          onChange={() => setPaymentMethod('transferencia')}
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <Building2 className="w-4 h-4 text-gray-500" />
+                            <span className="font-medium text-sm">Transferencia Bancaria</span>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            Te mostraremos los datos para transferir
+                          </p>
+                        </div>
+                      </div>
+                    </label>
+                  </div>
                 </div>
 
                 <button
@@ -418,6 +513,8 @@ export default function CheckoutPage() {
                       <Loader2 className="w-5 h-5 animate-spin" />
                       Procesando...
                     </>
+                  ) : paymentMethod === 'mercadopago' ? (
+                    'Pagar con MercadoPago'
                   ) : (
                     'Confirmar Pedido'
                   )}
