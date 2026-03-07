@@ -13,6 +13,7 @@ interface AuthContextType {
   isAdmin: boolean
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>
   signUp: (email: string, password: string, metadata?: { first_name?: string; last_name?: string }) => Promise<{ error: Error | null }>
+  signInWithGoogle: () => Promise<{ error: Error | null }>
   signOut: () => Promise<void>
   resetPassword: (email: string) => Promise<{ error: Error | null }>
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>
@@ -182,6 +183,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: error as Error | null }
   }, [])
 
+  const signInWithGoogle = useCallback(async () => {
+    const supabase = getSupabaseClient()
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${siteUrl}/auth/callback`,
+      },
+    })
+    return { error: error as Error | null }
+  }, [])
+
   const signOut = useCallback(async () => {
     const supabase = getSupabaseClient()
     await supabase.auth.signOut()
@@ -233,6 +246,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isAdmin: profile?.rol === 'admin',
     signIn,
     signUp,
+    signInWithGoogle,
     signOut,
     resetPassword,
     updateProfile,
