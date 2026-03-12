@@ -4,7 +4,7 @@ import { sendWelcomeEmail } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, email, firstName, lastName } = await request.json()
+    const { userId, email, firstName, lastName, avatarUrl } = await request.json()
 
     if (!userId || !email) {
       return NextResponse.json(
@@ -26,15 +26,20 @@ export async function POST(request: NextRequest) {
     )
 
     // Crear el perfil
+    const profileData: Record<string, unknown> = {
+      id: userId,
+      email: email,
+      nombre: firstName || '',
+      apellido: lastName || '',
+      rol: 'cliente',
+    }
+    if (avatarUrl) {
+      profileData.avatar_url = avatarUrl
+    }
+
     const { data, error } = await supabaseAdmin
       .from('perfiles')
-      .upsert({
-        id: userId,
-        email: email,
-        nombre: firstName || '',
-        apellido: lastName || '',
-        rol: 'cliente',
-      }, {
+      .upsert(profileData, {
         onConflict: 'id'
       })
       .select()

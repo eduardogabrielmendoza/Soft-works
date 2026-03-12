@@ -185,6 +185,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = useCallback(async () => {
     const supabase = getSupabaseClient()
+    const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
+
+    // Use Google Identity Services for direct sign-in (shows softworks.com.ar instead of supabase URL)
+    if (googleClientId && typeof window !== 'undefined' && (window as any).google?.accounts?.id) {
+      return new Promise<{ error: Error | null }>((resolve) => {
+        const google = (window as any).google
+        google.accounts.id.initialize({
+          client_id: googleClientId,
+          callback: async (response: { credential: string }) => {
+            try {
+              const { data, error } = await supabase.auth.signInWithIdToken({
+                provider: 'google',
+                token: response.credential,
+              })
+              if (!error && data.user) {
+                // Create profile for new Google users
+                await fetch('/api/auth/create-profile', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    userId: data.user.id,
+                    email: data.user.email,
+                    firstName: data.user.user_metadata?.full_name?.split(' ')[0] || data.user.user_metadata?.name?.split(' ')[0] || '',
+                    lastName: data.user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || data.user.user_metadata?.name?.split(' ').slice(1).join(' ') || '',
+                    avatarUrl: data.user.user_metadata?.avatar_url || data.user.user_metadata?.picture || null,
+                  }),
+                }).catch(() => {})
+                window.location.href = '/cuenta/perfil'
+              }
+              resolve({ error: error as Error | null })
+            } catch (err) {
+              resolve({ error: err as Error })
+            }
+          },
+        })
+        // Trigger the One Tap prompt
+        google.accounts.id.prompt()
+      })
+    }
+
+    // Fallback: OAuth redirect through Supabase
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
