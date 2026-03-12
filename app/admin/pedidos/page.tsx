@@ -126,7 +126,7 @@ function AdminPedidosContent() {
     try {
       // Primero eliminar los items del pedido
       await supabase
-        .from('pedido_items')
+        .from('items_pedido')
         .delete()
         .eq('pedido_id', orderId);
 

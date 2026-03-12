@@ -17,7 +17,8 @@ import {
   ArrowDown,
   TrendingUp,
   User,
-  FileText
+  FileText,
+  Bug
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/hooks/useAuth';
@@ -356,6 +357,13 @@ export default function AdminDashboardPage() {
                 >
                   <LayoutDashboard className="w-5 h-5 text-gray-600" />
                   <span>Configuración</span>
+                </Link>
+                <Link
+                  href="/admin/debug"
+                  className="flex items-center gap-3 p-3 rounded-lg border border-orange-200 bg-orange-50 hover:bg-orange-100 transition-colors"
+                >
+                  <Bug className="w-5 h-5 text-orange-600" />
+                  <span className="text-orange-700">Debug y Diagnósticos</span>
                 </Link>
               </div>
             </div>
