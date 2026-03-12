@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
 
     // Get current mode from DB config
     const mode = await getMercadoPagoMode();
-    const client = createMPClient(mode);
+    const client = await createMPClient(mode);
     const preference = new Preference(client);
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://softworks.com.ar';

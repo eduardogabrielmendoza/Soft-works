@@ -15,7 +15,6 @@ import {
   CreditCard,
   Bug,
   RefreshCw,
-  Trash2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/hooks/useAuth';
@@ -30,10 +29,12 @@ interface Diagnostics {
     replyTo: string;
   };
   mercadopago: {
-    accessTokenConfigured: boolean;
-    accessTokenPreview: string;
-    sandboxTokenConfigured: boolean;
-    publicKey: string;
+    mode: string;
+    accessTokenProductionConfigured: boolean;
+    accessTokenProductionPreview: string;
+    accessTokenSandboxConfigured: boolean;
+    accessTokenSandboxPreview: string;
+    tokenSource: string;
   };
   site: {
     siteUrl: string;
@@ -81,6 +82,13 @@ export default function AdminDebugPage() {
   const [emailType, setEmailType] = useState('raw_test');
   const [isSending, setIsSending] = useState(false);
   const [emailResult, setEmailResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  // MercadoPago config state
+  const [mpTokenProd, setMpTokenProd] = useState('');
+  const [mpTokenSandbox, setMpTokenSandbox] = useState('');
+  const [mpMode, setMpMode] = useState<'production' | 'sandbox'>('production');
+  const [isSavingMP, setIsSavingMP] = useState(false);
+  const [mpSaveResult, setMpSaveResult] = useState<{ success: boolean; message: string } | null>(null);
 
   useEffect(() => {
     if (!authLoading && !isAdmin) {
@@ -149,6 +157,38 @@ export default function AdminDebugPage() {
       });
     } finally {
       setIsSending(false);
+    }
+  };
+
+  const handleSaveMPConfig = async () => {
+    setIsSavingMP(true);
+    setMpSaveResult(null);
+
+    try {
+      const payload: Record<string, string> = { action: 'save_mp_config', mode: mpMode };
+      if (mpTokenProd.trim()) payload.accessTokenProduction = mpTokenProd.trim();
+      if (mpTokenSandbox.trim()) payload.accessTokenSandbox = mpTokenSandbox.trim();
+
+      const res = await fetch('/api/admin/debug', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        setMpSaveResult({ success: true, message: 'Configuración guardada correctamente' });
+        setMpTokenProd('');
+        setMpTokenSandbox('');
+        loadDiagnostics();
+      } else {
+        setMpSaveResult({ success: false, message: data.error || 'Error al guardar' });
+      }
+    } catch (err: any) {
+      setMpSaveResult({ success: false, message: err.message || 'Error de conexión' });
+    } finally {
+      setIsSavingMP(false);
     }
   };
 
@@ -245,21 +285,112 @@ export default function AdminDebugPage() {
                     <CreditCard className="w-5 h-5 text-blue-500" />
                     <h2 className="text-lg font-medium">MercadoPago</h2>
                   </div>
-                  <StatusBadge ok={diagnostics.mercadopago.accessTokenConfigured} label={diagnostics.mercadopago.accessTokenConfigured ? 'Producción OK' : 'Sin configurar'} />
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                      diagnostics.mercadopago.mode === 'production' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
+                    }`}>
+                      {diagnostics.mercadopago.mode === 'production' ? 'Producción' : 'Sandbox'}
+                    </span>
+                    <StatusBadge ok={diagnostics.mercadopago.accessTokenProductionConfigured} label={diagnostics.mercadopago.accessTokenProductionConfigured ? 'Token OK' : 'Sin configurar'} />
+                  </div>
                 </div>
-                <div className="p-6">
+                <div className="p-6 space-y-6">
+                  {/* Current status */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Access Token (Producción)</p>
-                      <p className="font-mono text-sm">{diagnostics.mercadopago.accessTokenPreview}</p>
+                      <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Token Producción</p>
+                      <p className="font-mono text-sm">{diagnostics.mercadopago.accessTokenProductionPreview}</p>
                     </div>
                     <div>
                       <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Token Sandbox</p>
-                      <StatusBadge ok={diagnostics.mercadopago.sandboxTokenConfigured} label={diagnostics.mercadopago.sandboxTokenConfigured ? 'Configurado' : 'Sin configurar'} />
+                      <p className="font-mono text-sm">{diagnostics.mercadopago.accessTokenSandboxPreview}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Public Key</p>
-                      <p className="font-mono text-sm">{diagnostics.mercadopago.publicKey}</p>
+                      <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Origen de tokens</p>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                        diagnostics.mercadopago.tokenSource === 'database' ? 'bg-blue-50 text-blue-700' :
+                        diagnostics.mercadopago.tokenSource === 'env' ? 'bg-gray-100 text-gray-700' :
+                        'bg-red-50 text-red-700'
+                      }`}>
+                        {diagnostics.mercadopago.tokenSource === 'database' ? 'Base de datos' :
+                         diagnostics.mercadopago.tokenSource === 'env' ? 'Variables de entorno' :
+                         'No configurado'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Config form */}
+                  <div className="border-t border-gray-100 pt-6">
+                    <h3 className="text-sm font-medium text-gray-700 mb-4">Configurar MercadoPago</h3>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm text-gray-600 mb-1">Modo</label>
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => setMpMode('production')}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium border-2 transition-colors ${
+                              mpMode === 'production' ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                            }`}
+                          >
+                            Producción
+                          </button>
+                          <button
+                            onClick={() => setMpMode('sandbox')}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium border-2 transition-colors ${
+                              mpMode === 'sandbox' ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                            }`}
+                          >
+                            Sandbox (pruebas)
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm text-gray-600 mb-1">Access Token Producción</label>
+                        <input
+                          type="password"
+                          value={mpTokenProd}
+                          onChange={(e) => setMpTokenProd(e.target.value)}
+                          placeholder="APP_USR-... (dejá vacío para no cambiar)"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 font-mono text-sm"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm text-gray-600 mb-1">Access Token Sandbox</label>
+                        <input
+                          type="password"
+                          value={mpTokenSandbox}
+                          onChange={(e) => setMpTokenSandbox(e.target.value)}
+                          placeholder="TEST-... (dejá vacío para no cambiar)"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 font-mono text-sm"
+                        />
+                      </div>
+
+                      <button
+                        onClick={handleSaveMPConfig}
+                        disabled={isSavingMP}
+                        className="w-full py-2.5 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {isSavingMP ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Guardando...
+                          </>
+                        ) : (
+                          'Guardar Configuración MercadoPago'
+                        )}
+                      </button>
+
+                      {mpSaveResult && (
+                        <div className={`p-3 rounded-lg flex items-center gap-2 ${
+                          mpSaveResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+                        }`}>
+                          {mpSaveResult.success ? <CheckCircle className="w-4 h-4 text-green-600" /> : <XCircle className="w-4 h-4 text-red-600" />}
+                          <p className={`text-sm ${mpSaveResult.success ? 'text-green-700' : 'text-red-700'}`}>{mpSaveResult.message}</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

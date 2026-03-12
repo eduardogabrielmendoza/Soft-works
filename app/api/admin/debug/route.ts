@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import sgMail from '@sendgrid/mail';
+import { getMercadoPagoConfig } from '@/lib/api/mercadopago-config';
 import {
   sendEmail,
   sendPaymentApprovedEmail,
@@ -26,36 +26,43 @@ async function verifyAdmin() {
   return user;
 }
 
+function maskToken(token: string | undefined): string {
+  if (!token) return 'NO CONFIGURADO';
+  if (token.length <= 16) return `${token.substring(0, 4)}...`;
+  return `${token.substring(0, 12)}...${token.substring(token.length - 4)}`;
+}
+
 export async function GET() {
   const user = await verifyAdmin();
   if (!user) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
   }
 
-  // Diagnóstico del sistema
   const diagnostics: Record<string, any> = {};
 
   // 1. SendGrid config
   diagnostics.sendgrid = {
     apiKeyConfigured: !!process.env.SENDGRID_API_KEY,
-    apiKeyPreview: process.env.SENDGRID_API_KEY
-      ? `${process.env.SENDGRID_API_KEY.substring(0, 8)}...${process.env.SENDGRID_API_KEY.substring(process.env.SENDGRID_API_KEY.length - 4)}`
-      : 'NO CONFIGURADA',
-    fromEmail: process.env.EMAIL_FROM || 'administracion@softworks.com.ar',
+    apiKeyPreview: maskToken(process.env.SENDGRID_API_KEY),
+    fromEmail: process.env.EMAIL_FROM || 'softworksargentina@gmail.com',
     fromName: process.env.EMAIL_FROM_NAME || 'Softworks',
     replyTo: process.env.EMAIL_REPLY_TO || 'softworksargentina@gmail.com',
   };
 
-  // 2. MercadoPago config
+  // 2. MercadoPago config (from DB + env fallback)
+  const mpConfig = await getMercadoPagoConfig();
+  const mpMode = mpConfig.mercadopago_mode || 'production';
+  const prodToken = mpConfig.access_token_production || process.env.MERCADOPAGO_ACCESS_TOKEN_PRODUCTION;
+  const sandboxToken = mpConfig.access_token_sandbox || process.env.MERCADOPAGO_ACCESS_TOKEN_SANDBOX;
+
   diagnostics.mercadopago = {
-    accessTokenConfigured: !!process.env.MERCADOPAGO_ACCESS_TOKEN,
-    accessTokenPreview: process.env.MERCADOPAGO_ACCESS_TOKEN
-      ? `${process.env.MERCADOPAGO_ACCESS_TOKEN.substring(0, 12)}...`
-      : 'NO CONFIGURADO',
-    sandboxTokenConfigured: !!process.env.MERCADOPAGO_SANDBOX_ACCESS_TOKEN,
-    publicKey: process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY
-      ? `${process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY.substring(0, 12)}...`
-      : 'NO CONFIGURADA',
+    mode: mpMode,
+    accessTokenProductionConfigured: !!prodToken,
+    accessTokenProductionPreview: maskToken(prodToken),
+    accessTokenSandboxConfigured: !!sandboxToken,
+    accessTokenSandboxPreview: maskToken(sandboxToken),
+    // Whether tokens are from DB or env
+    tokenSource: mpConfig.access_token_production ? 'database' : (process.env.MERCADOPAGO_ACCESS_TOKEN_PRODUCTION ? 'env' : 'none'),
   };
 
   // 3. Site config
@@ -105,6 +112,42 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { action, emailTo, emailType } = body;
+
+    if (action === 'save_mp_config') {
+      const { accessTokenProduction, accessTokenSandbox, mode } = body;
+      const supabase = await createClient();
+
+      // Read existing config
+      const { data: existing } = await supabase
+        .from('configuracion_sitio')
+        .select('valor')
+        .eq('clave', 'mercadopago')
+        .single() as { data: { valor: Record<string, unknown> } | null };
+
+      const currentConfig = (existing?.valor && typeof existing.valor === 'object')
+        ? existing.valor
+        : {};
+
+      // Merge new values (only update fields that were provided)
+      const newConfig: Record<string, unknown> = { ...currentConfig };
+      if (mode) newConfig.mercadopago_mode = mode;
+      if (accessTokenProduction !== undefined) newConfig.access_token_production = accessTokenProduction;
+      if (accessTokenSandbox !== undefined) newConfig.access_token_sandbox = accessTokenSandbox;
+
+      // Upsert
+      const { error } = await (supabase
+        .from('configuracion_sitio') as any)
+        .upsert({
+          clave: 'mercadopago',
+          valor: newConfig,
+        }, { onConflict: 'clave' });
+
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+
+      return NextResponse.json({ success: true, message: 'Configuración de MercadoPago guardada' });
+    }
 
     if (action === 'test_email') {
       if (!emailTo) {
@@ -189,7 +232,7 @@ export async function POST(request: NextRequest) {
                 <p><strong>Detalles:</strong></p>
                 <ul>
                   <li>Fecha: ${new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })}</li>
-                  <li>Enviado desde: ${process.env.EMAIL_FROM || 'administracion@softworks.com.ar'}</li>
+                  <li>Enviado desde: ${process.env.EMAIL_FROM || 'softworksargentina@gmail.com'}</li>
                   <li>Destinatario: ${emailTo}</li>
                 </ul>
                 <p style="color: #666; font-size: 12px;">Este es un email de prueba enviado desde el panel de debug de Softworks.</p>

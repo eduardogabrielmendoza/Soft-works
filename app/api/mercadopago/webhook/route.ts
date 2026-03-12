@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
 
       // Get current mode and create client
       const mode = await getMercadoPagoMode();
-      const client = createMPClient(mode);
+      const client = await createMPClient(mode);
       const payment = new Payment(client);
 
       // Get payment details from MercadoPago

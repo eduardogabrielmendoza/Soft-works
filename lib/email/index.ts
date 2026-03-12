@@ -9,8 +9,8 @@ if (process.env.SENDGRID_API_KEY) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 }
 
-// Email del remitente (debe coincidir con el dominio autenticado en SendGrid)
-const FROM_EMAIL = process.env.EMAIL_FROM || 'administracion@softworks.com.ar';
+// Email del remitente (debe estar verificado como Sender Identity en SendGrid)
+const FROM_EMAIL = process.env.EMAIL_FROM || 'softworksargentina@gmail.com';
 const FROM_NAME = process.env.EMAIL_FROM_NAME || 'Softworks';
 const REPLY_TO_EMAIL = process.env.EMAIL_REPLY_TO || 'softworksargentina@gmail.com';
 
