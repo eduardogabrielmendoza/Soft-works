@@ -44,7 +44,7 @@ export async function GET() {
   diagnostics.sendgrid = {
     apiKeyConfigured: !!process.env.SENDGRID_API_KEY,
     apiKeyPreview: maskToken(process.env.SENDGRID_API_KEY),
-    fromEmail: process.env.EMAIL_FROM || 'softworksargentina@gmail.com',
+    fromEmail: process.env.EMAIL_FROM || 'administracion@softworks.com.ar',
     fromName: process.env.EMAIL_FROM_NAME || 'Softworks',
     replyTo: process.env.EMAIL_REPLY_TO || 'softworksargentina@gmail.com',
   };
@@ -232,7 +232,7 @@ export async function POST(request: NextRequest) {
                 <p><strong>Detalles:</strong></p>
                 <ul>
                   <li>Fecha: ${new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })}</li>
-                  <li>Enviado desde: ${process.env.EMAIL_FROM || 'softworksargentina@gmail.com'}</li>
+                  <li>Enviado desde: ${process.env.EMAIL_FROM || 'administracion@softworks.com.ar'}</li>
                   <li>Destinatario: ${emailTo}</li>
                 </ul>
                 <p style="color: #666; font-size: 12px;">Este es un email de prueba enviado desde el panel de debug de Softworks.</p>
