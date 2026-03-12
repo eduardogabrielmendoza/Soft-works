@@ -15,6 +15,19 @@ import {
   CreditCard,
   Bug,
   RefreshCw,
+  FlaskConical,
+  Play,
+  Package,
+  ShoppingCart,
+  Users,
+  Settings,
+  Landmark,
+  Truck,
+  FileText,
+  MapPin,
+  Shield,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/hooks/useAuth';
@@ -59,6 +72,30 @@ const EMAIL_TYPES = [
   { value: 'welcome', label: 'Bienvenida', description: 'Template de registro exitoso' },
 ];
 
+interface TestResult {
+  step: string;
+  ok: boolean;
+  detail: string;
+}
+
+interface TestGroup {
+  name: string;
+  results: TestResult[];
+}
+
+const FUNCTIONAL_TESTS = [
+  { key: 'products', label: 'Productos CRUD', icon: Package, description: 'Crear, leer, actualizar, toggle destacado, stock, soft delete, hard delete' },
+  { key: 'orders', label: 'Pedidos CRUD', icon: ShoppingCart, description: 'Crear pedido + items, cambiar estado, notas admin, info envío, cancelar, eliminar' },
+  { key: 'verifications', label: 'Verificaciones de Pago', icon: CreditCard, description: 'Crear verificación, aprobar, rechazar, limpiar' },
+  { key: 'users', label: 'Perfiles / Usuarios', icon: Users, description: 'Listar perfiles, leer propio, actualizar teléfono, buscar por email' },
+  { key: 'config', label: 'Configuración del Sitio', icon: Settings, description: 'Leer, escribir, re-leer y eliminar configuración' },
+  { key: 'bank_accounts', label: 'Cuentas Bancarias', icon: Landmark, description: 'Listar, crear, actualizar, eliminar cuenta bancaria' },
+  { key: 'shipping_zones', label: 'Zonas de Envío', icon: Truck, description: 'Listar, crear, actualizar precio, eliminar zona' },
+  { key: 'pages', label: 'Contenidos CMS', icon: FileText, description: 'Listar páginas, crear contenido, leer, eliminar' },
+  { key: 'addresses', label: 'Direcciones', icon: MapPin, description: 'Listar, crear, actualizar, eliminar dirección' },
+  { key: 'rls', label: 'Acceso a Tablas (RLS)', icon: Shield, description: 'Verificar acceso SELECT a todas las tablas' },
+];
+
 function StatusBadge({ ok, label }: { ok: boolean; label: string }) {
   return (
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
@@ -89,6 +126,11 @@ export default function AdminDebugPage() {
   const [mpMode, setMpMode] = useState<'production' | 'sandbox'>('production');
   const [isSavingMP, setIsSavingMP] = useState(false);
   const [mpSaveResult, setMpSaveResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  // Functional tests state
+  const [testResults, setTestResults] = useState<TestGroup[]>([]);
+  const [runningTest, setRunningTest] = useState<string | null>(null);
+  const [expandedTests, setExpandedTests] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!authLoading && !isAdmin) {
@@ -190,6 +232,68 @@ export default function AdminDebugPage() {
     } finally {
       setIsSavingMP(false);
     }
+  };
+
+  const runFunctionalTest = async (testKey: string) => {
+    setRunningTest(testKey);
+    try {
+      const res = await fetch('/api/admin/debug/tests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ test: testKey }),
+      });
+      const data = await res.json();
+      if (data.success && data.results) {
+        setTestResults(prev => {
+          const filtered = prev.filter(g => g.name !== data.results[0].name);
+          return [...filtered, ...data.results];
+        });
+        setExpandedTests(prev => new Set([...prev, data.results[0].name]));
+      }
+    } catch (err: any) {
+      setTestResults(prev => [
+        ...prev,
+        { name: testKey, results: [{ step: 'Error', ok: false, detail: err.message }] },
+      ]);
+    } finally {
+      setRunningTest(null);
+    }
+  };
+
+  const runAllTests = async () => {
+    setRunningTest('all');
+    setTestResults([]);
+    try {
+      const res = await fetch('/api/admin/debug/tests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ test: 'all' }),
+      });
+      const data = await res.json();
+      if (data.success && data.results) {
+        setTestResults(data.results);
+        setExpandedTests(new Set(data.results.map((r: TestGroup) => r.name)));
+      }
+    } catch (err: any) {
+      setTestResults([
+        { name: 'Error General', results: [{ step: 'Error', ok: false, detail: err.message }] },
+      ]);
+    } finally {
+      setRunningTest(null);
+    }
+  };
+
+  const toggleExpand = (name: string) => {
+    setExpandedTests(prev => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  };
+
+  const getTestGroupResult = (name: string) => {
+    return testResults.find(g => g.name === name);
   };
 
   if (authLoading || !isAdmin) {
@@ -526,6 +630,156 @@ export default function AdminDebugPage() {
                       </p>
                     </div>
                   )}
+                </div>
+              </div>
+
+              {/* ================================================ */}
+              {/* === FUNCTIONAL TESTS === */}
+              {/* ================================================ */}
+              <div className="bg-white rounded-lg border-2 border-indigo-200 overflow-hidden">
+                <div className="px-6 py-4 border-b border-indigo-100 bg-indigo-50/50">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <FlaskConical className="w-5 h-5 text-indigo-600" />
+                      <div>
+                        <h2 className="text-lg font-medium">Tests Funcionales</h2>
+                        <p className="text-sm text-gray-500 mt-0.5">
+                          Probá todas las operaciones del sistema (CRUD completo, RLS, etc.)
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={runAllTests}
+                      disabled={runningTest !== null}
+                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+                    >
+                      {runningTest === 'all' ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Ejecutando todos...
+                        </>
+                      ) : (
+                        <>
+                          <Play className="w-4 h-4" />
+                          Ejecutar Todos
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Summary bar */}
+                  {testResults.length > 0 && (
+                    <div className="mt-3 flex items-center gap-4 text-sm">
+                      <span className="text-green-700 font-medium">
+                        {testResults.reduce((acc, g) => acc + g.results.filter(r => r.ok).length, 0)} pasaron
+                      </span>
+                      <span className="text-red-700 font-medium">
+                        {testResults.reduce((acc, g) => acc + g.results.filter(r => !r.ok).length, 0)} fallaron
+                      </span>
+                      <span className="text-gray-500">
+                        de {testResults.reduce((acc, g) => acc + g.results.length, 0)} tests totales
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="divide-y divide-gray-100">
+                  {FUNCTIONAL_TESTS.map((test) => {
+                    const Icon = test.icon;
+                    const groupResult = getTestGroupResult(
+                      FUNCTIONAL_TESTS.find(t => t.key === test.key)?.label || test.key
+                    );
+                    const isRunning = runningTest === test.key || runningTest === 'all';
+                    const isExpanded = groupResult && expandedTests.has(groupResult.name);
+                    const allPassed = groupResult?.results.every(r => r.ok);
+                    const someFailed = groupResult?.results.some(r => !r.ok);
+
+                    return (
+                      <div key={test.key}>
+                        <div className="px-6 py-3 flex items-center gap-4">
+                          <Icon className="w-4 h-4 text-gray-400 shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{test.label}</p>
+                            <p className="text-xs text-gray-400 truncate">{test.description}</p>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            {groupResult && (
+                              <>
+                                {allPassed ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700">
+                                    <CheckCircle className="w-3 h-3" />
+                                    {groupResult.results.length}/{groupResult.results.length}
+                                  </span>
+                                ) : someFailed ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700">
+                                    <XCircle className="w-3 h-3" />
+                                    {groupResult.results.filter(r => r.ok).length}/{groupResult.results.length}
+                                  </span>
+                                ) : null}
+                                <button
+                                  onClick={() => toggleExpand(groupResult.name)}
+                                  className="p-1 hover:bg-gray-100 rounded"
+                                >
+                                  {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                                </button>
+                              </>
+                            )}
+                            <button
+                              onClick={() => runFunctionalTest(test.key)}
+                              disabled={runningTest !== null}
+                              className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                            >
+                              {isRunning && runningTest === test.key ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <Play className="w-3 h-3" />
+                              )}
+                              {isRunning && runningTest === test.key ? 'Corriendo...' : 'Ejecutar'}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Expanded results */}
+                        {groupResult && isExpanded && (
+                          <div className="px-6 pb-4">
+                            <div className="bg-gray-50 rounded-lg overflow-hidden border border-gray-200">
+                              <table className="w-full text-sm">
+                                <thead>
+                                  <tr className="bg-gray-100">
+                                    <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 uppercase">Paso</th>
+                                    <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 uppercase w-16">Estado</th>
+                                    <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 uppercase">Detalle</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-200">
+                                  {groupResult.results.map((r, i) => (
+                                    <tr key={i} className={r.ok ? '' : 'bg-red-50/50'}>
+                                      <td className="px-3 py-2 font-medium">{r.step}</td>
+                                      <td className="px-3 py-2">
+                                        {r.ok ? (
+                                          <CheckCircle className="w-4 h-4 text-green-600" />
+                                        ) : (
+                                          <XCircle className="w-4 h-4 text-red-600" />
+                                        )}
+                                      </td>
+                                      <td className="px-3 py-2 text-gray-600 font-mono text-xs break-all">{r.detail}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="px-6 py-3 bg-indigo-50/30 border-t border-indigo-100">
+                  <p className="text-xs text-gray-500">
+                    Todos los tests crean datos temporales y los eliminan al finalizar. No afectan datos reales.
+                  </p>
                 </div>
               </div>
 
