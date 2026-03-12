@@ -190,17 +190,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Use Google Identity Services for direct sign-in (shows softworks.com.ar instead of supabase URL)
     if (googleClientId && typeof window !== 'undefined' && (window as any).google?.accounts?.id) {
       return new Promise<{ error: Error | null }>((resolve) => {
+        let resolved = false
         const google = (window as any).google
+
         google.accounts.id.initialize({
           client_id: googleClientId,
           callback: async (response: { credential: string }) => {
+            if (resolved) return
+            resolved = true
             try {
               const { data, error } = await supabase.auth.signInWithIdToken({
                 provider: 'google',
                 token: response.credential,
               })
               if (!error && data.user) {
-                // Create profile for new Google users
                 await fetch('/api/auth/create-profile', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
@@ -220,8 +223,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
           },
         })
-        // Trigger the One Tap prompt
-        google.accounts.id.prompt()
+
+        // Try One Tap prompt first
+        google.accounts.id.prompt((notification: any) => {
+          // If One Tap is not available, fall back to OAuth redirect
+          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            if (!resolved) {
+              resolved = true
+              // Fallback to Supabase OAuth redirect
+              const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
+              supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: { redirectTo: `${siteUrl}/auth/callback` },
+              }).then((result: any) => {
+                resolve({ error: result.error as Error | null })
+              })
+            }
+          }
+        })
+
+        // Safety timeout: if nothing happens in 3 seconds, fall back
+        setTimeout(() => {
+          if (!resolved) {
+            resolved = true
+            const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
+            supabase.auth.signInWithOAuth({
+              provider: 'google',
+              options: { redirectTo: `${siteUrl}/auth/callback` },
+            }).then((result: any) => {
+              resolve({ error: result.error as Error | null })
+            })
+          }
+        }, 3000)
       })
     }
 
