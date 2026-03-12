@@ -13,7 +13,6 @@ interface AuthContextType {
   isAdmin: boolean
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>
   signUp: (email: string, password: string, metadata?: { first_name?: string; last_name?: string }) => Promise<{ error: Error | null }>
-  signInWithGoogle: () => Promise<{ error: Error | null }>
   signOut: () => Promise<void>
   resetPassword: (email: string) => Promise<{ error: Error | null }>
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>
@@ -183,92 +182,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: error as Error | null }
   }, [])
 
-  const signInWithGoogle = useCallback(async () => {
-    const supabase = getSupabaseClient()
-    const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
-
-    // Use Google Identity Services for direct sign-in (shows softworks.com.ar instead of supabase URL)
-    if (googleClientId && typeof window !== 'undefined' && (window as any).google?.accounts?.id) {
-      return new Promise<{ error: Error | null }>((resolve) => {
-        let resolved = false
-        const google = (window as any).google
-
-        google.accounts.id.initialize({
-          client_id: googleClientId,
-          callback: async (response: { credential: string }) => {
-            if (resolved) return
-            resolved = true
-            try {
-              const { data, error } = await supabase.auth.signInWithIdToken({
-                provider: 'google',
-                token: response.credential,
-              })
-              if (!error && data.user) {
-                await fetch('/api/auth/create-profile', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    userId: data.user.id,
-                    email: data.user.email,
-                    firstName: data.user.user_metadata?.full_name?.split(' ')[0] || data.user.user_metadata?.name?.split(' ')[0] || '',
-                    lastName: data.user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || data.user.user_metadata?.name?.split(' ').slice(1).join(' ') || '',
-                    avatarUrl: data.user.user_metadata?.avatar_url || data.user.user_metadata?.picture || null,
-                  }),
-                }).catch(() => {})
-                window.location.href = '/cuenta/perfil'
-              }
-              resolve({ error: error as Error | null })
-            } catch (err) {
-              resolve({ error: err as Error })
-            }
-          },
-        })
-
-        // Try One Tap prompt first
-        google.accounts.id.prompt((notification: any) => {
-          // If One Tap is not available, fall back to OAuth redirect
-          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            if (!resolved) {
-              resolved = true
-              // Fallback to Supabase OAuth redirect
-              const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
-              supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: { redirectTo: `${siteUrl}/auth/callback` },
-              }).then((result: any) => {
-                resolve({ error: result.error as Error | null })
-              })
-            }
-          }
-        })
-
-        // Safety timeout: if nothing happens in 3 seconds, fall back
-        setTimeout(() => {
-          if (!resolved) {
-            resolved = true
-            const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
-            supabase.auth.signInWithOAuth({
-              provider: 'google',
-              options: { redirectTo: `${siteUrl}/auth/callback` },
-            }).then((result: any) => {
-              resolve({ error: result.error as Error | null })
-            })
-          }
-        }, 3000)
-      })
-    }
-
-    // Fallback: OAuth redirect through Supabase
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${siteUrl}/auth/callback`,
-      },
-    })
-    return { error: error as Error | null }
-  }, [])
-
   const signOut = useCallback(async () => {
     const supabase = getSupabaseClient()
     await supabase.auth.signOut()
@@ -320,7 +233,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isAdmin: profile?.rol === 'admin',
     signIn,
     signUp,
-    signInWithGoogle,
     signOut,
     resetPassword,
     updateProfile,
