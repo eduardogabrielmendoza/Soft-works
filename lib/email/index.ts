@@ -9,9 +9,10 @@ if (process.env.SENDGRID_API_KEY) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 }
 
-// Email del remitente (debe estar verificado en SendGrid)
-const FROM_EMAIL = process.env.EMAIL_FROM || 'softworksargentina@gmail.com';
+// Email del remitente (debe coincidir con el dominio autenticado en SendGrid)
+const FROM_EMAIL = process.env.EMAIL_FROM || 'hola@softworks.com.ar';
 const FROM_NAME = process.env.EMAIL_FROM_NAME || 'Softworks';
+const REPLY_TO_EMAIL = process.env.EMAIL_REPLY_TO || 'softworksargentina@gmail.com';
 
 // URL base del sitio para convertir rutas relativas a absolutas
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://softworks.com.ar';
@@ -56,6 +57,10 @@ export async function sendEmail(data: EmailData) {
       to: data.to,
       from: {
         email: FROM_EMAIL,
+        name: FROM_NAME,
+      },
+      replyTo: {
+        email: REPLY_TO_EMAIL,
         name: FROM_NAME,
       },
       subject: data.subject,
