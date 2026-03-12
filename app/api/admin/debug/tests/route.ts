@@ -1,7 +1,6 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
-// Verificar que el usuario es admin
 async function verifyAdmin() {
   const supabase = await getSupabase();
   const { data: { user } } = await supabase.auth.getUser();
@@ -29,7 +28,7 @@ async function testProductsCRUD() {
   const results: { step: string; ok: boolean; detail: string }[] = [];
   let testProductId: string | null = null;
 
-  // 1. CREATE
+  // CREATE
   try {
     const slug = `test-debug-${Date.now()}`;
     const { data, error } = await supabase
@@ -37,7 +36,7 @@ async function testProductsCRUD() {
       .insert({
         nombre: '[TEST] Producto de Prueba Debug',
         slug,
-        descripcion: 'Producto creado automÃ¡ticamente por el panel de debug. Se eliminarÃ¡ al finalizar.',
+        descripcion: 'Producto creado por debug. Se elimina al finalizar.',
         precio: 1,
         categoria: 'camisetas',
         imagenes: [],
@@ -48,31 +47,29 @@ async function testProductsCRUD() {
       })
       .select()
       .single();
-
     if (error) throw error;
-    testProductId = (data as any).id;
+    testProductId = data.id;
     results.push({ step: 'Crear producto', ok: true, detail: `ID: ${testProductId}` });
   } catch (e: any) {
     results.push({ step: 'Crear producto', ok: false, detail: e.message });
     return { name: 'Productos CRUD', results };
   }
 
-  // 2. READ
+  // READ
   try {
     const { data, error } = await supabase
       .from('productos')
       .select('*')
       .eq('id', testProductId!)
       .single();
-
     if (error) throw error;
     if (!data) throw new Error('Producto no encontrado');
-    results.push({ step: 'Leer producto', ok: true, detail: `Nombre: ${(data as any).nombre}` });
+    results.push({ step: 'Leer producto', ok: true, detail: `Nombre: ${data.nombre}` });
   } catch (e: any) {
     results.push({ step: 'Leer producto', ok: false, detail: e.message });
   }
 
-  // 3. UPDATE
+  // UPDATE
   try {
     const { data, error } = await supabase
       .from('productos')
@@ -80,60 +77,55 @@ async function testProductsCRUD() {
       .eq('id', testProductId!)
       .select()
       .single();
-
     if (error) throw error;
-    if ((data as any).precio !== 2) throw new Error('El precio no se actualizÃ³');
+    if (data.precio !== 2) throw new Error('El precio no se actualizo');
     results.push({ step: 'Actualizar producto', ok: true, detail: 'Precio actualizado a $2' });
   } catch (e: any) {
     results.push({ step: 'Actualizar producto', ok: false, detail: e.message });
   }
 
-  // 4. TOGGLE destacado
+  // TOGGLE destacado
   try {
     const { error } = await supabase
       .from('productos')
       .update({ destacado: true })
       .eq('id', testProductId!);
-
     if (error) throw error;
     results.push({ step: 'Toggle destacado', ok: true, detail: 'Marcado como destacado' });
   } catch (e: any) {
     results.push({ step: 'Toggle destacado', ok: false, detail: e.message });
   }
 
-  // 5. UPDATE stock
+  // UPDATE stock
   try {
     const { error } = await supabase
       .from('productos')
       .update({ stock: { S: 5, M: 10, L: 3 } })
       .eq('id', testProductId!);
-
     if (error) throw error;
     results.push({ step: 'Actualizar stock', ok: true, detail: 'Stock: S:5 M:10 L:3' });
   } catch (e: any) {
     results.push({ step: 'Actualizar stock', ok: false, detail: e.message });
   }
 
-  // 6. SOFT DELETE (activo = false, ya lo estÃ¡ pero igual)
+  // SOFT DELETE
   try {
     const { error } = await supabase
       .from('productos')
       .update({ activo: false })
       .eq('id', testProductId!);
-
     if (error) throw error;
     results.push({ step: 'Soft delete producto', ok: true, detail: 'Marcado como inactivo' });
   } catch (e: any) {
     results.push({ step: 'Soft delete producto', ok: false, detail: e.message });
   }
 
-  // 7. HARD DELETE (limpiar)
+  // HARD DELETE
   try {
     const { error } = await supabase
       .from('productos')
       .delete()
       .eq('id', testProductId!);
-
     if (error) throw error;
     results.push({ step: 'Eliminar producto (limpieza)', ok: true, detail: 'Eliminado permanentemente' });
   } catch (e: any) {
@@ -153,11 +145,11 @@ async function testOrdersCRUD() {
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    results.push({ step: 'AutenticaciÃ³n', ok: false, detail: 'No autenticado' });
+    results.push({ step: 'Autenticacion', ok: false, detail: 'No autenticado' });
     return { name: 'Pedidos CRUD', results };
   }
 
-  // 1. CREATE order
+  // CREATE order
   try {
     const { data, error } = await supabase
       .from('pedidos')
@@ -183,16 +175,15 @@ async function testOrdersCRUD() {
       })
       .select()
       .single();
-
     if (error) throw error;
-    testOrderId = (data as any).id;
+    testOrderId = data.id;
     results.push({ step: 'Crear pedido', ok: true, detail: `ID: ${testOrderId}` });
   } catch (e: any) {
     results.push({ step: 'Crear pedido', ok: false, detail: e.message });
     return { name: 'Pedidos CRUD', results };
   }
 
-  // 2. CREATE order items
+  // CREATE order items
   try {
     const { error } = await supabase
       .from('items_pedido')
@@ -205,56 +196,52 @@ async function testOrdersCRUD() {
         cantidad: 1,
         total_linea: 100,
       });
-
     if (error) throw error;
     results.push({ step: 'Crear items de pedido', ok: true, detail: '1 item creado' });
   } catch (e: any) {
     results.push({ step: 'Crear items de pedido', ok: false, detail: e.message });
   }
 
-  // 3. READ order
+  // READ order
   try {
     const { data, error } = await supabase
       .from('pedidos')
       .select('*')
       .eq('id', testOrderId!)
       .single();
-
     if (error) throw error;
-    results.push({ step: 'Leer pedido', ok: true, detail: `NÂ°: ${(data as any).numero_pedido}` });
+    results.push({ step: 'Leer pedido', ok: true, detail: `N: ${data.numero_pedido}` });
   } catch (e: any) {
     results.push({ step: 'Leer pedido', ok: false, detail: e.message });
   }
 
-  // 4. UPDATE status
+  // UPDATE status
   try {
     const { error } = await supabase
       .from('pedidos')
       .update({ estado: 'pago_aprobado', pagado_el: new Date().toISOString() })
       .eq('id', testOrderId!);
-
     if (error) throw error;
     results.push({ step: 'Cambiar estado a pago_aprobado', ok: true, detail: 'Estado actualizado' });
   } catch (e: any) {
     results.push({ step: 'Cambiar estado a pago_aprobado', ok: false, detail: e.message });
   }
 
-  // 5. Add admin notes
+  // Add admin notes
   try {
     const { error } = await supabase
       .from('pedidos')
       .update({ notas_admin: 'Nota de prueba desde debug panel' })
       .eq('id', testOrderId!);
-
     if (error) throw error;
     results.push({ step: 'Agregar notas admin', ok: true, detail: 'Notas guardadas' });
   } catch (e: any) {
     results.push({ step: 'Agregar notas admin', ok: false, detail: e.message });
   }
 
-  // 6. Add shipping info
+  // Add shipping info
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('info_envio')
       .insert({
         pedido_id: testOrderId!,
@@ -265,31 +252,29 @@ async function testOrdersCRUD() {
       })
       .select()
       .single();
-
     if (error) throw error;
-    results.push({ step: 'Crear info de envÃ­o', ok: true, detail: `Tracking: TEST-TRACK-000` });
+    results.push({ step: 'Crear info de envio', ok: true, detail: 'Tracking: TEST-TRACK-000' });
   } catch (e: any) {
-    results.push({ step: 'Crear info de envÃ­o', ok: false, detail: e.message });
+    results.push({ step: 'Crear info de envio', ok: false, detail: e.message });
   }
 
-  // 7. Cancel order
+  // Cancel order
   try {
     const { error } = await supabase
       .from('pedidos')
       .update({
         estado: 'cancelado',
         cancelado_el: new Date().toISOString(),
-        motivo_cancelacion: 'Test de debug - limpieza automÃ¡tica',
+        motivo_cancelacion: 'Test de debug - limpieza automatica',
       })
       .eq('id', testOrderId!);
-
     if (error) throw error;
     results.push({ step: 'Cancelar pedido', ok: true, detail: 'Pedido cancelado' });
   } catch (e: any) {
     results.push({ step: 'Cancelar pedido', ok: false, detail: e.message });
   }
 
-  // 8. CLEANUP - Delete everything
+  // CLEANUP
   try {
     await supabase.from('info_envio').delete().eq('pedido_id', testOrderId!);
     await supabase.from('items_pedido').delete().eq('pedido_id', testOrderId!);
@@ -312,7 +297,7 @@ async function testPaymentVerifications() {
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    results.push({ step: 'AutenticaciÃ³n', ok: false, detail: 'No autenticado' });
+    results.push({ step: 'Autenticacion', ok: false, detail: 'No autenticado' });
     return { name: 'Verificaciones de Pago', results };
   }
 
@@ -336,14 +321,14 @@ async function testPaymentVerifications() {
       .select()
       .single();
     if (error) throw error;
-    testOrderId = (data as any).id;
-    results.push({ step: 'Crear pedido temporal', ok: true, detail: `OK` });
+    testOrderId = data.id;
+    results.push({ step: 'Crear pedido temporal', ok: true, detail: 'OK' });
   } catch (e: any) {
     results.push({ step: 'Crear pedido temporal', ok: false, detail: e.message });
     return { name: 'Verificaciones de Pago', results };
   }
 
-  // 1. Create verification
+  // Create verification
   try {
     const { data, error } = await supabase
       .from('verificaciones_pago')
@@ -356,15 +341,14 @@ async function testPaymentVerifications() {
       })
       .select()
       .single();
-
     if (error) throw error;
-    testVerifId = (data as any).id;
-    results.push({ step: 'Crear verificaciÃ³n de pago', ok: true, detail: `ID: ${testVerifId}` });
+    testVerifId = data.id;
+    results.push({ step: 'Crear verificacion de pago', ok: true, detail: `ID: ${testVerifId}` });
   } catch (e: any) {
-    results.push({ step: 'Crear verificaciÃ³n de pago', ok: false, detail: e.message });
+    results.push({ step: 'Crear verificacion de pago', ok: false, detail: e.message });
   }
 
-  // 2. Approve verification
+  // Approve
   if (testVerifId) {
     try {
       const { error } = await supabase
@@ -376,14 +360,13 @@ async function testPaymentVerifications() {
           notas_admin: 'Aprobado por debug test',
         })
         .eq('id', testVerifId);
-
       if (error) throw error;
-      results.push({ step: 'Aprobar verificaciÃ³n', ok: true, detail: 'Estado: aprobado' });
+      results.push({ step: 'Aprobar verificacion', ok: true, detail: 'Estado: aprobado' });
     } catch (e: any) {
-      results.push({ step: 'Aprobar verificaciÃ³n', ok: false, detail: e.message });
+      results.push({ step: 'Aprobar verificacion', ok: false, detail: e.message });
     }
 
-    // 3. Reject (reset and reject)
+    // Reject
     try {
       const { error } = await supabase
         .from('verificaciones_pago')
@@ -392,11 +375,10 @@ async function testPaymentVerifications() {
           motivo_rechazo: 'Test de rechazo desde debug',
         })
         .eq('id', testVerifId);
-
       if (error) throw error;
-      results.push({ step: 'Rechazar verificaciÃ³n', ok: true, detail: 'Estado: rechazado' });
+      results.push({ step: 'Rechazar verificacion', ok: true, detail: 'Estado: rechazado' });
     } catch (e: any) {
-      results.push({ step: 'Rechazar verificaciÃ³n', ok: false, detail: e.message });
+      results.push({ step: 'Rechazar verificacion', ok: false, detail: e.message });
     }
   }
 
@@ -416,7 +398,7 @@ async function testPaymentVerifications() {
 }
 
 // ============================================
-// TEST: Perfiles / Usuarios (lectura + ediciÃ³n del propio)
+// TEST: Perfiles / Usuarios
 // ============================================
 async function testUserProfiles() {
   const supabase = await getSupabase();
@@ -424,38 +406,36 @@ async function testUserProfiles() {
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    results.push({ step: 'AutenticaciÃ³n', ok: false, detail: 'No autenticado' });
+    results.push({ step: 'Autenticacion', ok: false, detail: 'No autenticado' });
     return { name: 'Perfiles / Usuarios', results };
   }
 
-  // 1. List all profiles
+  // List all profiles
   try {
     const { data, error, count } = await supabase
       .from('perfiles')
       .select('*', { count: 'exact', head: false })
       .limit(5);
-
     if (error) throw error;
     results.push({ step: 'Listar perfiles', ok: true, detail: `${count ?? (data as any[]).length} usuarios encontrados` });
   } catch (e: any) {
     results.push({ step: 'Listar perfiles', ok: false, detail: e.message });
   }
 
-  // 2. Read own profile
+  // Read own profile
   try {
     const { data, error } = await supabase
       .from('perfiles')
       .select('*')
       .eq('id', user.id)
       .single();
-
     if (error) throw error;
-    results.push({ step: 'Leer perfil propio', ok: true, detail: `Rol: ${(data as any).rol}` });
+    results.push({ step: 'Leer perfil propio', ok: true, detail: `Rol: ${data.rol}` });
   } catch (e: any) {
     results.push({ step: 'Leer perfil propio', ok: false, detail: e.message });
   }
 
-  // 3. Update own profile (telefono test then revert)
+  // Update own profile (telefono test then revert)
   let originalPhone: string | null = null;
   try {
     const { data: current } = await supabase
@@ -463,34 +443,31 @@ async function testUserProfiles() {
       .select('telefono')
       .eq('id', user.id)
       .single();
-    originalPhone = (current as any)?.telefono;
+    originalPhone = current?.telefono;
 
     const { error } = await supabase
       .from('perfiles')
       .update({ telefono: 'TEST-DEBUG-000' })
       .eq('id', user.id);
-
     if (error) throw error;
 
     // Revert
     await supabase.from('perfiles').update({ telefono: originalPhone }).eq('id', user.id);
-    results.push({ step: 'Actualizar perfil', ok: true, detail: 'TelÃ©fono modificado y restaurado' });
+    results.push({ step: 'Actualizar perfil', ok: true, detail: 'Telefono modificado y restaurado' });
   } catch (e: any) {
     results.push({ step: 'Actualizar perfil', ok: false, detail: e.message });
-    // Try to revert
     if (originalPhone !== null) {
       await supabase.from('perfiles').update({ telefono: originalPhone }).eq('id', user.id);
     }
   }
 
-  // 4. Search profiles by email
+  // Search profiles by email
   try {
     const { data, error } = await supabase
       .from('perfiles')
       .select('id, email, nombre')
       .ilike('email', '%@%')
       .limit(3);
-
     if (error) throw error;
     results.push({ step: 'Buscar perfiles por email', ok: true, detail: `${(data as any[]).length} resultados` });
   } catch (e: any) {
@@ -501,18 +478,17 @@ async function testUserProfiles() {
 }
 
 // ============================================
-// TEST: ConfiguraciÃ³n del Sitio
+// TEST: Configuracion del Sitio
 // ============================================
 async function testSiteConfig() {
   const supabase = await getSupabase();
   const results: { step: string; ok: boolean; detail: string }[] = [];
 
-  // 1. Read all config
+  // 1. Read all config keys
   try {
     const { data, error } = await supabase
       .from('configuracion_sitio')
       .select('clave');
-
     if (error) throw error;
     const keys = (data as any[]).map((d: any) => d.clave);
     results.push({ step: 'Leer configuraciones', ok: true, detail: `Claves: ${keys.join(', ') || 'ninguna'}` });
@@ -520,15 +496,16 @@ async function testSiteConfig() {
     results.push({ step: 'Leer configuraciones', ok: false, detail: e.message });
   }
 
-  // 2. Upsert test config
+  // 2. Upsert test config (valor as JSON string, matching app pattern)
   try {
-    const { error } = await (supabase.from('configuracion_sitio') as any)
-      .upsert({ clave: '_debug_test', valor: { test: true, ts: Date.now() } }, { onConflict: 'clave' });
-
+    const testVal = JSON.stringify({ test: true, ts: Date.now() });
+    const { error } = await supabase
+      .from('configuracion_sitio')
+      .upsert({ clave: '_debug_test', valor: testVal }, { onConflict: 'clave' });
     if (error) throw error;
-    results.push({ step: 'Escribir configuraciÃ³n', ok: true, detail: 'Clave _debug_test guardada' });
+    results.push({ step: 'Escribir configuracion', ok: true, detail: 'Clave _debug_test guardada' });
   } catch (e: any) {
-    results.push({ step: 'Escribir configuraciÃ³n', ok: false, detail: e.message });
+    results.push({ step: 'Escribir configuracion', ok: false, detail: e.message });
   }
 
   // 3. Read it back
@@ -538,27 +515,38 @@ async function testSiteConfig() {
       .select('valor')
       .eq('clave', '_debug_test')
       .single();
-
     if (error) throw error;
-    results.push({ step: 'Re-leer configuraciÃ³n', ok: true, detail: `Valor: ${JSON.stringify((data as any).valor).substring(0, 50)}` });
+    const valStr = typeof data.valor === 'string' ? data.valor : JSON.stringify(data.valor);
+    results.push({ step: 'Re-leer configuracion', ok: true, detail: `Valor: ${valStr.substring(0, 50)}` });
   } catch (e: any) {
-    results.push({ step: 'Re-leer configuraciÃ³n', ok: false, detail: e.message });
+    results.push({ step: 'Re-leer configuracion', ok: false, detail: e.message });
   }
 
-  // 4. Delete test config
+  // 4. Update test config (overwrite with new value)
+  try {
+    const { error } = await supabase
+      .from('configuracion_sitio')
+      .upsert({ clave: '_debug_test', valor: JSON.stringify({ cleaned: true }) }, { onConflict: 'clave' });
+    if (error) throw error;
+    results.push({ step: 'Actualizar configuracion', ok: true, detail: 'Valor actualizado' });
+  } catch (e: any) {
+    results.push({ step: 'Actualizar configuracion', ok: false, detail: e.message });
+  }
+
+  // 5. Delete test config
   try {
     const { error } = await supabase
       .from('configuracion_sitio')
       .delete()
       .eq('clave', '_debug_test');
-
     if (error) throw error;
-    results.push({ step: 'Eliminar configuraciÃ³n test', ok: true, detail: 'Limpiado' });
+    results.push({ step: 'Eliminar configuracion test', ok: true, detail: 'Limpiado' });
   } catch (e: any) {
-    results.push({ step: 'Eliminar configuraciÃ³n test', ok: false, detail: e.message });
+    // If delete fails (RLS), mark as warning but not critical
+    results.push({ step: 'Eliminar configuracion test', ok: false, detail: `${e.message} (puede requerir policy DELETE)` });
   }
 
-  return { name: 'ConfiguraciÃ³n del Sitio', results };
+  return { name: 'Configuracion del Sitio', results };
 }
 
 // ============================================
@@ -569,19 +557,18 @@ async function testBankAccounts() {
   const results: { step: string; ok: boolean; detail: string }[] = [];
   let testAccountId: string | null = null;
 
-  // 1. List
+  // List
   try {
     const { data, error } = await supabase
       .from('cuentas_bancarias')
       .select('*');
-
     if (error) throw error;
     results.push({ step: 'Listar cuentas bancarias', ok: true, detail: `${(data as any[]).length} cuentas` });
   } catch (e: any) {
     results.push({ step: 'Listar cuentas bancarias', ok: false, detail: e.message });
   }
 
-  // 2. Create
+  // Create
   try {
     const { data, error } = await supabase
       .from('cuentas_bancarias')
@@ -596,22 +583,20 @@ async function testBankAccounts() {
       })
       .select()
       .single();
-
     if (error) throw error;
-    testAccountId = (data as any).id;
+    testAccountId = data.id;
     results.push({ step: 'Crear cuenta bancaria', ok: true, detail: `ID: ${testAccountId}` });
   } catch (e: any) {
     results.push({ step: 'Crear cuenta bancaria', ok: false, detail: e.message });
   }
 
-  // 3. Update
+  // Update
   if (testAccountId) {
     try {
       const { error } = await supabase
         .from('cuentas_bancarias')
         .update({ titular: 'Test Actualizado' })
         .eq('id', testAccountId);
-
       if (error) throw error;
       results.push({ step: 'Actualizar cuenta bancaria', ok: true, detail: 'Titular actualizado' });
     } catch (e: any) {
@@ -619,14 +604,13 @@ async function testBankAccounts() {
     }
   }
 
-  // 4. Delete
+  // Delete
   if (testAccountId) {
     try {
       const { error } = await supabase
         .from('cuentas_bancarias')
         .delete()
         .eq('id', testAccountId);
-
       if (error) throw error;
       results.push({ step: 'Eliminar cuenta bancaria', ok: true, detail: 'Eliminada' });
     } catch (e: any) {
@@ -638,143 +622,147 @@ async function testBankAccounts() {
 }
 
 // ============================================
-// TEST: Zonas de EnvÃ­o
+// TEST: Zonas de Envio
 // ============================================
 async function testShippingZones() {
   const supabase = await getSupabase();
   const results: { step: string; ok: boolean; detail: string }[] = [];
   let testZoneId: string | null = null;
 
-  // 1. List
+  // List
   try {
     const { data, error } = await supabase
       .from('zonas_envio')
       .select('*');
-
     if (error) throw error;
-    results.push({ step: 'Listar zonas de envÃ­o', ok: true, detail: `${(data as any[]).length} zonas` });
+    results.push({ step: 'Listar zonas de envio', ok: true, detail: `${(data as any[]).length} zonas` });
   } catch (e: any) {
-    results.push({ step: 'Listar zonas de envÃ­o', ok: false, detail: e.message });
+    results.push({ step: 'Listar zonas de envio', ok: false, detail: e.message });
   }
 
-  // 2. Create
+  // Create (set activa=true so SELECT policy can also see it)
   try {
     const { data, error } = await supabase
       .from('zonas_envio')
       .insert({
         nombre: 'Zona Test Debug',
-        provincias: ['Test'],
+        provincias: JSON.stringify(['Test']),
         precio: 1,
+        envio_gratis_minimo: null,
         dias_estimados_min: 1,
         dias_estimados_max: 3,
-        activa: false,
+        activa: true,
       })
       .select()
       .single();
-
     if (error) throw error;
-    testZoneId = (data as any).id;
-    results.push({ step: 'Crear zona de envÃ­o', ok: true, detail: `ID: ${testZoneId}` });
+    testZoneId = data.id;
+    results.push({ step: 'Crear zona de envio', ok: true, detail: `ID: ${testZoneId}` });
   } catch (e: any) {
-    results.push({ step: 'Crear zona de envÃ­o', ok: false, detail: e.message });
+    results.push({ step: 'Crear zona de envio', ok: false, detail: e.message });
   }
 
-  // 3. Update
+  // Update
   if (testZoneId) {
     try {
       const { error } = await supabase
         .from('zonas_envio')
         .update({ precio: 999, nombre: 'Zona Test Actualizada' })
         .eq('id', testZoneId);
-
       if (error) throw error;
-      results.push({ step: 'Actualizar zona de envÃ­o', ok: true, detail: 'Precio: $999' });
+      results.push({ step: 'Actualizar zona de envio', ok: true, detail: 'Precio: $999' });
     } catch (e: any) {
-      results.push({ step: 'Actualizar zona de envÃ­o', ok: false, detail: e.message });
+      results.push({ step: 'Actualizar zona de envio', ok: false, detail: e.message });
     }
   }
 
-  // 4. Delete
+  // Delete
   if (testZoneId) {
     try {
       const { error } = await supabase
         .from('zonas_envio')
         .delete()
         .eq('id', testZoneId);
-
       if (error) throw error;
-      results.push({ step: 'Eliminar zona de envÃ­o', ok: true, detail: 'Eliminada' });
+      results.push({ step: 'Eliminar zona de envio', ok: true, detail: 'Eliminada' });
     } catch (e: any) {
-      results.push({ step: 'Eliminar zona de envÃ­o', ok: false, detail: e.message });
+      results.push({ step: 'Eliminar zona de envio', ok: false, detail: e.message });
     }
   }
 
-  return { name: 'Zonas de EnvÃ­o', results };
+  return { name: 'Zonas de Envio', results };
 }
 
 // ============================================
-// TEST: Contenidos de PÃ¡ginas
+// TEST: Contenidos CMS (stored in configuracion_sitio)
 // ============================================
 async function testPageContents() {
   const supabase = await getSupabase();
   const results: { step: string; ok: boolean; detail: string }[] = [];
 
-  // 1. List
+  // 1. List content keys (CMS stores pages as contenido_* keys in configuracion_sitio)
   try {
     const { data, error } = await supabase
-      .from('contenidos_paginas')
-      .select('pagina');
-
+      .from('configuracion_sitio')
+      .select('clave')
+      .ilike('clave', 'contenido_%');
     if (error) throw error;
-    const pages = (data as any[]).map((d: any) => d.pagina);
-    results.push({ step: 'Listar contenidos de pÃ¡ginas', ok: true, detail: `PÃ¡ginas: ${pages.join(', ') || 'ninguna'}` });
+    const pages = (data as any[]).map((d: any) => d.clave.replace('contenido_', ''));
+    results.push({ step: 'Listar contenidos CMS', ok: true, detail: `Paginas: ${pages.join(', ') || 'ninguna'}` });
   } catch (e: any) {
-    results.push({ step: 'Listar contenidos de pÃ¡ginas', ok: false, detail: e.message });
+    results.push({ step: 'Listar contenidos CMS', ok: false, detail: e.message });
   }
 
-  // 2. Upsert test page content
+  // 2. Write test CMS content
   try {
-    const { error } = await (supabase.from('contenidos_paginas') as any)
-      .upsert({
-        pagina: '_debug_test',
-        contenido: { test: true, sections: [] },
-        actualizado_por: (await supabase.auth.getUser()).data.user?.id,
-      }, { onConflict: 'pagina' });
-
+    const testContent = JSON.stringify({ title: 'Debug Test', sections: [], _test: true });
+    const { error } = await supabase
+      .from('configuracion_sitio')
+      .upsert({ clave: 'contenido__debug_test', valor: testContent }, { onConflict: 'clave' });
     if (error) throw error;
-    results.push({ step: 'Escribir contenido de pÃ¡gina', ok: true, detail: 'PÃ¡gina _debug_test creada' });
+    results.push({ step: 'Escribir contenido CMS', ok: true, detail: 'Pagina _debug_test creada' });
   } catch (e: any) {
-    results.push({ step: 'Escribir contenido de pÃ¡gina', ok: false, detail: e.message });
+    results.push({ step: 'Escribir contenido CMS', ok: false, detail: e.message });
   }
 
   // 3. Read back
   try {
     const { data, error } = await supabase
-      .from('contenidos_paginas')
-      .select('*')
-      .eq('pagina', '_debug_test')
+      .from('configuracion_sitio')
+      .select('valor')
+      .eq('clave', 'contenido__debug_test')
       .single();
-
     if (error) throw error;
-    results.push({ step: 'Re-leer contenido', ok: true, detail: 'Contenido verificado' });
+    results.push({ step: 'Re-leer contenido CMS', ok: true, detail: 'Contenido verificado' });
   } catch (e: any) {
-    results.push({ step: 'Re-leer contenido', ok: false, detail: e.message });
+    results.push({ step: 'Re-leer contenido CMS', ok: false, detail: e.message });
   }
 
-  // 4. Delete
+  // 4. Update it
+  try {
+    const updatedContent = JSON.stringify({ title: 'Debug Test Updated', sections: [{ type: 'test' }], _test: true });
+    const { error } = await supabase
+      .from('configuracion_sitio')
+      .upsert({ clave: 'contenido__debug_test', valor: updatedContent }, { onConflict: 'clave' });
+    if (error) throw error;
+    results.push({ step: 'Actualizar contenido CMS', ok: true, detail: 'Contenido actualizado' });
+  } catch (e: any) {
+    results.push({ step: 'Actualizar contenido CMS', ok: false, detail: e.message });
+  }
+
+  // 5. Delete test content
   try {
     const { error } = await supabase
-      .from('contenidos_paginas')
+      .from('configuracion_sitio')
       .delete()
-      .eq('pagina', '_debug_test');
-
+      .eq('clave', 'contenido__debug_test');
     if (error) throw error;
     results.push({ step: 'Eliminar contenido test', ok: true, detail: 'Limpiado' });
   } catch (e: any) {
-    results.push({ step: 'Eliminar contenido test', ok: false, detail: e.message });
+    results.push({ step: 'Eliminar contenido test', ok: false, detail: `${e.message} (puede requerir policy DELETE)` });
   }
 
-  return { name: 'Contenidos de PÃ¡ginas (CMS)', results };
+  return { name: 'Contenidos CMS', results };
 }
 
 // ============================================
@@ -787,24 +775,23 @@ async function testAddresses() {
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    results.push({ step: 'AutenticaciÃ³n', ok: false, detail: 'No autenticado' });
+    results.push({ step: 'Autenticacion', ok: false, detail: 'No autenticado' });
     return { name: 'Direcciones', results };
   }
 
-  // 1. List
+  // List
   try {
     const { data, error } = await supabase
       .from('direcciones')
       .select('*')
       .eq('usuario_id', user.id);
-
     if (error) throw error;
     results.push({ step: 'Listar direcciones', ok: true, detail: `${(data as any[]).length} direcciones` });
   } catch (e: any) {
     results.push({ step: 'Listar direcciones', ok: false, detail: e.message });
   }
 
-  // 2. Create
+  // Create
   try {
     const { data, error } = await supabase
       .from('direcciones')
@@ -815,48 +802,45 @@ async function testAddresses() {
         calle: 'Calle Debug',
         numero: '000',
         ciudad: 'CABA',
-        provincia: 'Ciudad AutÃ³noma de Buenos Aires',
+        provincia: 'Ciudad Autonoma de Buenos Aires',
         codigo_postal: '0000',
         pais: 'Argentina',
         es_predeterminada: false,
       })
       .select()
       .single();
-
     if (error) throw error;
-    testAddressId = (data as any).id;
-    results.push({ step: 'Crear direcciÃ³n', ok: true, detail: `ID: ${testAddressId}` });
+    testAddressId = data.id;
+    results.push({ step: 'Crear direccion', ok: true, detail: `ID: ${testAddressId}` });
   } catch (e: any) {
-    results.push({ step: 'Crear direcciÃ³n', ok: false, detail: e.message });
+    results.push({ step: 'Crear direccion', ok: false, detail: e.message });
   }
 
-  // 3. Update
+  // Update
   if (testAddressId) {
     try {
       const { error } = await supabase
         .from('direcciones')
         .update({ calle: 'Calle Actualizada' })
         .eq('id', testAddressId);
-
       if (error) throw error;
-      results.push({ step: 'Actualizar direcciÃ³n', ok: true, detail: 'Calle actualizada' });
+      results.push({ step: 'Actualizar direccion', ok: true, detail: 'Calle actualizada' });
     } catch (e: any) {
-      results.push({ step: 'Actualizar direcciÃ³n', ok: false, detail: e.message });
+      results.push({ step: 'Actualizar direccion', ok: false, detail: e.message });
     }
   }
 
-  // 4. Delete
+  // Delete
   if (testAddressId) {
     try {
       const { error } = await supabase
         .from('direcciones')
         .delete()
         .eq('id', testAddressId);
-
       if (error) throw error;
-      results.push({ step: 'Eliminar direcciÃ³n', ok: true, detail: 'Eliminada' });
+      results.push({ step: 'Eliminar direccion', ok: true, detail: 'Eliminada' });
     } catch (e: any) {
-      results.push({ step: 'Eliminar direcciÃ³n', ok: false, detail: e.message });
+      results.push({ step: 'Eliminar direccion', ok: false, detail: e.message });
     }
   }
 
@@ -873,7 +857,7 @@ async function testRLSPolicies() {
   const tables = [
     'productos', 'pedidos', 'items_pedido', 'perfiles', 'direcciones',
     'verificaciones_pago', 'info_envio', 'cuentas_bancarias', 'zonas_envio',
-    'configuracion_sitio', 'contenidos_paginas',
+    'configuracion_sitio',
   ];
 
   for (const table of tables) {
@@ -881,7 +865,6 @@ async function testRLSPolicies() {
       const { error, count } = await supabase
         .from(table)
         .select('*', { count: 'exact', head: true });
-
       if (error) throw error;
       results.push({ step: `SELECT ${table}`, ok: true, detail: `${count ?? '?'} filas` });
     } catch (e: any) {
@@ -918,13 +901,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { test } = body;
 
-    // Run a single test
     if (test && TEST_MAP[test]) {
       const result = await TEST_MAP[test]();
       return NextResponse.json({ success: true, results: [result] });
     }
 
-    // Run all tests
     if (test === 'all') {
       const allResults = [];
       for (const key of Object.keys(TEST_MAP)) {
@@ -935,7 +916,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      error: 'Test no vÃ¡lido',
+      error: 'Test no valido',
       available: Object.keys(TEST_MAP),
     }, { status: 400 });
   } catch (error: any) {

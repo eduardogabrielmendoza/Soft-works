@@ -31,7 +31,7 @@ export type EstadoVerificacion = 'pendiente' | 'aprobado' | 'rechazado'
 
 export type CategoriaProducto = 'camisetas' | 'hoodies' | 'gorras' | 'accesorios'
 
-export type Transportista = 'correo_argentino' | 'andreani' | 'oca' | 'otro'
+export type Transportista = 'correo_argentino'
 
 // =============================================
 // INTERFACES DE TABLAS

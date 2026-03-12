@@ -107,10 +107,7 @@ export async function sendOrderEmail(
 // Helper para obtener nombre del transportista para mostrar
 export function getCarrierDisplayName(carrier: string): string {
   const carriers: Record<string, string> = {
-    'andreani': 'Andreani',
-    'oca': 'OCA',
     'correo_argentino': 'Correo Argentino',
-    'otro': 'Servicio de envío',
   };
   return carriers[carrier] || carrier;
 }

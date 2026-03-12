@@ -563,24 +563,9 @@ export async function updateOrderStatus(
 function generateTrackingUrl(carrier: string, trackingNumber: string): string | undefined {
   const carrierLower = carrier.toLowerCase();
   
-  // Andreani
-  if (carrierLower.includes('andreani')) {
-    return `https://www.andreani.com/#!/personas/tracking?numero=${trackingNumber}`;
-  }
-  
-  // OCA
-  if (carrierLower.includes('oca')) {
-    return `https://www1.oca.com.ar/OCA_Track.asp?gui=${trackingNumber}`;
-  }
-  
   // Correo Argentino
   if (carrierLower.includes('correo')) {
     return `https://www.correoargentino.com.ar/formularios/e-commerce?codigo=${trackingNumber}`;
-  }
-  
-  // Via Cargo
-  if (carrierLower.includes('via') || carrierLower.includes('cargo')) {
-    return `https://www.viacargo.com.ar/Tracking?NroGuia=${trackingNumber}`;
   }
   
   return undefined;

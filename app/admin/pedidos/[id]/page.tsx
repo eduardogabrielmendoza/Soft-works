@@ -27,13 +27,9 @@ import { formatPrice, formatDateTime, getOrderStatusLabel, getOrderStatusColor }
 import { sendOrderEmail, getCarrierDisplayName } from '@/lib/utils/emailClient';
 import type { OrderWithItems } from '@/lib/types/database.types';
 
-// Mapeo de transportistas: valor para DB -> nombre para mostrar
-// Nota: El enum en BD tiene: 'correo_argentino', 'andreani', 'oca', 'otro'
+// Mapeo de transportistas
 const CARRIERS = [
-  { value: 'andreani', label: 'Andreani' },
-  { value: 'oca', label: 'OCA' },
   { value: 'correo_argentino', label: 'Correo Argentino' },
-  { value: 'otro', label: 'Otro (especificar)' },
 ];
 
 export default function AdminPedidoDetailPage({ params }: { params: Promise<{ id: string }> }) {
