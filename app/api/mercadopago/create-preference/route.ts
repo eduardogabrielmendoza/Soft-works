@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { MercadoPagoConfig, Preference } from 'mercadopago';
-
-const client = new MercadoPagoConfig({
-  accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN!,
-});
-
-const preference = new Preference(client);
+import { Preference } from 'mercadopago';
+import { getMercadoPagoMode, createMPClient } from '@/lib/api/mercadopago-config';
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,7 +11,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Datos incompletos' }, { status: 400 });
     }
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    // Get current mode from DB config
+    const mode = await getMercadoPagoMode();
+    const client = createMPClient(mode);
+    const preference = new Preference(client);
+
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://softworks.com.ar';
 
     const preferenceData = await preference.create({
       body: {
@@ -58,6 +58,7 @@ export async function POST(req: NextRequest) {
       id: preferenceData.id,
       init_point: preferenceData.init_point,
       sandbox_init_point: preferenceData.sandbox_init_point,
+      mode,
     });
   } catch (error) {
     console.error('MercadoPago preference error:', error);

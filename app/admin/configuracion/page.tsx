@@ -13,7 +13,9 @@ import {
   Loader2,
   Globe,
   DollarSign,
-  Megaphone
+  Megaphone,
+  AlertTriangle,
+  TestTube2
 } from 'lucide-react';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { getSupabaseClient } from '@/lib/supabase/client';
@@ -40,6 +42,7 @@ export default function ConfiguracionAdminPage() {
     free_shipping_threshold: 50000,
     shipping_cost: 5000,
     payment_methods: ['transferencia', 'mercadopago'],
+    mercadopago_mode: 'production' as 'production' | 'sandbox',
     notifications_enabled: true,
     email_notifications: true,
   });
@@ -130,6 +133,12 @@ export default function ConfiguracionAdminPage() {
           clave: 'pagos',
           valor: {
             payment_methods: settings.payment_methods,
+          },
+        },
+        {
+          clave: 'mercadopago',
+          valor: {
+            mercadopago_mode: settings.mercadopago_mode,
           },
         },
         {
@@ -576,6 +585,88 @@ export default function ConfiguracionAdminPage() {
                   />
                   <span>Mercado Pago</span>
                 </label>
+              </div>
+            </div>
+
+            {/* MercadoPago Mode */}
+            <div className={`rounded-lg border p-6 ${
+              settings.mercadopago_mode === 'sandbox' 
+                ? 'bg-amber-50 border-amber-300' 
+                : 'bg-white border-gray-200'
+            }`}>
+              <div className="flex items-center gap-3 mb-4">
+                <TestTube2 className={`w-6 h-6 ${settings.mercadopago_mode === 'sandbox' ? 'text-amber-600' : 'text-foreground'}`} />
+                <h2 className="text-lg font-medium">MercadoPago - Modo de Operación</h2>
+              </div>
+              <p className="text-sm text-gray-500 mb-4">
+                Cambiá entre el modo de pruebas (sandbox) y producción (pagos reales).
+              </p>
+              
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Modo Sandbox (Pruebas)</p>
+                    <p className="text-sm text-gray-600">Activar para hacer pruebas sin cobrar de verdad</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={settings.mercadopago_mode === 'sandbox'}
+                      onChange={(e) => setSettings({ 
+                        ...settings, 
+                        mercadopago_mode: e.target.checked ? 'sandbox' : 'production' 
+                      })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                  </label>
+                </div>
+
+                {settings.mercadopago_mode === 'sandbox' && (
+                  <div className="flex items-start gap-3 p-3 bg-amber-100 rounded-lg border border-amber-200">
+                    <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-amber-800">Modo de pruebas activo</p>
+                      <p className="text-xs text-amber-700 mt-1">
+                        Los pagos NO son reales. Se usan credenciales de prueba de MercadoPago. 
+                        Ideal para probar el flujo de pago, emails de confirmación y webhooks.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {settings.mercadopago_mode === 'production' && (
+                  <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                    <CreditCard className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-green-800">Modo producción activo</p>
+                      <p className="text-xs text-green-700 mt-1">
+                        Los pagos SON reales. Se cobran a las tarjetas de los clientes y el dinero llega a tu cuenta de MercadoPago.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Quick save button for MP mode */}
+                <div className="pt-2">
+                  <button
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="px-4 py-2 bg-foreground text-white text-sm rounded-md hover:bg-foreground/90 transition-colors flex items-center gap-2 disabled:opacity-50"
+                  >
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Guardando...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4" />
+                        Guardar Modo MercadoPago
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
 

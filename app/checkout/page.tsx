@@ -159,8 +159,10 @@ export default function CheckoutPage() {
 
         // Clear cart and redirect to MercadoPago
         clearCart();
-        // Use sandbox_init_point for test mode, init_point for production
-        window.location.href = mpData.sandbox_init_point || mpData.init_point;
+        // Use sandbox_init_point for sandbox mode, init_point for production
+        window.location.href = mpData.mode === 'sandbox'
+          ? (mpData.sandbox_init_point || mpData.init_point)
+          : (mpData.init_point || mpData.sandbox_init_point);
         return;
       }
 
@@ -468,9 +470,9 @@ export default function CheckoutPage() {
                           </p>
                         </div>
                         <img
-                          src="https://http2.mlstatic.com/frontend-assets/mp-web-navigation/ui-navigation/6.6.92/mercadopago/logo__small@2x.png"
+                          src="/images/mercadopago-logo.svg"
                           alt="MercadoPago"
-                          className="h-5 object-contain"
+                          className="h-6 object-contain"
                         />
                       </div>
                     </label>

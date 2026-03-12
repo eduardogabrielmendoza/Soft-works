@@ -206,7 +206,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const resetPassword = useCallback(async (email: string) => {
     const supabase = getSupabaseClient()
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://softworks.up.railway.app'
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://softworks.com.ar'
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${siteUrl}/cuenta/reset-password`,
     })

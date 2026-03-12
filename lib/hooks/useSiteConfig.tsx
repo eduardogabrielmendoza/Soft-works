@@ -33,6 +33,7 @@ export interface SiteConfig {
   
   // Pagos
   payment_methods: string[];
+  mercadopago_mode: 'production' | 'sandbox';
   
   // Notificaciones
   notifications_enabled: boolean;
@@ -57,6 +58,7 @@ const defaultConfig: SiteConfig = {
   free_shipping_threshold: 50000,
   shipping_cost: 5000,
   payment_methods: ['transferencia', 'mercadopago'],
+  mercadopago_mode: 'production',
   notifications_enabled: true,
   email_notifications: true,
 };
