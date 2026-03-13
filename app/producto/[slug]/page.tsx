@@ -7,9 +7,11 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/lib/hooks/useCart';
+import { useAuth } from '@/lib/hooks/useAuth';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { CategoriaProducto } from '@/lib/types/database.types';
 import RelatedProducts from '@/app/components/RelatedProducts';
+import AuthPromptModal from '@/app/components/AuthPromptModal';
 
 interface Producto {
   id: string;
@@ -36,6 +38,7 @@ export default function ProductoPage({ params }: { params: Promise<{ slug: strin
   const { slug } = use(params);
   const router = useRouter();
   const { addItem } = useCart();
+  const { user } = useAuth();
   const [product, setProduct] = useState<Producto | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -43,6 +46,7 @@ export default function ProductoPage({ params }: { params: Promise<{ slug: strin
   const [quantity, setQuantity] = useState(1);
   const [showSizeGuide, setShowSizeGuide] = useState(false);
   const [showAddedMessage, setShowAddedMessage] = useState(false);
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
 
   const sizes = ['XS', 'S', 'M', 'L', 'XL'];
 
@@ -511,6 +515,10 @@ export default function ProductoPage({ params }: { params: Promise<{ slug: strin
               disabled={!selectedSize || isOutOfStock}
               onClick={() => {
                 if (selectedSize && product && !isOutOfStock) {
+                  if (!user) {
+                    setShowAuthPrompt(true);
+                    return;
+                  }
                   addItem(product, selectedSize, quantity);
                   setShowAddedMessage(true);
                   setTimeout(() => setShowAddedMessage(false), 3000);
@@ -563,6 +571,8 @@ export default function ProductoPage({ params }: { params: Promise<{ slug: strin
           category={product.categoria} 
         />
       )}
+
+      <AuthPromptModal isOpen={showAuthPrompt} onClose={() => setShowAuthPrompt(false)} />
     </div>
   );
 }

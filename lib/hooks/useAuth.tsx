@@ -147,11 +147,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     metadata?: { first_name?: string; last_name?: string }
   ) => {
     const supabase = getSupabaseClient()
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: metadata,
+        emailRedirectTo: `${siteUrl}/auth/callback`,
       },
     })
 
