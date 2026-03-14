@@ -67,7 +67,7 @@ export const defaultLayoutContent: LayoutContent = {
       { id: '2', label: 'Nosotros', href: '/nosotros' },
       { id: '3', label: 'Producción', href: '/produccion' },
     ],
-    logoUrl: '/images/logosoftworks.png',
+    logoUrl: '',
   },
   footer: {
     newsletterTitle: 'Unite a la comunidad {site_name}',

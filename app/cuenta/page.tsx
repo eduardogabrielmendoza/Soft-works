@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, Suspense } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -91,14 +90,9 @@ function CuentaContent() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.6 }}
-            className="relative aspect-[4/5] rounded-lg overflow-hidden hidden lg:block"
+            className="relative aspect-[4/5] rounded-lg overflow-hidden hidden lg:block bg-gray-100"
           >
-            <Image
-              src="/images/mision.png"
-              alt="Softworks"
-              fill
-              className="object-cover"
-            />
+            <div className="flex items-center justify-center h-full text-gray-400 text-sm">SOFTWORKS</div>
           </motion.div>
 
           {/* Right Form */}

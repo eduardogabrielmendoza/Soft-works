@@ -148,15 +148,15 @@ const defaultNosotrosContent: NosotrosContent = {
     title: 'Nuestra Historia',
     description: 'En Softworks, creemos en hacer una de cada cosa realmente bien. Nuestra filosofía es crear prendas esenciales, intencionadas y de alto rendimiento que uses todos los días.'
   },
-  headerImage: '/images/nosotrosheader.png',
+  headerImage: '',
   vision: {
-    image: '/images/nosotros1.png',
+    image: '',
     title: 'Nuestra Visión',
     paragraph1: 'Fundada en 2023, Softworks nació de la frustración con la moda rápida y la necesidad de crear algo verdaderamente atemporal. Queremos que cada prenda cuente una historia de calidad, durabilidad y diseño consciente.',
     paragraph2: 'Creemos que menos es más. Cada pieza de nuestra colección está diseñada para complementar tu guardarropa existente, no para reemplazarlo. Sostenibilidad a través de la simplicidad.'
   },
   values: {
-    image: '/images/nosotros2.png',
+    image: '',
     title: 'Nuestros Valores',
     items: [
       { title: 'Calidad sobre Cantidad', description: 'Menos piezas, mejor fabricadas' },
@@ -180,9 +180,9 @@ const defaultProduccionContent: ProduccionContent = {
     description: 'Cada prenda es fabricada con dedicación y precisión en nuestro taller. Nos comprometemos con la calidad artesanal y procesos responsables.'
   },
   pillars: [
-    { title: 'Diseño Artesanal', description: 'Cada pieza diseñada con atención al detalle', image: '/images/impacto1.png' },
-    { title: 'Calidad Premium', description: 'Materiales seleccionados y procesos cuidadosos', image: '/images/impacto2.png' },
-    { title: 'Producción Local', description: 'Fabricado en Argentina con orgullo', image: '/images/impacto3.png' }
+    { title: 'Diseño Artesanal', description: 'Cada pieza diseñada con atención al detalle', image: '' },
+    { title: 'Calidad Premium', description: 'Materiales seleccionados y procesos cuidadosos', image: '' },
+    { title: 'Producción Local', description: 'Fabricado en Argentina con orgullo', image: '' }
   ],
   customSections: []
 };
@@ -194,7 +194,7 @@ const defaultEventosContent: EventosContent = {
   upcomingEvents: [
     {
       id: '1',
-      image: '/images/showroom2.png',
+      image: '',
       date: '06/05/2026',
       location: 'CABA',
       title: 'Showroom Palermo Nº2',
@@ -212,7 +212,7 @@ const defaultEventosContent: EventosContent = {
   pastEvents: [
     {
       id: '2',
-      image: '/images/showroom1.png',
+      image: '',
       date: '15/12/2025',
       location: 'Buenos Aires',
       title: 'Showroom Palermo Nº1',

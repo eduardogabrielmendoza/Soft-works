@@ -191,8 +191,9 @@ export default function Navbar() {
                       height: `${(layout.header.logoScale ?? 100) * 0.64}px`,
                     }}
                   >
+                    {layout.header.logoUrl ? (
                     <Image
-                      src={layout.header.logoUrl || '/images/logosoftworks.png'}
+                      src={layout.header.logoUrl}
                       alt="Softworks"
                       fill
                       className={`object-contain transition-all duration-300 ${
@@ -202,6 +203,11 @@ export default function Navbar() {
                       }`}
                       priority
                     />
+                    ) : (
+                      <span className={`font-bold text-lg transition-all duration-300 ${
+                        isTransparent ? 'text-white' : 'text-black'
+                      }`}>SOFTWORKS</span>
+                    )}
                   </div>
                 </Link>
                 {/* Mobile logo */}
@@ -219,8 +225,9 @@ export default function Navbar() {
                       height: `${(layout.header.mobileLogoScale ?? 100) * 0.64}px`,
                     }}
                   >
+                    {layout.header.logoUrl ? (
                     <Image
-                      src={layout.header.logoUrl || '/images/logosoftworks.png'}
+                      src={layout.header.logoUrl}
                       alt="Softworks"
                       fill
                       className={`object-contain transition-all duration-300 ${
@@ -230,6 +237,11 @@ export default function Navbar() {
                       }`}
                       priority
                     />
+                    ) : (
+                      <span className={`font-bold text-lg transition-all duration-300 ${
+                        isTransparent ? 'text-white' : 'text-black'
+                      }`}>SOFTWORKS</span>
+                    )}
                   </div>
                 </Link>
               </>

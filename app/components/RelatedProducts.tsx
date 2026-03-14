@@ -111,7 +111,7 @@ export default function RelatedProducts({ currentProductId, category }: RelatedP
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
           {products.map((product, index) => {
             const discount = getDiscount(product.precio, product.precio_comparacion);
-            const mainImage = product.imagenes?.[0]?.src || '/images/placeholder.jpg';
+            const mainImage = product.imagenes?.[0]?.src || '';
 
             return (
               <motion.div
@@ -123,12 +123,16 @@ export default function RelatedProducts({ currentProductId, category }: RelatedP
                 <Link href={`/producto/${product.slug}`} className="group block">
                   {/* Imagen del producto */}
                   <div className="relative aspect-square mb-4 overflow-hidden rounded-lg bg-gray-100">
+                    {mainImage ? (
                     <Image
                       src={mainImage}
                       alt={product.nombre}
                       fill
                       className="object-cover group-hover:scale-105 transition-transform duration-300"
                     />
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-gray-400 text-sm">Sin imagen</div>
+                    )}
                     {discount > 0 && (
                       <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-md text-xs font-bold">
                         -{discount}%
