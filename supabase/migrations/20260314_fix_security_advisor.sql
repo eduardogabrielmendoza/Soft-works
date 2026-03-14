@@ -5,12 +5,17 @@
 
 -- =====================================================
 -- 1. FIX ERRORS: RLS references user metadata en perfiles
--- El trigger manejar_nuevo_usuario usa raw_user_meta_data
--- que es confiable porque se ejecuta como SECURITY DEFINER
--- desde un trigger de auth.users (datos del servidor, no del cliente).
--- Sin embargo, el Security Advisor lo marca como error.
--- Re-creamos la función sin cambios pero con search_path fijo.
+-- Las policies originales del schema usaban auth.jwt() -> 'user_metadata'
+-- que es inseguro porque el cliente puede manipular user_metadata.
+-- Eliminamos esas policies si aún existen y nos aseguramos de usar es_admin().
 -- =====================================================
+
+-- Eliminar policies viejas que usan user_metadata/app_metadata (del schema original)
+DROP POLICY IF EXISTS "Admins pueden ver todos los perfiles" ON perfiles;
+DROP POLICY IF EXISTS "Admins pueden actualizar todos los perfiles" ON perfiles;
+DROP POLICY IF EXISTS "Sistema puede insertar perfiles" ON perfiles;
+DROP POLICY IF EXISTS "Usuarios pueden ver su perfil" ON perfiles;
+DROP POLICY IF EXISTS "Usuarios pueden actualizar su perfil" ON perfiles;
 
 -- =====================================================
 -- 2. FIX WARNINGS: Function Search Path Mutable
@@ -154,6 +159,19 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER
 SET search_path = public;
 
+-- log_order_status_change (existe en la DB pero faltaba en la migración anterior)
+CREATE OR REPLACE FUNCTION log_order_status_change()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF OLD.estado IS DISTINCT FROM NEW.estado THEN
+    INSERT INTO public.historial_estados_pedido (pedido_id, estado_anterior, estado_nuevo)
+    VALUES (NEW.id, OLD.estado, NEW.estado);
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public;
+
 -- =====================================================
 -- 3. FIX WARNINGS: RLS Policy Always True
 -- Reemplazar WITH CHECK (true) con condiciones más seguras
@@ -164,21 +182,14 @@ DROP POLICY IF EXISTS "perfiles_insert_system" ON perfiles;
 CREATE POLICY "perfiles_insert_system"
   ON perfiles FOR INSERT
   WITH CHECK (
-    -- Solo permite insertar si el id coincide con el usuario autenticado
-    -- o si es llamado desde un trigger SECURITY DEFINER (service role)
     auth.uid() = id
   );
 
--- perfiles_update_own: ya está bien (auth.uid() = id)
--- perfiles_update_admin: ya está bien (es_admin())
-
--- historial_estados_insert_system: restringir al admin o service role
+-- historial_estados_insert_system: restringir al admin o dueño del pedido
 DROP POLICY IF EXISTS "historial_estados_insert_system" ON historial_estados_pedido;
 CREATE POLICY "historial_estados_insert_system"
   ON historial_estados_pedido FOR INSERT
   WITH CHECK (
-    -- El trigger de cambio de estado se ejecuta como SECURITY DEFINER
-    -- Para inserciones manuales, solo admins
     es_admin()
     OR
     EXISTS (
@@ -188,14 +199,11 @@ CREATE POLICY "historial_estados_insert_system"
     )
   );
 
--- newsletter_insert_all: mantener abierto pero agregar rate-limiting conceptual
--- No podemos hacer rate limiting en RLS, pero sí limitar campos
+-- newsletter_insert_all: público pero sin duplicados
 DROP POLICY IF EXISTS "newsletter_insert_all" ON suscriptores_newsletter;
 CREATE POLICY "newsletter_insert_all"
   ON suscriptores_newsletter FOR INSERT
   WITH CHECK (
-    -- Permitir a cualquiera suscribirse (es un formulario público)
-    -- Pero solo si el email no está ya registrado (evitar duplicados)
     NOT EXISTS (
       SELECT 1 FROM public.suscriptores_newsletter AS existing
       WHERE existing.email = suscriptores_newsletter.email
@@ -205,6 +213,6 @@ CREATE POLICY "newsletter_insert_all"
 -- =====================================================
 -- 4. ENABLE: Leaked Password Protection
 -- Esto se habilita desde el Dashboard de Supabase:
--- Authentication > Settings > Enable Leaked Password Protection
+-- Authentication > Providers > Email > Enable Leaked Password Protection
 -- No se puede hacer via SQL.
 -- =====================================================
