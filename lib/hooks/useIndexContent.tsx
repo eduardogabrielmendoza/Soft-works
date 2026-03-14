@@ -148,7 +148,7 @@ const defaultContent: IndexContent = {
   contentGrid: [
     { id: '1', title: 'Nuestra Misión', description: 'Restaurar, diseñar y crear', image: '', link: '/nosotros' },
     { id: '2', title: 'Filantropía', description: 'Apoyando estilos de vida', image: '', link: '/futuros-softworks' },
-    { id: '3', title: 'Sostenibilidad', description: 'Moda consciente y responsable', image: '', link: '/produccion' },
+    { id: '3', title: 'Preguntas Frecuentes', description: 'Resolvé tus dudas', image: '', link: '/preguntas-frecuentes' },
   ],
   customSections: [],
 };

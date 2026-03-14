@@ -97,7 +97,7 @@ export default function ColeccionesPage() {
     if (product.imagenes && product.imagenes.length > 0) {
       return product.imagenes[0].src;
     }
-    return '/images/placeholder.png';
+    return '';
   };
 
   // Calcular descuento

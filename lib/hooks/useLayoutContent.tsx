@@ -65,7 +65,7 @@ export const defaultLayoutContent: LayoutContent = {
     navLinks: [
       { id: '1', label: 'Colecciones', href: '/colecciones' },
       { id: '2', label: 'Nosotros', href: '/nosotros' },
-      { id: '3', label: 'Producción', href: '/produccion' },
+      { id: '3', label: 'FAQ', href: '/preguntas-frecuentes' },
     ],
     logoUrl: '/images/logosoftworks.png',
   },
@@ -88,7 +88,7 @@ export const defaultLayoutContent: LayoutContent = {
         title: 'Sobre Nosotros',
         links: [
           { id: '2a', label: 'Nuestra Historia', href: '/nosotros' },
-          { id: '2b', label: 'Nuestra Producción', href: '/produccion' },
+          { id: '2b', label: 'Preguntas Frecuentes', href: '/preguntas-frecuentes' },
         ],
       },
       {
