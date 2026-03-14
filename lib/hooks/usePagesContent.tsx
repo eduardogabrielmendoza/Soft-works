@@ -45,6 +45,25 @@ export interface NosotrosContent {
   textStyles?: Record<string, TextStyle>;
 }
 
+// Producción Page
+export interface ProduccionContent {
+  hero: {
+    title: string;
+    description: string;
+    buttons?: CustomButton[];
+    buttonAlignment?: ButtonAlignment;
+  };
+  pillars: Array<{
+    title: string;
+    description: string;
+    image: string;
+    buttons?: CustomButton[];
+    buttonAlignment?: ButtonAlignment;
+  }>;
+  customSections?: CustomSection[];
+  textStyles?: Record<string, TextStyle>;
+}
+
 // Eventos Page
 export interface EventoItem {
   id: string;
@@ -129,15 +148,15 @@ const defaultNosotrosContent: NosotrosContent = {
     title: 'Nuestra Historia',
     description: 'En Softworks, creemos en hacer una de cada cosa realmente bien. Nuestra filosofía es crear prendas esenciales, intencionadas y de alto rendimiento que uses todos los días.'
   },
-  headerImage: '',
+  headerImage: '/images/nosotrosheader.png',
   vision: {
-    image: '',
+    image: '/images/nosotros1.png',
     title: 'Nuestra Visión',
     paragraph1: 'Fundada en 2023, Softworks nació de la frustración con la moda rápida y la necesidad de crear algo verdaderamente atemporal. Queremos que cada prenda cuente una historia de calidad, durabilidad y diseño consciente.',
     paragraph2: 'Creemos que menos es más. Cada pieza de nuestra colección está diseñada para complementar tu guardarropa existente, no para reemplazarlo. Sostenibilidad a través de la simplicidad.'
   },
   values: {
-    image: '',
+    image: '/images/nosotros2.png',
     title: 'Nuestros Valores',
     items: [
       { title: 'Calidad sobre Cantidad', description: 'Menos piezas, mejor fabricadas' },
@@ -150,8 +169,21 @@ const defaultNosotrosContent: NosotrosContent = {
     title: 'Conoce más sobre nuestro impacto',
     description: 'Descubre cómo estamos trabajando para crear un futuro más sostenible y equitativo',
     buttonText: 'Ver más',
-    buttonLink: '/preguntas-frecuentes'
+    buttonLink: '/produccion'
   },
+  customSections: []
+};
+
+const defaultProduccionContent: ProduccionContent = {
+  hero: {
+    title: 'Nuestra Producción',
+    description: 'Cada prenda es fabricada con dedicación y precisión en nuestro taller. Nos comprometemos con la calidad artesanal y procesos responsables.'
+  },
+  pillars: [
+    { title: 'Diseño Artesanal', description: 'Cada pieza diseñada con atención al detalle', image: '/images/impacto1.png' },
+    { title: 'Calidad Premium', description: 'Materiales seleccionados y procesos cuidadosos', image: '/images/impacto2.png' },
+    { title: 'Producción Local', description: 'Fabricado en Argentina con orgullo', image: '/images/impacto3.png' }
+  ],
   customSections: []
 };
 
@@ -162,7 +194,7 @@ const defaultEventosContent: EventosContent = {
   upcomingEvents: [
     {
       id: '1',
-      image: '',
+      image: '/images/showroom2.png',
       date: '06/05/2026',
       location: 'CABA',
       title: 'Showroom Palermo Nº2',
@@ -180,7 +212,7 @@ const defaultEventosContent: EventosContent = {
   pastEvents: [
     {
       id: '2',
-      image: '',
+      image: '/images/showroom1.png',
       date: '15/12/2025',
       location: 'Buenos Aires',
       title: 'Showroom Palermo Nº1',
@@ -231,6 +263,7 @@ const defaultContactoContent: ContactoContent = {
 
 interface PagesContentContextType {
   nosotros: NosotrosContent;
+  produccion: ProduccionContent;
   eventos: EventosContent;
   ubicaciones: UbicacionesContent;
   contacto: ContactoContent;
@@ -242,6 +275,7 @@ const PagesContentContext = createContext<PagesContentContextType | undefined>(u
 
 export function PagesContentProvider({ children }: { children: ReactNode }) {
   const [nosotros, setNosotros] = useState<NosotrosContent>(defaultNosotrosContent);
+  const [produccion, setProduccion] = useState<ProduccionContent>(defaultProduccionContent);
   const [eventos, setEventos] = useState<EventosContent>(defaultEventosContent);
   const [ubicaciones, setUbicaciones] = useState<UbicacionesContent>(defaultUbicacionesContent);
   const [contacto, setContacto] = useState<ContactoContent>(defaultContactoContent);
@@ -255,7 +289,7 @@ export function PagesContentProvider({ children }: { children: ReactNode }) {
       const { data } = await supabase
         .from('configuracion_sitio')
         .select('clave, valor')
-        .in('clave', ['contenido_nosotros', 'contenido_eventos', 'contenido_ubicaciones', 'contenido_contacto']);
+        .in('clave', ['contenido_nosotros', 'contenido_produccion', 'contenido_eventos', 'contenido_ubicaciones', 'contenido_contacto']);
 
       if (data) {
         data.forEach((row: { clave: string; valor: string }) => {
@@ -264,6 +298,9 @@ export function PagesContentProvider({ children }: { children: ReactNode }) {
             switch (row.clave) {
               case 'contenido_nosotros':
                 setNosotros({ ...defaultNosotrosContent, ...parsed });
+                break;
+              case 'contenido_produccion':
+                setProduccion({ ...defaultProduccionContent, ...parsed });
                 break;
               case 'contenido_eventos':
                 setEventos({ ...defaultEventosContent, ...parsed });
@@ -301,6 +338,9 @@ export function PagesContentProvider({ children }: { children: ReactNode }) {
             case 'contenido_nosotros':
               setNosotros({ ...defaultNosotrosContent, ...val });
               break;
+            case 'contenido_produccion':
+              setProduccion({ ...defaultProduccionContent, ...val });
+              break;
             case 'contenido_eventos':
               setEventos({ ...defaultEventosContent, ...val });
               break;
@@ -323,6 +363,7 @@ export function PagesContentProvider({ children }: { children: ReactNode }) {
   return (
     <PagesContentContext.Provider value={{
       nosotros,
+      produccion,
       eventos,
       ubicaciones,
       contacto,
@@ -345,6 +386,7 @@ export function usePagesContent() {
 // Export defaults for use in admin
 export const defaultContents = {
   nosotros: defaultNosotrosContent,
+  produccion: defaultProduccionContent,
   eventos: defaultEventosContent,
   ubicaciones: defaultUbicacionesContent,
   contacto: defaultContactoContent

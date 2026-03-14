@@ -41,18 +41,12 @@ export default function Home() {
             >
               <Link href={largeCard.link}>
                 <div className="aspect-[3/4] rounded-lg mb-4 relative overflow-hidden">
-                  {largeCard.image ? (
-                    <Image
-                      src={largeCard.image}
-                      alt={largeCard.title}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-[#E8E6E1] flex items-center justify-center">
-                      <span className="text-foreground/30 text-sm font-medium">Placeholder Producto Grande</span>
-                    </div>
-                  )}
+                  <Image
+                    src={largeCard.image}
+                    alt={largeCard.title}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                   <div className="absolute bottom-6 left-6 z-10">
                     <h3 className="text-2xl font-medium text-white mb-2" style={textStyleCSS(content.textStyles, `card-${largeCard.id}-title`)}>{largeCard.title}</h3>
@@ -84,18 +78,12 @@ export default function Home() {
               >
                 <Link href={card.link}>
                   <div className="aspect-[16/9] lg:aspect-[21/9] rounded-lg mb-3 relative overflow-hidden">
-                    {card.image ? (
-                      <Image
-                        src={card.image}
-                        alt={card.title}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-[#E8E6E1] flex items-center justify-center">
-                        <span className="text-foreground/30 text-sm font-medium">Placeholder {card.title}</span>
-                      </div>
-                    )}
+                    <Image
+                      src={card.image}
+                      alt={card.title}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                     <div className="absolute bottom-4 left-4 z-10">
                       <h3 className="text-xl font-medium text-white" style={textStyleCSS(content.textStyles, `card-${card.id}-title`)}>{card.title}</h3>
@@ -157,18 +145,12 @@ export default function Home() {
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 className="aspect-[3/4] rounded-lg overflow-hidden relative group cursor-pointer"
               >
-                {item.image ? (
-                  <Image
-                    src={item.image}
-                    alt={item.label}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-[#E8E6E1] flex items-center justify-center">
-                    <span className="text-foreground/30 text-sm font-medium">Placeholder {item.label}</span>
-                  </div>
-                )}
+                <Image
+                  src={item.image}
+                  alt={item.label}
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-500"
+                />
               </motion.div>
             ))}
           </div>
@@ -184,16 +166,12 @@ export default function Home() {
           transition={{ duration: 0.8 }}
           className="relative aspect-[9/12] lg:aspect-[21/9]"
         >
-          {content.fullWidthBanner.image ? (
-            <Image
-              src={content.fullWidthBanner.image}
-              alt={content.fullWidthBanner.title}
-              fill
-              className="object-cover"
-            />
-          ) : (
-            <div className="w-full h-full bg-[#D5D3CE]" />
-          )}
+          <Image
+            src={content.fullWidthBanner.image}
+            alt={content.fullWidthBanner.title}
+            fill
+            className="object-cover"
+          />
           <div className="absolute inset-0 bg-black/30" />
           <div className="absolute inset-0 flex items-center justify-center z-10">
             <div className="text-center text-white">
@@ -223,18 +201,12 @@ export default function Home() {
             >
               <Link href={item.link}>
                 <div className="aspect-square rounded-lg mb-6 relative overflow-hidden group cursor-pointer">
-                  {item.image ? (
-                    <Image
-                      src={item.image}
-                      alt={item.title}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-[#E8E6E1] flex items-center justify-center">
-                      <span className="text-foreground/30 text-sm font-medium">Placeholder {item.title}</span>
-                    </div>
-                  )}
+                  <Image
+                    src={item.image}
+                    alt={item.title}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
                 </div>
               </Link>
               <h3 className="text-xl font-medium mb-2" style={textStyleCSS(content.textStyles, `grid-${item.id}-title`)}>{item.title}</h3>

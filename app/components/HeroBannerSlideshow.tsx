@@ -155,21 +155,15 @@ export default function HeroBannerSlideshow() {
                   style={{ y: imageY, scale: imageScale }}
                   className="absolute inset-0 will-change-transform"
                 >
-                  {slides[currentSlide].image ? (
-                    <Image
-                      src={slides[currentSlide].image}
-                      alt={slides[currentSlide].title}
-                      fill
-                      priority
-                      quality={90}
-                      className="object-cover"
-                      sizes="100vw"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-[#D5D3CE] flex items-center justify-center">
-                      <span className="text-foreground/30 text-lg font-medium">Placeholder Hero</span>
-                    </div>
-                  )}
+                  <Image
+                    src={slides[currentSlide].image}
+                    alt={slides[currentSlide].title}
+                    fill
+                    priority
+                    quality={90}
+                    className="object-cover"
+                    sizes="100vw"
+                  />
                 </motion.div>
                 
                 {/* Overlay gradiente elegante */}

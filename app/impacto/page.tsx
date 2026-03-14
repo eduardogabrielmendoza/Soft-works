@@ -16,24 +16,18 @@ export default function ImpactoPage() {
       <section className="px-4 py-16 max-w-6xl mx-auto">
         <div className="grid lg:grid-cols-3 gap-8">
           {[
-            { title: 'Diseño Artesanal', desc: 'Cada pieza diseñada con atención al detalle', img: '' },
-            { title: 'Calidad Premium', desc: 'Materiales seleccionados y procesos cuidadosos', img: '' },
-            { title: 'Producción Local', desc: 'Fabricado en Argentina con orgullo', img: '' },
+            { title: 'Diseño Artesanal', desc: 'Cada pieza diseñada con atención al detalle', img: '/images/impacto1.png' },
+            { title: 'Calidad Premium', desc: 'Materiales seleccionados y procesos cuidadosos', img: '/images/impacto2.png' },
+            { title: 'Producción Local', desc: 'Fabricado en Argentina con orgullo', img: '/images/impacto3.png' },
           ].map((pillar, i) => (
             <div key={i} className="text-center">
               <div className="aspect-square rounded-lg mx-auto mb-4 w-32 h-32 relative overflow-hidden">
-                {pillar.img ? (
-                  <Image
-                    src={pillar.img}
-                    alt={pillar.title}
-                    fill
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-[#E8E6E1] flex items-center justify-center">
-                    <span className="text-foreground/30 text-xs font-medium text-center">Placeholder {pillar.title}</span>
-                  </div>
-                )}
+                <Image
+                  src={pillar.img}
+                  alt={pillar.title}
+                  fill
+                  className="object-cover"
+                />
               </div>
               <h3 className="text-xl font-medium mb-2">{pillar.title}</h3>
               <p className="text-foreground/70">{pillar.desc}</p>

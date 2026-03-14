@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Save, Loader2, ArrowLeft, Monitor, Tablet, Smartphone,
-  Home, Users, Calendar, MapPin, Phone,
+  Home, Users, Factory, Calendar, MapPin, Phone,
   Plus, Trash2, ChevronDown, ChevronUp, Check, AlertCircle,
   GripVertical, Link as LinkIcon, ExternalLink, Globe, Youtube, MousePointerClick,
   Layout, PanelTop, PanelBottom, Type, Palette, RotateCcw,
@@ -12,7 +12,7 @@ import {
 import Link from 'next/link';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useIndexContent, type IndexContent, type HeroSlide, type ProductCard, type LifestyleImage, type ContentItem } from '@/lib/hooks/useIndexContent';
-import { usePagesContent, type NosotrosContent, type EventosContent, type EventoItem, type UbicacionesContent, type ContactoContent } from '@/lib/hooks/usePagesContent';
+import { usePagesContent, type NosotrosContent, type ProduccionContent, type EventosContent, type EventoItem, type UbicacionesContent, type ContactoContent } from '@/lib/hooks/usePagesContent';
 import { useLayoutContent, type LayoutContent, type NavLink, type FooterLinkColumn, defaultLayoutContent } from '@/lib/hooks/useLayoutContent';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { type CustomSection, type CustomButton, type TextStyle, type ButtonAlignment, type CustomSectionType, SECTION_TYPE_OPTIONS, BTN_ALIGN_CLASS, createEmptySection, toEmbedUrl } from '@/lib/types/sections';
@@ -20,13 +20,14 @@ import { type CustomSection, type CustomButton, type TextStyle, type ButtonAlign
 // ============================================================
 // TYPES
 // ============================================================
-type PageId = 'layout' | 'index' | 'nosotros' | 'eventos' | 'ubicaciones' | 'contacto';
+type PageId = 'layout' | 'index' | 'nosotros' | 'produccion' | 'eventos' | 'ubicaciones' | 'contacto';
 type DevicePreview = 'desktop' | 'tablet' | 'mobile';
 
 const PAGE_TABS: { id: PageId; label: string; icon: React.ReactNode; path: string }[] = [
   { id: 'layout', label: 'Layout', icon: <Layout className="w-4 h-4" />, path: '/' },
   { id: 'index', label: 'Inicio', icon: <Home className="w-4 h-4" />, path: '/' },
   { id: 'nosotros', label: 'Nosotros', icon: <Users className="w-4 h-4" />, path: '/nosotros' },
+  { id: 'produccion', label: 'Producción', icon: <Factory className="w-4 h-4" />, path: '/produccion' },
   { id: 'eventos', label: 'Eventos', icon: <Calendar className="w-4 h-4" />, path: '/eventos' },
   { id: 'ubicaciones', label: 'Ubicaciones', icon: <MapPin className="w-4 h-4" />, path: '/ubicaciones' },
   { id: 'contacto', label: 'Contacto', icon: <Phone className="w-4 h-4" />, path: '/contacto' },
@@ -864,6 +865,67 @@ function NosotrosEditor({ content, onChange }: { content: NosotrosContent; onCha
   );
 }
 
+// ---- PRODUCCIÓN ----
+function ProduccionEditor({ content, onChange }: { content: ProduccionContent; onChange: (c: ProduccionContent) => void }) {
+  const ts = (key: string) => ({ styleKey: key, textStyles: content.textStyles, onStyleChange: (k: string, s: TextStyle | undefined) => { const next = { ...content.textStyles }; if (s) next[k] = s; else delete next[k]; onChange({ ...content, textStyles: next }); } });
+  const updatePillar = (idx: number, updates: Partial<{ title: string; description: string; image: string; buttons: CustomButton[]; buttonAlignment: ButtonAlignment }>) => {
+    const pillars = content.pillars.map((p, i) => i === idx ? { ...p, ...updates } : p);
+    onChange({ ...content, pillars });
+  };
+  const addPillar = () => {
+    onChange({ ...content, pillars: [...content.pillars, { title: 'Nuevo pilar', description: 'Descripción', image: '' }] });
+  };
+  const removePillar = (idx: number) => {
+    onChange({ ...content, pillars: content.pillars.filter((_, i) => i !== idx) });
+  };
+
+  return (
+    <div className="space-y-4">
+      <SectionCard title="🏠 Hero">
+        <div className="space-y-3 pt-3">
+          <Field label="Título" {...ts('hero-title')}><TextInput value={content.hero.title} onChange={v => onChange({ ...content, hero: { ...content.hero, title: v } })} /></Field>
+          <Field label="Descripción" {...ts('hero-desc')}><TextArea value={content.hero.description} onChange={v => onChange({ ...content, hero: { ...content.hero, description: v } })} /></Field>
+          <ButtonEditor
+            buttons={content.hero.buttons || []}
+            onChange={buttons => onChange({ ...content, hero: { ...content.hero, buttons } })}
+            alignment={content.hero.buttonAlignment}
+            onAlignmentChange={a => onChange({ ...content, hero: { ...content.hero, buttonAlignment: a } })}
+          />
+        </div>
+      </SectionCard>
+
+      <SectionCard title="🏛️ Pilares de Producción">
+        <div className="space-y-4 pt-3">
+          {content.pillars.map((pillar, idx) => (
+            <div key={idx} className="p-4 bg-gray-50 rounded-lg space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-foreground/70">Pilar {idx + 1}</span>
+                {content.pillars.length > 1 && (
+                  <button onClick={() => removePillar(idx)} className="p-1 text-red-400 hover:text-red-600 rounded"><Trash2 className="w-3.5 h-3.5" /></button>
+                )}
+              </div>
+              <ImageInput value={pillar.image} onChange={v => updatePillar(idx, { image: v })} />
+              <Field label="Título" {...ts(`pillar-${idx}-title`)}><TextInput value={pillar.title} onChange={v => updatePillar(idx, { title: v })} /></Field>
+              <Field label="Descripción" {...ts(`pillar-${idx}-desc`)}><TextArea value={pillar.description} onChange={v => updatePillar(idx, { description: v })} /></Field>
+              <ButtonEditor
+                buttons={pillar.buttons || []}
+                onChange={buttons => updatePillar(idx, { buttons })}
+                alignment={pillar.buttonAlignment}
+                onAlignmentChange={a => updatePillar(idx, { buttonAlignment: a })}
+              />
+            </div>
+          ))}
+          <button onClick={addPillar} className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-sm text-foreground/50 hover:border-blue-400 hover:text-blue-600 transition-colors flex items-center justify-center gap-2">
+            <Plus className="w-4 h-4" /> Agregar Pilar
+          </button>
+        </div>
+      </SectionCard>
+
+      <CustomSectionsEditor sections={content.customSections || []} onChange={s => onChange({ ...content, customSections: s })} />
+    </div>
+  );
+}
+
 // ---- EVENTOS ----
 function EventosEditor({ content, onChange }: { content: EventosContent; onChange: (c: EventosContent) => void }) {
   const ts = (key: string) => ({ styleKey: key, textStyles: content.textStyles, onStyleChange: (k: string, s: TextStyle | undefined) => { const next = { ...content.textStyles }; if (s) next[k] = s; else delete next[k]; onChange({ ...content, textStyles: next }); } });
@@ -1332,7 +1394,7 @@ function LayoutEditor({ content, onChange }: { content: LayoutContent; onChange:
 export default function AdminContenidosPage() {
   const { isAdmin, isLoading: authLoading } = useAuth();
   const { content: indexContent, refreshContent: refreshIndex } = useIndexContent();
-  const { nosotros, eventos, ubicaciones, contacto, refreshContent: refreshPages } = usePagesContent();
+  const { nosotros, produccion, eventos, ubicaciones, contacto, refreshContent: refreshPages } = usePagesContent();
   const { layout: layoutContent, refreshLayout } = useLayoutContent();
 
   const [activePage, setActivePage] = useState<PageId>('index');
@@ -1345,7 +1407,7 @@ export default function AdminContenidosPage() {
   // Local state for each page (mutable copies)
   const [indexData, setIndexData] = useState<IndexContent>(indexContent);
   const [nosotrosData, setNosotrosData] = useState<NosotrosContent>(nosotros);
-
+  const [produccionData, setProduccionData] = useState<ProduccionContent>(produccion);
   const [eventosData, setEventosData] = useState<EventosContent>(eventos);
   const [ubicacionesData, setUbicacionesData] = useState<UbicacionesContent>(ubicaciones);
   const [contactoData, setContactoData] = useState<ContactoContent>(contacto);
@@ -1359,7 +1421,7 @@ export default function AdminContenidosPage() {
     if (!authLoading) {
       setIndexData(indexContent);
       setNosotrosData(nosotros);
-
+      setProduccionData(produccion);
       setEventosData(eventos);
       setUbicacionesData(ubicaciones);
       setContactoData(contacto);
@@ -1376,7 +1438,7 @@ export default function AdminContenidosPage() {
 
   const handleIndexChange = useCallback((c: IndexContent) => { setIndexData(c); markChanged(); }, [markChanged]);
   const handleNosotrosChange = useCallback((c: NosotrosContent) => { setNosotrosData(c); markChanged(); }, [markChanged]);
-
+  const handleProduccionChange = useCallback((c: ProduccionContent) => { setProduccionData(c); markChanged(); }, [markChanged]);
   const handleEventosChange = useCallback((c: EventosContent) => { setEventosData(c); markChanged(); }, [markChanged]);
   const handleUbicacionesChange = useCallback((c: UbicacionesContent) => { setUbicacionesData(c); markChanged(); }, [markChanged]);
   const handleContactoChange = useCallback((c: ContactoContent) => { setContactoData(c); markChanged(); }, [markChanged]);
@@ -1398,7 +1460,7 @@ export default function AdminContenidosPage() {
         layout: { key: 'contenido_layout', value: layoutData },
         index: { key: 'contenido_index', value: indexData },
         nosotros: { key: 'contenido_nosotros', value: nosotrosData },
-
+        produccion: { key: 'contenido_produccion', value: produccionData },
         eventos: { key: 'contenido_eventos', value: eventosData },
         ubicaciones: { key: 'contenido_ubicaciones', value: ubicacionesData },
         contacto: { key: 'contenido_contacto', value: contactoData },
@@ -1411,7 +1473,7 @@ export default function AdminContenidosPage() {
       }
     }, 150);
     return () => clearTimeout(previewTimerRef.current);
-  }, [activePage, indexData, nosotrosData, eventosData, ubicacionesData, contactoData, layoutData, sendPreview]);
+  }, [activePage, indexData, nosotrosData, produccionData, eventosData, ubicacionesData, contactoData, layoutData, sendPreview]);
 
   // ---- SAVE ----
   const handleSave = useCallback(async () => {
@@ -1423,7 +1485,7 @@ export default function AdminContenidosPage() {
       const updates = [
         { clave: 'contenido_index', valor: JSON.stringify(indexData) },
         { clave: 'contenido_nosotros', valor: JSON.stringify(nosotrosData) },
-
+        { clave: 'contenido_produccion', valor: JSON.stringify(produccionData) },
         { clave: 'contenido_eventos', valor: JSON.stringify(eventosData) },
         { clave: 'contenido_ubicaciones', valor: JSON.stringify(ubicacionesData) },
         { clave: 'contenido_contacto', valor: JSON.stringify(contactoData) },
@@ -1450,7 +1512,7 @@ export default function AdminContenidosPage() {
     } finally {
       setIsSaving(false);
     }
-  }, [indexData, nosotrosData, eventosData, ubicacionesData, contactoData, layoutData, refreshIndex, refreshPages, refreshLayout]);
+  }, [indexData, nosotrosData, produccionData, eventosData, ubicacionesData, contactoData, layoutData, refreshIndex, refreshPages, refreshLayout]);
 
   // Ctrl+S
   useEffect(() => {
@@ -1555,7 +1617,7 @@ export default function AdminContenidosPage() {
             {activePage === 'layout' && <LayoutEditor content={layoutData} onChange={handleLayoutChange} />}
             {activePage === 'index' && <IndexEditor content={indexData} onChange={handleIndexChange} />}
             {activePage === 'nosotros' && <NosotrosEditor content={nosotrosData} onChange={handleNosotrosChange} />}
-
+            {activePage === 'produccion' && <ProduccionEditor content={produccionData} onChange={handleProduccionChange} />}
             {activePage === 'eventos' && <EventosEditor content={eventosData} onChange={handleEventosChange} />}
             {activePage === 'ubicaciones' && <UbicacionesEditor content={ubicacionesData} onChange={handleUbicacionesChange} />}
             {activePage === 'contacto' && <ContactoEditor content={contactoData} onChange={handleContactoChange} />}
