@@ -179,7 +179,8 @@ export function IndexContentProvider({ children }: { children: ReactNode }) {
       }
 
       if (data?.valor) {
-        setContent({ ...defaultContent, ...data.valor });
+        const parsed = typeof data.valor === 'string' ? JSON.parse(data.valor) : data.valor;
+        setContent({ ...defaultContent, ...parsed });
       }
     } catch (error) {
       console.error('Error:', error);
