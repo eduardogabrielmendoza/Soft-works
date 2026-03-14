@@ -48,12 +48,18 @@ export default function NosotrosPage() {
         transition={{ duration: 0.8 }}
         className="aspect-[16/9] lg:aspect-[21/9] relative mb-16 overflow-hidden"
       >
-        <Image
-          src={content.headerImage}
-          alt="Equipo Fundador Softworks"
-          fill
-          className="object-cover"
-        />
+        {content.headerImage ? (
+          <Image
+            src={content.headerImage}
+            alt="Equipo Fundador Softworks"
+            fill
+            className="object-cover"
+          />
+        ) : (
+          <div className="w-full h-full bg-[#E8E6E1] flex items-center justify-center">
+            <span className="text-foreground/30 text-lg font-medium">Placeholder Nosotros Header</span>
+          </div>
+        )}
       </motion.div>
 
       {/* Misión y Visión */}
@@ -66,12 +72,18 @@ export default function NosotrosPage() {
             transition={{ duration: 0.6 }}
             className="aspect-[4/5] relative rounded-lg overflow-hidden"
           >
-            <Image
-              src={content.vision.image}
-              alt="Equipo Softworks"
-              fill
-              className="object-cover"
-            />
+            {content.vision.image ? (
+              <Image
+                src={content.vision.image}
+                alt="Equipo Softworks"
+                fill
+                className="object-cover"
+              />
+            ) : (
+              <div className="w-full h-full bg-[#E8E6E1] flex items-center justify-center">
+                <span className="text-foreground/30 text-sm font-medium">Placeholder Visión</span>
+              </div>
+            )}
           </motion.div>
           <motion.div
             initial={{ opacity: 0, x: 20 }}
@@ -132,12 +144,18 @@ export default function NosotrosPage() {
             transition={{ duration: 0.6 }}
             className="aspect-[4/5] relative rounded-lg overflow-hidden order-1 lg:order-2"
           >
-            <Image
-              src={content.values.image}
-              alt="Proceso de Producción"
-              fill
-              className="object-cover"
-            />
+            {content.values.image ? (
+              <Image
+                src={content.values.image}
+                alt="Proceso de Producción"
+                fill
+                className="object-cover"
+              />
+            ) : (
+              <div className="w-full h-full bg-[#E8E6E1] flex items-center justify-center">
+                <span className="text-foreground/30 text-sm font-medium">Placeholder Valores</span>
+              </div>
+            )}
           </motion.div>
         </div>
       </section>

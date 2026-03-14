@@ -102,7 +102,6 @@ function TextSection({ section }: { section: CustomSection }) {
 }
 
 function ImageSection({ section }: { section: CustomSection }) {
-  if (!section.image) return null;
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -115,13 +114,19 @@ function ImageSection({ section }: { section: CustomSection }) {
         <h3 className="text-xl font-light text-foreground text-center mb-6 px-6">{section.title}</h3>
       )}
       <div className="relative w-full aspect-[16/9] lg:aspect-[21/9] overflow-hidden">
-        <Image
-          src={section.image}
-          alt={section.title || 'Imagen'}
-          fill
-          className="object-cover"
-          sizes="100vw"
-        />
+        {section.image ? (
+          <Image
+            src={section.image}
+            alt={section.title || 'Imagen'}
+            fill
+            className="object-cover"
+            sizes="100vw"
+          />
+        ) : (
+          <div className="w-full h-full bg-[#E8E6E1] flex items-center justify-center">
+            <span className="text-foreground/30 text-sm font-medium">Placeholder Imagen</span>
+          </div>
+        )}
       </div>
       {section.description && (
         <p className="text-sm text-foreground/50 text-center mt-4 px-6">{section.description}</p>
@@ -139,7 +144,7 @@ function BannerSection({ section }: { section: CustomSection }) {
       transition={{ duration: 0.8 }}
       className="relative w-full aspect-[9/12] md:aspect-[16/9] lg:aspect-[21/9] overflow-hidden"
     >
-      {section.image && (
+      {section.image ? (
         <Image
           src={section.image}
           alt={section.title || 'Banner'}
@@ -147,6 +152,8 @@ function BannerSection({ section }: { section: CustomSection }) {
           className="object-cover"
           sizes="100vw"
         />
+      ) : (
+        <div className="absolute inset-0 bg-[#D5D3CE]" />
       )}
       <div className="absolute inset-0 bg-black/30 flex flex-col items-center justify-center text-center px-6">
         {section.title && (

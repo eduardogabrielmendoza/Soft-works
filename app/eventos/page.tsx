@@ -41,12 +41,18 @@ export default function EventosPage() {
             {content.upcomingEvents.map((evento) => (
               <div key={evento.id} className="grid lg:grid-cols-[300px_1fr] gap-6 p-6 border border-gray-200 rounded-lg">
                 <div className="aspect-square rounded-lg relative overflow-hidden">
-                  <Image
-                    src={evento.image}
-                    alt={evento.title}
-                    fill
-                    className="object-cover"
-                  />
+                  {evento.image ? (
+                    <Image
+                      src={evento.image}
+                      alt={evento.title}
+                      fill
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-[#E8E6E1] flex items-center justify-center">
+                      <span className="text-foreground/30 text-sm font-medium">Placeholder Evento</span>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <div className="text-sm text-foreground/70 mb-1">{evento.date} · {evento.location}</div>
@@ -77,12 +83,18 @@ export default function EventosPage() {
             {content.pastEvents.map((evento) => (
               <div key={evento.id}>
                 <div className="aspect-[4/3] rounded-lg mb-3 relative overflow-hidden">
-                  <Image
-                    src={evento.image}
-                    alt={evento.title}
-                    fill
-                    className="object-cover"
-                  />
+                  {evento.image ? (
+                    <Image
+                      src={evento.image}
+                      alt={evento.title}
+                      fill
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-[#E8E6E1] flex items-center justify-center">
+                      <span className="text-foreground/30 text-sm font-medium">Placeholder Evento Pasado</span>
+                    </div>
+                  )}
                 </div>
                 <h3 className="font-medium mb-1">{evento.title}</h3>
                 <p className="text-sm text-foreground/70">{evento.date} · {evento.location}</p>

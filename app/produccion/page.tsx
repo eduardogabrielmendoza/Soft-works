@@ -38,12 +38,18 @@ export default function ProduccionPage() {
           {content.pillars.map((pillar, i) => (
             <div key={i} className="text-center">
               <div className="aspect-square rounded-lg mx-auto mb-6 w-full max-w-sm relative overflow-hidden group cursor-pointer">
-                <Image
-                  src={pillar.image}
-                  alt={pillar.title}
-                  fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-500"
-                />
+                {pillar.image ? (
+                  <Image
+                    src={pillar.image}
+                    alt={pillar.title}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-[#E8E6E1] flex items-center justify-center">
+                    <span className="text-foreground/30 text-sm font-medium">Placeholder {pillar.title}</span>
+                  </div>
+                )}
               </div>
               <h3 className="text-xl font-medium mb-2" style={textStyleCSS(content.textStyles, `pillar-${i}-title`)}>{pillar.title}</h3>
               <p className="text-foreground/70" style={textStyleCSS(content.textStyles, `pillar-${i}-desc`)}>{pillar.description}</p>
