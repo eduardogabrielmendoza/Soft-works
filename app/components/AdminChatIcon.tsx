@@ -67,9 +67,10 @@ export default function AdminChatIcon() {
 
   // Load active chats
   const loadChats = useCallback(async () => {
-    if (!isAdmin) return;
+    if (!isAdmin || !user?.id) return;
     if (!hasLoadedRef.current) setIsLoading(true);
     const supabase = getSupabaseClient();
+    const currentUserId = user.id;
 
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     const { data: chatList } = await (supabase as any)
@@ -89,18 +90,21 @@ export default function AdminChatIcon() {
 
           const { data: lastMsg } = await (supabase as any)
             .from('chat_mensajes')
-            .select('contenido, tipo, autor_id')
+            .select('contenido, tipo, autor_id, id')
             .eq('chat_id', chat.id)
             .order('fecha_creacion', { ascending: false })
             .limit(1);
 
-          // On first load, seed unread for chats whose last message is from the client
-          if (!hasLoadedRef.current && lastMsg?.[0]?.autor_id && lastMsg[0].autor_id !== userIdRef.current && lastMsg[0].tipo === 'mensaje') {
-            setUnreadChatIds((prev) => {
-              const next = new Set(prev);
-              next.add(chat.id);
-              return next;
-            });
+          // Detect unread: last message is from client and admin hasn't read it
+          if (lastMsg?.[0] && lastMsg[0].autor_id !== currentUserId && lastMsg[0].tipo === 'mensaje') {
+            const lastReadId = localStorage.getItem(`admin-lastread-${chat.id}`);
+            if (lastReadId !== lastMsg[0].id) {
+              setUnreadChatIds((prev) => {
+                const next = new Set(prev);
+                next.add(chat.id);
+                return next;
+              });
+            }
           }
 
           return {
@@ -114,7 +118,7 @@ export default function AdminChatIcon() {
     }
     setIsLoading(false);
     hasLoadedRef.current = true;
-  }, [isAdmin]);
+  }, [isAdmin, user?.id]);
 
   useEffect(() => { loadChats(); }, [loadChats]);
 
@@ -241,7 +245,13 @@ export default function AdminChatIcon() {
       .select('*')
       .eq('chat_id', chatId)
       .order('fecha_creacion', { ascending: true });
-    if (data) setMessages(data);
+    if (data) {
+      setMessages(data);
+      // Save last message id as read marker
+      if (data.length > 0) {
+        localStorage.setItem(`admin-lastread-${chatId}`, data[data.length - 1].id);
+      }
+    }
   };
 
   const handleSend = async () => {
