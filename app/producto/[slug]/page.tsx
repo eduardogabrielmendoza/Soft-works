@@ -572,7 +572,17 @@ export default function ProductoPage({ params }: { params: Promise<{ slug: strin
         />
       )}
 
-      <AuthPromptModal isOpen={showAuthPrompt} onClose={() => setShowAuthPrompt(false)} />
+      <AuthPromptModal
+        isOpen={showAuthPrompt}
+        onClose={() => setShowAuthPrompt(false)}
+        onGuestContinue={() => {
+          if (selectedSize && product && !isOutOfStock) {
+            addItem(product, selectedSize, quantity);
+            setShowAddedMessage(true);
+            setTimeout(() => setShowAddedMessage(false), 3000);
+          }
+        }}
+      />
     </div>
   );
 }

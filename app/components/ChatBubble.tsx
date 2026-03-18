@@ -57,13 +57,15 @@ export default function ChatBubble() {
       await loadMessages(id);
     } else {
       // Create new chat
-      const { data: newChat } = await (supabase as any)
+      const { data: newChat, error } = await (supabase as any)
         .from('chats')
         .insert({ usuario_id: user!.id })
         .select()
         .single();
 
-      if (newChat) {
+      if (error) {
+        console.error('Error creating chat:', error);
+      } else if (newChat) {
         setChatId(newChat.id);
         setMessages([]);
       }
@@ -131,7 +133,7 @@ export default function ChatBubble() {
     setIsSending(true);
     const supabase = getSupabaseClient();
 
-    await (supabase as any)
+    const { error } = await (supabase as any)
       .from('chat_mensajes')
       .insert({
         chat_id: chatId,
@@ -140,7 +142,11 @@ export default function ChatBubble() {
         tipo: 'mensaje',
       });
 
-    setNewMessage('');
+    if (error) {
+      console.error('Error sending message:', error);
+    } else {
+      setNewMessage('');
+    }
     setIsSending(false);
   };
 
@@ -253,6 +259,7 @@ export default function ChatBubble() {
                     className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
                   />
                   <button
+                    type="button"
                     onClick={handleSend}
                     disabled={!newMessage.trim() || isSending}
                     className="p-2 bg-foreground text-white rounded-md hover:bg-foreground/90 transition-colors disabled:opacity-50"
