@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, nombreIngresado, securityQuestion, securityAnswer } = await request.json()
+    const { email, nombreIngresado, securityAnswer, step } = await request.json()
 
     if (!email || !nombreIngresado) {
       return NextResponse.json(
@@ -26,18 +26,42 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (profileError || !profile) {
-      // No revelar si el email existe o no
-      return NextResponse.json({ success: true, message: 'Si el email existe, tu solicitud fue registrada.' })
+      return NextResponse.json({ error: 'No se encontró una cuenta con ese email.' }, { status: 404 })
     }
 
-    // Verificar pregunta de seguridad si fue proporcionada
-    let securityVerified = false
-    if (securityQuestion && securityAnswer && profile.pregunta_seguridad && profile.respuesta_seguridad) {
-      securityVerified = 
-        profile.pregunta_seguridad === securityQuestion &&
-        profile.respuesta_seguridad === securityAnswer.trim().toLowerCase()
+    // Verificar que el nombre coincida
+    const fullName = `${profile.nombre || ''} ${profile.apellido || ''}`.trim().toLowerCase()
+    const inputName = nombreIngresado.trim().toLowerCase()
+    if (fullName !== inputName && profile.nombre?.toLowerCase() !== inputName) {
+      return NextResponse.json({ error: 'El nombre no coincide con la cuenta registrada.' }, { status: 400 })
     }
 
+    // Step 1: Validate email + name, return security question
+    if (step === 'validate') {
+      // Check for pending request first
+      const { data: existing } = await supabaseAdmin
+        .from('solicitudes_recuperacion')
+        .select('id, fecha_creacion')
+        .eq('usuario_id', profile.id)
+        .eq('estado', 'pendiente')
+        .single()
+
+      if (existing) {
+        return NextResponse.json({
+          success: true,
+          pending: true,
+          message: 'Ya tenés una solicitud pendiente. Un administrador la revisará pronto.',
+          fecha: existing.fecha_creacion,
+        })
+      }
+
+      return NextResponse.json({
+        success: true,
+        securityQuestion: profile.pregunta_seguridad || null,
+      })
+    }
+
+    // Step 2: Submit with security answer
     // Verificar si ya hay una solicitud pendiente
     const { data: existing } = await supabaseAdmin
       .from('solicitudes_recuperacion')
@@ -50,8 +74,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, message: 'Ya tenés una solicitud pendiente. Un administrador la revisará pronto.' })
     }
 
+    // Verificar pregunta de seguridad
+    let securityVerified = false
+    const userAnswer = (securityAnswer || '').trim().toLowerCase()
+    if (profile.pregunta_seguridad && profile.respuesta_seguridad && userAnswer) {
+      securityVerified = profile.respuesta_seguridad === userAnswer
+    }
+
     // Crear solicitud de recuperación
-    const { error: insertError } = await supabaseAdmin
+    const { data: solicitud, error: insertError } = await supabaseAdmin
       .from('solicitudes_recuperacion')
       .insert({
         usuario_id: profile.id,
@@ -62,8 +93,10 @@ export async function POST(request: NextRequest) {
         pregunta_seguridad: profile.pregunta_seguridad || null,
         respuesta_seguridad: profile.respuesta_seguridad || null,
       })
+      .select('id')
+      .single()
 
-    if (insertError) {
+    if (insertError || !solicitud) {
       console.error('Error creating reset request:', insertError)
       return NextResponse.json({ error: 'Error al crear solicitud' }, { status: 500 })
     }
@@ -85,12 +118,22 @@ export async function POST(request: NextRequest) {
       .eq('rol', 'admin')
 
     if (admins && admins.length > 0) {
+      const securityInfo = profile.pregunta_seguridad
+        ? securityVerified
+          ? ' ✓ Respuesta de seguridad correcta.'
+          : ' ✗ Respuesta de seguridad incorrecta.'
+        : ''
+
       const adminNotifs = admins.map((admin) => ({
         usuario_id: admin.id,
         tipo: 'admin',
         titulo: 'Nueva solicitud de recuperación',
-        mensaje: `${nombreIngresado} (${email}) solicita recuperar su contraseña.${securityVerified ? ' ✓ Pregunta de seguridad verificada.' : ''}`,
-        metadata: { solicitud_tipo: 'recuperacion', usuario_email: email },
+        mensaje: `${nombreIngresado} (${email}) solicita recuperar su contraseña.${securityInfo}`,
+        metadata: {
+          solicitud_tipo: 'recuperacion',
+          usuario_email: email,
+          solicitud_id: solicitud.id,
+        },
       }))
       await supabaseAdmin.from('notificaciones').insert(adminNotifs)
     }

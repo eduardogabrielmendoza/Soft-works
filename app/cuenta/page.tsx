@@ -28,8 +28,11 @@ function CuentaContent() {
   const [resetSent, setResetSent] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
   const [resetMessage, setResetMessage] = useState('');
+  const [resetError, setResetError] = useState('');
   const [pendingRequest, setPendingRequest] = useState<{ estado: string; fecha: string } | null>(null);
-  const [checkingPending, setCheckingPending] = useState(false);
+  const [resetStep, setResetStep] = useState<'credentials' | 'security' | 'done'>('credentials');
+  const [securityQuestion, setSecurityQuestion] = useState('');
+  const [securityAnswer, setSecurityAnswer] = useState('');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,9 +61,11 @@ function CuentaContent() {
     }
   };
 
-  const handleResetRequest = async (e: React.FormEvent) => {
+  // Step 1: Validate email + name
+  const handleValidateCredentials = async (e: React.FormEvent) => {
     e.preventDefault();
     setResetLoading(true);
+    setResetError('');
 
     try {
       const res = await fetch('/api/auth/request-reset', {
@@ -69,41 +74,75 @@ function CuentaContent() {
         body: JSON.stringify({
           email: resetEmail,
           nombreIngresado: resetName,
+          step: 'validate',
         }),
       });
       const data = await res.json();
-      if (data.message?.includes('solicitud pendiente')) {
-        setPendingRequest({ estado: 'pendiente', fecha: '' });
+
+      if (!res.ok) {
+        setResetError(data.error || 'Datos incorrectos.');
+        return;
       }
-      setResetMessage(data.message || 'Tu solicitud fue registrada.');
-      setResetSent(true);
+
+      if (data.pending) {
+        setPendingRequest({ estado: 'pendiente', fecha: data.fecha || '' });
+        return;
+      }
+
+      if (data.securityQuestion) {
+        setSecurityQuestion(data.securityQuestion);
+        setResetStep('security');
+      } else {
+        // No security question, submit directly
+        await submitResetRequest('');
+      }
     } catch {
-      setResetMessage('Ocurrió un error. Intentá de nuevo.');
+      setResetError('Ocurrió un error. Intentá de nuevo.');
     } finally {
       setResetLoading(false);
     }
   };
 
-  const checkPendingRequest = async (emailToCheck: string) => {
-    if (!emailToCheck) return;
-    setCheckingPending(true);
+  // Step 2: Submit with security answer
+  const handleSubmitWithSecurity = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetLoading(true);
+    setResetError('');
+    await submitResetRequest(securityAnswer);
+    setResetLoading(false);
+  };
+
+  const submitResetRequest = async (answer: string) => {
     try {
-      const res = await fetch('/api/auth/check-reset', {
+      const res = await fetch('/api/auth/request-reset', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: emailToCheck }),
+        body: JSON.stringify({
+          email: resetEmail,
+          nombreIngresado: resetName,
+          securityAnswer: answer,
+        }),
       });
       const data = await res.json();
-      if (data.estado === 'pendiente') {
-        setPendingRequest({ estado: data.estado, fecha: data.fecha });
-      } else {
-        setPendingRequest(null);
+      if (data.message?.includes('solicitud pendiente')) {
+        setPendingRequest({ estado: 'pendiente', fecha: '' });
+        return;
       }
+      setResetMessage(data.message || 'Tu solicitud fue registrada.');
+      setResetSent(true);
     } catch {
-      setPendingRequest(null);
-    } finally {
-      setCheckingPending(false);
+      setResetError('Ocurrió un error. Intentá de nuevo.');
     }
+  };
+
+  const closeResetModal = () => {
+    setShowResetModal(false);
+    setResetSent(false);
+    setPendingRequest(null);
+    setResetStep('credentials');
+    setSecurityQuestion('');
+    setSecurityAnswer('');
+    setResetError('');
   };
 
   if (authLoading) {
@@ -205,7 +244,10 @@ function CuentaContent() {
                     setResetEmail(email);
                     setPendingRequest(null);
                     setResetSent(false);
-                    if (email) checkPendingRequest(email);
+                    setResetStep('credentials');
+                    setSecurityQuestion('');
+                    setSecurityAnswer('');
+                    setResetError('');
                   }}
                   className="text-sm text-gray-600 hover:text-black transition-colors underline"
                 >
@@ -249,7 +291,7 @@ function CuentaContent() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-            onClick={() => { setShowResetModal(false); setResetSent(false); setPendingRequest(null); }}
+            onClick={closeResetModal}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
@@ -259,7 +301,7 @@ function CuentaContent() {
               onClick={(e) => e.stopPropagation()}
             >
               <button
-                onClick={() => { setShowResetModal(false); setResetSent(false); setPendingRequest(null); }}
+                onClick={closeResetModal}
                 className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
               >
                 <X className="w-5 h-5" />
@@ -279,16 +321,11 @@ function CuentaContent() {
                     </Link>.
                   </p>
                   <button
-                    onClick={() => { setShowResetModal(false); setResetSent(false); setPendingRequest(null); }}
+                    onClick={closeResetModal}
                     className="px-6 py-3 bg-foreground text-white rounded-md hover:bg-foreground/90 transition-colors font-medium"
                   >
                     Entendido
                   </button>
-                </div>
-              ) : checkingPending ? (
-                <div className="flex flex-col items-center py-8">
-                  <Loader2 className="w-6 h-6 animate-spin text-gray-400 mb-3" />
-                  <p className="text-sm text-gray-500">Verificando solicitudes...</p>
                 </div>
               ) : pendingRequest ? (
                 <div className="text-center">
@@ -306,19 +343,72 @@ function CuentaContent() {
                   )}
                   <Link
                     href="/cuenta/reset-password"
-                    onClick={() => { setShowResetModal(false); setPendingRequest(null); }}
+                    onClick={closeResetModal}
                     className="inline-block px-6 py-3 bg-foreground text-white rounded-md hover:bg-foreground/90 transition-colors font-medium"
                   >
                     Ver estado de solicitud
                   </Link>
                 </div>
+              ) : resetStep === 'security' ? (
+                <>
+                  <h3 className="text-2xl font-medium mb-4">Pregunta de Seguridad</h3>
+                  <p className="text-gray-700 mb-6">
+                    Respondé la siguiente pregunta para verificar tu identidad.
+                  </p>
+                  {resetError && (
+                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+                      {resetError}
+                    </div>
+                  )}
+                  <form onSubmit={handleSubmitWithSecurity} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{securityQuestion}</label>
+                      <input
+                        type="text"
+                        value={securityAnswer}
+                        onChange={(e) => setSecurityAnswer(e.target.value)}
+                        required
+                        disabled={resetLoading}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white disabled:opacity-50"
+                        placeholder="Tu respuesta..."
+                        autoFocus
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={resetLoading}
+                      className="w-full px-6 py-3 bg-foreground text-white rounded-md hover:bg-foreground/90 transition-colors font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {resetLoading ? (
+                        <>
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          Enviando...
+                        </>
+                      ) : (
+                        'Enviar Solicitud'
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setResetStep('credentials'); setResetError(''); }}
+                      className="w-full text-sm text-gray-500 hover:text-black transition-colors"
+                    >
+                      ← Volver
+                    </button>
+                  </form>
+                </>
               ) : (
                 <>
                   <h3 className="text-2xl font-medium mb-4">Recuperar Contraseña</h3>
                   <p className="text-gray-700 mb-6">
-                    Ingresá tus datos para solicitar la recuperación. Un administrador revisará tu solicitud.
+                    Ingresá tus datos para verificar tu identidad.
                   </p>
-                  <form onSubmit={handleResetRequest} className="space-y-4">
+                  {resetError && (
+                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+                      {resetError}
+                    </div>
+                  )}
+                  <form onSubmit={handleValidateCredentials} className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Email de la cuenta</label>
                       <input
@@ -351,16 +441,16 @@ function CuentaContent() {
                       {resetLoading ? (
                         <>
                           <Loader2 className="w-5 h-5 animate-spin" />
-                          Enviando...
+                          Verificando...
                         </>
                       ) : (
-                        'Solicitar Recuperación'
+                        'Continuar'
                       )}
                     </button>
                     <div className="text-center mt-3">
                       <Link
                         href="/cuenta/reset-password"
-                        onClick={() => { setShowResetModal(false); setPendingRequest(null); }}
+                        onClick={closeResetModal}
                         className="text-sm text-gray-600 underline hover:text-black transition-colors"
                       >
                         Consultar estado de solicitud

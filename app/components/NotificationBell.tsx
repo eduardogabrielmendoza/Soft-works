@@ -27,34 +27,34 @@ export default function NotificationBell() {
 
   const recentNotifs = notifications.slice(0, 10);
 
-  const handleAdminAction = async (solicitudEmail: string, action: 'aprobar' | 'rechazar', notifId: string) => {
+  const handleAdminAction = async (notifId: string, action: 'aprobar' | 'rechazar', solicitudId?: string, solicitudEmail?: string) => {
     setProcessingId(notifId);
     try {
-      // Find the solicitud by email
-      const checkRes = await fetch('/api/auth/check-reset', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: solicitudEmail }),
-      });
-      const checkData = await checkRes.json();
-      if (checkData.estado !== 'pendiente') {
+      let resolvedId = solicitudId;
+
+      // If no solicitudId in metadata, find it by email
+      if (!resolvedId && solicitudEmail) {
+        const findRes = await fetch(`/api/auth/admin-reset-find?email=${encodeURIComponent(solicitudEmail)}`);
+        const findData = await findRes.json();
+        resolvedId = findData.solicitudId;
+      }
+
+      if (!resolvedId) {
         await markAsRead(notifId);
         await refresh();
         return;
       }
 
-      // Get solicitud ID from admin endpoint (need to find it)
-      const findRes = await fetch(`/api/auth/admin-reset-find?email=${encodeURIComponent(solicitudEmail)}`);
-      const findData = await findRes.json();
-      if (!findData.solicitudId) return;
-
-      await fetch('/api/auth/admin-reset', {
+      const res = await fetch('/api/auth/admin-reset', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ solicitudId: findData.solicitudId, action }),
+        body: JSON.stringify({ solicitudId: resolvedId, action }),
       });
-      await markAsRead(notifId);
-      await refresh();
+
+      if (res.ok) {
+        await markAsRead(notifId);
+        await refresh();
+      }
     } catch (err) {
       console.error('Error processing admin action:', err);
     } finally {
@@ -123,6 +123,7 @@ export default function NotificationBell() {
                   const actionUrl = notif.metadata?.action_url as string | undefined;
                   const isRecoveryRequest = isAdmin && notif.metadata?.solicitud_tipo === 'recuperacion';
                   const solicitudEmail = notif.metadata?.usuario_email as string | undefined;
+                  const solicitudId = notif.metadata?.solicitud_id as string | undefined;
                   const isProcessing = processingId === notif.id;
 
                   const Content = (
@@ -143,17 +144,18 @@ export default function NotificationBell() {
                           <p className="text-sm font-medium text-gray-900">{notif.titulo}</p>
                           <p className="text-xs text-gray-600 mt-0.5 line-clamp-2">{notif.mensaje}</p>
                           <p className="text-[10px] text-gray-400 mt-1">{formatTime(notif.fecha_creacion)}</p>
-                          {isRecoveryRequest && solicitudEmail && (
-                            <div className="flex gap-2 mt-2" onClick={(e) => e.preventDefault()}>
+                          {isRecoveryRequest && (solicitudId || solicitudEmail) && !notif.leida && (
+                            <div className="flex gap-2 mt-2">
                               {isProcessing ? (
                                 <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
                               ) : (
                                 <>
                                   <button
-                                    onClick={(e) => {
+                                    type="button"
+                                    onMouseDown={(e) => {
                                       e.stopPropagation();
                                       e.preventDefault();
-                                      handleAdminAction(solicitudEmail, 'aprobar', notif.id);
+                                      handleAdminAction(notif.id, 'aprobar', solicitudId, solicitudEmail);
                                     }}
                                     className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
                                   >
@@ -161,10 +163,11 @@ export default function NotificationBell() {
                                     Aprobar
                                   </button>
                                   <button
-                                    onClick={(e) => {
+                                    type="button"
+                                    onMouseDown={(e) => {
                                       e.stopPropagation();
                                       e.preventDefault();
-                                      handleAdminAction(solicitudEmail, 'rechazar', notif.id);
+                                      handleAdminAction(notif.id, 'rechazar', solicitudId, solicitudEmail);
                                     }}
                                     className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
                                   >
