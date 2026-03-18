@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Payment } from 'mercadopago';
 import { createClient } from '@supabase/supabase-js';
 import { getMercadoPagoMode, createMPClient } from '@/lib/api/mercadopago-config';
-import { sendPaymentApprovedEmail } from '@/lib/email';
 
 // Use service role to update orders (bypass RLS)
 function getSupabaseAdmin() {
@@ -83,10 +82,9 @@ export async function POST(req: NextRequest) {
       } else {
         console.log(`Order ${orderId} updated to ${newEstado} via webhook (payment ${paymentId})`);
 
-        // Send confirmation email when payment is approved
+        // Send notification when payment is approved
         if (newEstado === 'pago_aprobado') {
           try {
-            // Fetch order details with items for the email
             const { data: order } = await supabase
               .from('pedidos')
               .select('*, items:pedido_items(*)')
@@ -94,34 +92,20 @@ export async function POST(req: NextRequest) {
               .single();
 
             if (order) {
-              // Fetch customer profile
-              const { data: profile } = await supabase
-                .from('perfiles')
-                .select('email, nombre, apellido')
-                .eq('id', order.usuario_id)
-                .single();
-
-              if (profile?.email) {
-                await sendPaymentApprovedEmail({
-                  to: profile.email,
-                  customerName: `${profile.nombre || ''} ${profile.apellido || ''}`.trim() || 'Cliente',
-                  orderNumber: order.numero_pedido,
-                  orderId: order.id,
-                  total: order.total,
-                  items: (order.items || []).map((item: any) => ({
-                    producto_nombre: item.producto_nombre,
-                    producto_imagen: item.producto_imagen,
-                    talle: item.talle,
-                    cantidad: item.cantidad,
-                    producto_precio: item.producto_precio,
-                  })),
+              // Create in-app notification
+              await supabase
+                .from('notificaciones')
+                .insert({
+                  usuario_id: order.usuario_id,
+                  tipo: 'pedido',
+                  titulo: `¡Pago aprobado! Pedido #${order.numero_pedido}`,
+                  mensaje: `Tu pago de $${order.total} fue aprobado. Tu pedido está siendo procesado.`,
+                  metadata: { pedido_id: order.id, numero_pedido: order.numero_pedido },
                 });
-                console.log(`Payment confirmation email sent to ${profile.email} for order ${order.numero_pedido}`);
-              }
+              console.log(`Payment notification created for order ${order.numero_pedido}`);
             }
-          } catch (emailError) {
-            console.error('Error sending payment confirmation email:', emailError);
-            // Don't fail the webhook because of email issues
+          } catch (notifError) {
+            console.error('Error creating payment notification:', notifError);
           }
         }
       }

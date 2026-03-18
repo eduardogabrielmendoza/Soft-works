@@ -1,10 +1,9 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
-import { sendWelcomeEmail } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, email, firstName, lastName, avatarUrl } = await request.json()
+    const { userId, email, firstName, lastName, avatarUrl, securityQuestion, securityAnswer } = await request.json()
 
     if (!userId || !email) {
       return NextResponse.json(
@@ -32,9 +31,16 @@ export async function POST(request: NextRequest) {
       nombre: firstName || '',
       apellido: lastName || '',
       rol: 'cliente',
+      email_verificado: true,
     }
     if (avatarUrl) {
       profileData.avatar_url = avatarUrl
+    }
+    if (securityQuestion) {
+      profileData.pregunta_seguridad = securityQuestion
+    }
+    if (securityAnswer) {
+      profileData.respuesta_seguridad = securityAnswer
     }
 
     const { data, error } = await supabaseAdmin
@@ -53,17 +59,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Enviar email de bienvenida
+    // Crear notificación de bienvenida
     try {
       const customerName = firstName ? `${firstName}${lastName ? ' ' + lastName : ''}` : 'Cliente';
-      await sendWelcomeEmail({
-        to: email,
-        customerName,
-      });
-      console.log('Welcome email sent to:', email);
-    } catch (emailError) {
-      console.error('Error sending welcome email:', emailError);
-      // No fallamos la operación por el email
+      await supabaseAdmin
+        .from('notificaciones')
+        .insert({
+          usuario_id: userId,
+          tipo: 'bienvenida',
+          titulo: '¡Bienvenido/a a Softworks!',
+          mensaje: `Hola ${customerName}, tu cuenta fue creada exitosamente. Explorá nuestros productos y colecciones.`,
+        });
+    } catch (notifError) {
+      console.error('Error creating welcome notification:', notifError);
     }
 
     return NextResponse.json({ data })

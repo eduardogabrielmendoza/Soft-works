@@ -12,9 +12,8 @@ interface AuthContextType {
   isLoading: boolean
   isAdmin: boolean
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>
-  signUp: (email: string, password: string, metadata?: { first_name?: string; last_name?: string }) => Promise<{ error: Error | null }>
+  signUp: (email: string, password: string, metadata?: { first_name?: string; last_name?: string; security_question?: string; security_answer?: string }) => Promise<{ error: Error | null }>
   signOut: () => Promise<void>
-  resetPassword: (email: string) => Promise<{ error: Error | null }>
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>
   refreshProfile: () => Promise<void>
 }
@@ -144,16 +143,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = useCallback(async (
     email: string,
     password: string,
-    metadata?: { first_name?: string; last_name?: string }
+    metadata?: { first_name?: string; last_name?: string; security_question?: string; security_answer?: string }
   ) => {
     const supabase = getSupabaseClient()
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: metadata,
-        emailRedirectTo: `${siteUrl}/auth/callback`,
       },
     })
 
@@ -170,6 +167,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             email: data.user.email,
             firstName: metadata?.first_name || '',
             lastName: metadata?.last_name || '',
+            securityQuestion: metadata?.security_question || '',
+            securityAnswer: metadata?.security_answer || '',
           }),
         })
 
@@ -191,15 +190,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setProfile(null)
     setSession(null)
     window.location.href = '/'
-  }, [])
-
-  const resetPassword = useCallback(async (email: string) => {
-    const supabase = getSupabaseClient()
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://softworks.com.ar'
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${siteUrl}/cuenta/reset-password`,
-    })
-    return { error: error as Error | null }
   }, [])
 
   const updateProfile = useCallback(async (updates: Partial<Profile>) => {
@@ -236,7 +226,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signIn,
     signUp,
     signOut,
-    resetPassword,
     updateProfile,
     refreshProfile,
   }

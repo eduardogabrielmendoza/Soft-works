@@ -14,6 +14,7 @@ import { SectionButton } from './CustomSections';
 import SearchDrawer from './SearchDrawer';
 import CartDrawer from './CartDrawer';
 import AnnouncementBar from './AnnouncementBar';
+import NotificationBell from './NotificationBell';
 
 // Altura de la barra de anuncios (incluye mt-2)
 const ANNOUNCEMENT_HEIGHT = 44; // 36px altura + 8px margin-top
@@ -257,6 +258,9 @@ export default function Navbar() {
                 {accountButton.label}
               </Link>
               
+              {/* Notificaciones */}
+              {user && <NotificationBell />}
+
               {/* Buscar */}
               <button
                 onClick={() => setShowSearchDrawer(true)}
@@ -283,6 +287,7 @@ export default function Navbar() {
 
             {/* Mobile Right Actions */}
             <div className="lg:hidden flex items-center space-x-1 ml-auto">
+              {user && <NotificationBell />}
               <button
                 onClick={() => setShowSearchDrawer(true)}
                 className={`p-2 rounded-lg transition-colors ${

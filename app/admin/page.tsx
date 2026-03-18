@@ -42,6 +42,7 @@ export default function AdminDashboardPage() {
   const { user, profile, isAdmin, isLoading: authLoading } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
+  const [resetRequests, setResetRequests] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Cargar datos cuando el usuario sea admin
@@ -122,6 +123,15 @@ export default function AdminDashboardPage() {
       }
 
       setRecentOrders(recent || []);
+
+      // Get pending reset requests
+      const { data: pendingResets } = await supabase
+        .from('solicitudes_recuperacion')
+        .select('*')
+        .eq('estado', 'pendiente')
+        .order('fecha_creacion', { ascending: false });
+
+      setResetRequests(pendingResets || []);
     } catch (error: any) {
       // Error cargando datos del dashboard
     } finally {
@@ -311,6 +321,62 @@ export default function AdminDashboardPage() {
                 </div>
               )}
             </div>
+
+            {/* Solicitudes de Recuperación */}
+            {resetRequests.length > 0 && (
+              <div className="bg-white rounded-lg border border-orange-200 p-6">
+                <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 text-orange-500" />
+                  Solicitudes de Recuperación ({resetRequests.length})
+                </h2>
+                <div className="space-y-3">
+                  {resetRequests.map((req: any) => (
+                    <div key={req.id} className="p-4 border border-gray-200 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <p className="font-medium text-sm">{req.nombre_ingresado}</p>
+                          <p className="text-xs text-gray-500">{req.email}</p>
+                        </div>
+                        <span className="text-xs text-gray-400">
+                          {new Date(req.fecha_creacion).toLocaleDateString('es-AR')}
+                        </span>
+                      </div>
+                      {req.pregunta_seguridad_verificada && (
+                        <p className="text-xs text-green-600 mb-2">✓ Pregunta de seguridad verificada</p>
+                      )}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={async () => {
+                            await fetch('/api/auth/admin-reset', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ solicitudId: req.id, action: 'aprobar' }),
+                            });
+                            setResetRequests((prev) => prev.filter((r: any) => r.id !== req.id));
+                          }}
+                          className="flex-1 px-3 py-1.5 text-xs font-medium bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                        >
+                          Aprobar
+                        </button>
+                        <button
+                          onClick={async () => {
+                            await fetch('/api/auth/admin-reset', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ solicitudId: req.id, action: 'rechazar' }),
+                            });
+                            setResetRequests((prev) => prev.filter((r: any) => r.id !== req.id));
+                          }}
+                          className="flex-1 px-3 py-1.5 text-xs font-medium bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                        >
+                          Rechazar
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Quick Actions */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">

@@ -4,15 +4,16 @@ import { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Loader2, Eye, EyeOff } from 'lucide-react';
+import { X, Loader2, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/lib/hooks/useAuth';
 
 function CuentaContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect') || '/cuenta/perfil';
+  const justRegistered = searchParams.get('registered') === 'true';
   
-  const { signIn, resetPassword, isLoading: authLoading } = useAuth();
+  const { signIn, isLoading: authLoading } = useAuth();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,10 +22,13 @@ function CuentaContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
+  // Reset modal state
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
+  const [resetName, setResetName] = useState('');
   const [resetSent, setResetSent] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
+  const [resetMessage, setResetMessage] = useState('');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,21 +57,24 @@ function CuentaContent() {
     }
   };
 
-  const handleResetPassword = async (e: React.FormEvent) => {
+  const handleResetRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     setResetLoading(true);
 
     try {
-      const { error } = await resetPassword(resetEmail);
-      
-      if (error) {
-        setError(error.message);
-        return;
-      }
-
+      const res = await fetch('/api/auth/request-reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: resetEmail,
+          nombreIngresado: resetName,
+        }),
+      });
+      const data = await res.json();
+      setResetMessage(data.message || 'Tu solicitud fue registrada.');
       setResetSent(true);
     } catch {
-      setError('Ocurrió un error al enviar el email');
+      setResetMessage('Ocurrió un error. Intentá de nuevo.');
     } finally {
       setResetLoading(false);
     }
@@ -105,6 +112,13 @@ function CuentaContent() {
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-medium mb-6 sm:mb-8 text-foreground">
               Iniciar Sesión
             </h1>
+
+            {justRegistered && (
+              <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-md text-green-700 text-sm flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 flex-shrink-0" />
+                ¡Cuenta creada exitosamente! Ya podés iniciar sesión.
+              </div>
+            )}
 
             {error && (
               <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
@@ -213,10 +227,7 @@ function CuentaContent() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-            onClick={() => {
-              setShowResetModal(false);
-              setResetSent(false);
-            }}
+            onClick={() => { setShowResetModal(false); setResetSent(false); }}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
@@ -226,10 +237,7 @@ function CuentaContent() {
               onClick={(e) => e.stopPropagation()}
             >
               <button
-                onClick={() => {
-                  setShowResetModal(false);
-                  setResetSent(false);
-                }}
+                onClick={() => { setShowResetModal(false); setResetSent(false); }}
                 className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
               >
                 <X className="w-5 h-5" />
@@ -237,18 +245,19 @@ function CuentaContent() {
 
               {resetSent ? (
                 <div className="text-center">
-                  <h3 className="text-2xl font-medium mb-4">Email Enviado</h3>
-                  <p className="text-gray-700 leading-relaxed mb-6">
-                    Te enviamos un email con instrucciones para restablecer tu contraseña a <strong>{resetEmail}</strong>.
-                  </p>
+                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <CheckCircle className="w-8 h-8 text-blue-600" />
+                  </div>
+                  <h3 className="text-2xl font-medium mb-4">Solicitud Enviada</h3>
+                  <p className="text-gray-700 leading-relaxed mb-6">{resetMessage}</p>
                   <p className="text-sm text-gray-600 mb-6">
-                    Si no lo ves, revisá tu carpeta de spam.
+                    Cuando sea aprobada, podrás crear una nueva contraseña desde{' '}
+                    <Link href="/cuenta/reset-password" className="text-foreground font-medium hover:underline">
+                      esta página
+                    </Link>.
                   </p>
                   <button
-                    onClick={() => {
-                      setShowResetModal(false);
-                      setResetSent(false);
-                    }}
+                    onClick={() => { setShowResetModal(false); setResetSent(false); }}
                     className="px-6 py-3 bg-foreground text-white rounded-md hover:bg-foreground/90 transition-colors font-medium"
                   >
                     Entendido
@@ -258,18 +267,33 @@ function CuentaContent() {
                 <>
                   <h3 className="text-2xl font-medium mb-4">Recuperar Contraseña</h3>
                   <p className="text-gray-700 mb-6">
-                    Ingresá tu email y te enviaremos instrucciones para restablecer tu contraseña.
+                    Ingresá tus datos para solicitar la recuperación. Un administrador revisará tu solicitud.
                   </p>
-                  <form onSubmit={handleResetPassword} className="space-y-4">
-                    <input
-                      type="email"
-                      value={resetEmail}
-                      onChange={(e) => setResetEmail(e.target.value)}
-                      required
-                      disabled={resetLoading}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white disabled:opacity-50"
-                      placeholder="tu@email.com"
-                    />
+                  <form onSubmit={handleResetRequest} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Email de la cuenta</label>
+                      <input
+                        type="email"
+                        value={resetEmail}
+                        onChange={(e) => setResetEmail(e.target.value)}
+                        required
+                        disabled={resetLoading}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white disabled:opacity-50"
+                        placeholder="tu@email.com"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Tu nombre completo</label>
+                      <input
+                        type="text"
+                        value={resetName}
+                        onChange={(e) => setResetName(e.target.value)}
+                        required
+                        disabled={resetLoading}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white disabled:opacity-50"
+                        placeholder="Juan Pérez"
+                      />
+                    </div>
                     <button
                       type="submit"
                       disabled={resetLoading}
@@ -281,7 +305,7 @@ function CuentaContent() {
                           Enviando...
                         </>
                       ) : (
-                        'Enviar Instrucciones'
+                        'Solicitar Recuperación'
                       )}
                     </button>
                   </form>
