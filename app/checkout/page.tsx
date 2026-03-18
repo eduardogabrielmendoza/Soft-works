@@ -1,15 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { ChevronLeft, Loader2, Minus, Plus, Trash2, MapPin, Truck, CreditCard, ShoppingBag, Building2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronLeft, Loader2, Minus, Plus, Trash2, MapPin, Truck, CreditCard, ShoppingBag, Building2, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useCart } from '@/lib/hooks/useCart';
 import { getUserAddresses } from '@/lib/api/addresses';
 import { getActiveShippingZones } from '@/lib/api/settings';
-import { createOrder } from '@/lib/api/orders';
 import { formatPrice } from '@/lib/utils/helpers';
 import type { Address, ShippingZone, MetodoPago } from '@/lib/types/database.types';
 
@@ -28,19 +27,38 @@ export default function CheckoutPage() {
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Redirect if not logged in
+  // Guest checkout state
+  const isGuest = !authLoading && !user;
+  const [showGuestPrompt, setShowGuestPrompt] = useState(false);
+  const [guestAccepted, setGuestAccepted] = useState(false);
+  const [guestInfo, setGuestInfo] = useState({
+    nombre: '',
+    email: '',
+    telefono: '',
+    calle: '',
+    numero: '',
+    piso_depto: '',
+    ciudad: '',
+    provincia: '',
+    codigo_postal: '',
+  });
+
+  // Show guest prompt when unauthenticated user arrives
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/cuenta?redirect=/checkout');
+    if (!authLoading && !user && !guestAccepted) {
+      setShowGuestPrompt(true);
     }
-  }, [authLoading, user, router]);
+  }, [authLoading, user, guestAccepted]);
 
   // Load addresses and shipping zones
   useEffect(() => {
     if (user) {
       loadData();
+    } else if (!authLoading) {
+      // Guest: only load shipping zones
+      loadGuestData();
     }
-  }, [user]);
+  }, [user, authLoading]);
 
   // Auto-select default address
   useEffect(() => {
@@ -52,19 +70,15 @@ export default function CheckoutPage() {
 
   // Auto-select shipping zone based on address province
   useEffect(() => {
-    if (selectedAddressId && shippingZones.length > 0) {
-      const address = addresses.find((a) => a.id === selectedAddressId);
-      if (address) {
-        // Try to find a matching zone for the province
-        const matchingZone = shippingZones.find((z) =>
-          z.provincias.includes(address.provincia)
-        );
-        // If no match, check for "Nacional" or similar catch-all zone
-        const defaultZone = shippingZones.find((z) => z.activa) || shippingZones[0];
-        setSelectedShippingZone(matchingZone || defaultZone);
-      }
+    const province = isGuest ? guestInfo.provincia : addresses.find((a) => a.id === selectedAddressId)?.provincia;
+    if (province && shippingZones.length > 0) {
+      const matchingZone = shippingZones.find((z) =>
+        z.provincias.includes(province)
+      );
+      const defaultZone = shippingZones.find((z) => z.activa) || shippingZones[0];
+      setSelectedShippingZone(matchingZone || defaultZone);
     }
-  }, [selectedAddressId, addresses, shippingZones]);
+  }, [selectedAddressId, addresses, shippingZones, isGuest, guestInfo.provincia]);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -77,6 +91,13 @@ export default function CheckoutPage() {
     setIsLoading(false);
   };
 
+  const loadGuestData = async () => {
+    setIsLoading(true);
+    const zonesData = await getActiveShippingZones();
+    setShippingZones(zonesData);
+    setIsLoading(false);
+  };
+
   const selectedAddress = addresses.find((a) => a.id === selectedAddressId);
   const shippingCost = selectedShippingZone?.precio || 0;
   const freeShippingThreshold = selectedShippingZone?.envio_gratis_minimo;
@@ -85,26 +106,47 @@ export default function CheckoutPage() {
   const total = subtotal + finalShippingCost;
 
   const handleCreateOrder = async () => {
-    if (!selectedAddressId || !selectedAddress || items.length === 0) {
+    if (isGuest) {
+      // Validate guest fields
+      if (!guestInfo.nombre || !guestInfo.email || !guestInfo.calle || !guestInfo.numero || !guestInfo.ciudad || !guestInfo.provincia || !guestInfo.codigo_postal) {
+        setError('Por favor completá todos los campos de envío');
+        return;
+      }
+    } else if (!selectedAddressId || !selectedAddress) {
       setError('Por favor seleccioná una dirección de envío');
       return;
     }
+
+    if (items.length === 0) return;
 
     setIsCreatingOrder(true);
     setError(null);
 
     try {
-      const orderData = {
-        direccion_envio: {
-          nombre_destinatario: selectedAddress.nombre_destinatario,
-          calle: selectedAddress.calle,
-          numero: selectedAddress.numero,
-          piso_depto: selectedAddress.piso_depto || undefined,
-          ciudad: selectedAddress.ciudad,
-          provincia: selectedAddress.provincia,
-          codigo_postal: selectedAddress.codigo_postal,
-          telefono: selectedAddress.telefono || undefined,
-        },
+      const direccion_envio = isGuest
+        ? {
+            nombre_destinatario: guestInfo.nombre,
+            calle: guestInfo.calle,
+            numero: guestInfo.numero,
+            piso_depto: guestInfo.piso_depto || undefined,
+            ciudad: guestInfo.ciudad,
+            provincia: guestInfo.provincia,
+            codigo_postal: guestInfo.codigo_postal,
+            telefono: guestInfo.telefono || undefined,
+          }
+        : {
+            nombre_destinatario: selectedAddress!.nombre_destinatario,
+            calle: selectedAddress!.calle,
+            numero: selectedAddress!.numero,
+            piso_depto: selectedAddress!.piso_depto || undefined,
+            ciudad: selectedAddress!.ciudad,
+            provincia: selectedAddress!.provincia,
+            codigo_postal: selectedAddress!.codigo_postal,
+            telefono: selectedAddress!.telefono || undefined,
+          };
+
+      const orderPayload = {
+        direccion_envio,
         items: items.map((item) => ({
           producto_id: item.producto_id,
           talle: item.talle,
@@ -120,17 +162,33 @@ export default function CheckoutPage() {
         customer_notes: customerNotes || undefined,
         shipping_zone_id: selectedShippingZone?.id,
         metodo_pago: paymentMethod,
+        ...(isGuest && {
+          guest_nombre: guestInfo.nombre,
+          guest_email: guestInfo.email,
+          guest_telefono: guestInfo.telefono || undefined,
+        }),
       };
 
-      const order = await createOrder(orderData);
+      // Use server API for order creation (supports both guest and auth)
+      const orderRes = await fetch('/api/checkout/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderPayload),
+      });
+      const orderData = await orderRes.json();
 
-      if (!order) {
-        setError('Error al crear el pedido. Por favor intentá de nuevo.');
+      if (!orderRes.ok || !orderData.order) {
+        setError(orderData.error || 'Error al crear el pedido. Por favor intentá de nuevo.');
         return;
       }
 
+      const order = orderData.order;
+
       // If MercadoPago, create preference and redirect to MP checkout
       if (paymentMethod === 'mercadopago') {
+        const payerEmail = isGuest ? guestInfo.email : (profile?.email || user?.email || '');
+        const payerName = isGuest ? guestInfo.nombre : (profile ? `${profile.nombre || ''} ${profile.apellido || ''}`.trim() : '');
+
         const mpResponse = await fetch('/api/mercadopago/create-preference', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -145,8 +203,8 @@ export default function CheckoutPage() {
             })),
             shipping: finalShippingCost,
             total,
-            payerEmail: profile?.email || user?.email || '',
-            payerName: profile ? `${profile.nombre || ''} ${profile.apellido || ''}`.trim() : '',
+            payerEmail,
+            payerName,
           }),
         });
 
@@ -159,7 +217,6 @@ export default function CheckoutPage() {
 
         // Clear cart and redirect to MercadoPago
         clearCart();
-        // Use sandbox_init_point for sandbox mode, init_point for production
         window.location.href = mpData.mode === 'sandbox'
           ? (mpData.sandbox_init_point || mpData.init_point)
           : (mpData.init_point || mpData.sandbox_init_point);
@@ -296,7 +353,105 @@ export default function CheckoutPage() {
                   Dirección de Envío
                 </h2>
 
-                {addresses.length === 0 ? (
+                {isGuest ? (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Nombre completo *</label>
+                        <input
+                          type="text"
+                          value={guestInfo.nombre}
+                          onChange={(e) => setGuestInfo({ ...guestInfo, nombre: e.target.value })}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                          placeholder="Juan Pérez"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                        <input
+                          type="email"
+                          value={guestInfo.email}
+                          onChange={(e) => setGuestInfo({ ...guestInfo, email: e.target.value })}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                          placeholder="tu@email.com"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                        <input
+                          type="tel"
+                          value={guestInfo.telefono}
+                          onChange={(e) => setGuestInfo({ ...guestInfo, telefono: e.target.value })}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                          placeholder="+54 11 1234-5678"
+                        />
+                      </div>
+                    </div>
+                    <hr className="border-gray-100" />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Calle *</label>
+                        <input
+                          type="text"
+                          value={guestInfo.calle}
+                          onChange={(e) => setGuestInfo({ ...guestInfo, calle: e.target.value })}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                          placeholder="Av. Corrientes"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Número *</label>
+                        <input
+                          type="text"
+                          value={guestInfo.numero}
+                          onChange={(e) => setGuestInfo({ ...guestInfo, numero: e.target.value })}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                          placeholder="1234"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Piso/Depto</label>
+                        <input
+                          type="text"
+                          value={guestInfo.piso_depto}
+                          onChange={(e) => setGuestInfo({ ...guestInfo, piso_depto: e.target.value })}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                          placeholder="3°A"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Ciudad *</label>
+                        <input
+                          type="text"
+                          value={guestInfo.ciudad}
+                          onChange={(e) => setGuestInfo({ ...guestInfo, ciudad: e.target.value })}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                          placeholder="CABA"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Provincia *</label>
+                        <input
+                          type="text"
+                          value={guestInfo.provincia}
+                          onChange={(e) => setGuestInfo({ ...guestInfo, provincia: e.target.value })}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                          placeholder="Buenos Aires"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Código Postal *</label>
+                        <input
+                          type="text"
+                          value={guestInfo.codigo_postal}
+                          onChange={(e) => setGuestInfo({ ...guestInfo, codigo_postal: e.target.value })}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                          placeholder="C1000"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : addresses.length === 0 ? (
                   <div className="text-center py-6">
                     <p className="text-gray-500 mb-4">No tenés direcciones guardadas</p>
                     <Link
@@ -507,7 +662,7 @@ export default function CheckoutPage() {
 
                 <button
                   onClick={handleCreateOrder}
-                  disabled={isCreatingOrder || !selectedAddressId || items.length === 0}
+                  disabled={isCreatingOrder || (!isGuest && !selectedAddressId) || items.length === 0}
                   className="w-full py-4 bg-foreground text-white rounded-md hover:bg-foreground/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 text-lg font-medium"
                 >
                   {isCreatingOrder ? (
@@ -533,6 +688,51 @@ export default function CheckoutPage() {
           </div>
         </motion.div>
       </div>
+
+      {/* Guest Checkout Prompt Modal */}
+      <AnimatePresence>
+        {showGuestPrompt && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-lg max-w-md w-full p-6 text-center"
+            >
+              <UserPlus className="w-12 h-12 mx-auto mb-4 text-foreground" />
+              <h2 className="text-xl font-medium mb-2">¿Querés registrarte?</h2>
+              <p className="text-gray-600 mb-6 text-sm leading-relaxed">
+                Si creás una cuenta, vas a poder hacer seguimiento de tus pedidos, ver tu historial de compras y recibir notificaciones sobre el estado de tu envío.
+              </p>
+              <div className="space-y-3">
+                <Link
+                  href="/cuenta/registro?redirect=/checkout"
+                  className="block w-full py-3 bg-foreground text-white rounded-md hover:bg-foreground/90 transition-colors font-medium"
+                >
+                  Crear cuenta
+                </Link>
+                <Link
+                  href="/cuenta?redirect=/checkout"
+                  className="block w-full py-3 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-sm"
+                >
+                  Ya tengo cuenta
+                </Link>
+                <button
+                  onClick={() => { setShowGuestPrompt(false); setGuestAccepted(true); }}
+                  className="block w-full py-3 text-gray-500 hover:text-foreground transition-colors text-sm"
+                >
+                  Continuar sin registrarme
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

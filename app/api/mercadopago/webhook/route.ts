@@ -90,16 +90,16 @@ export async function POST(req: NextRequest) {
             .eq('id', orderId)
             .single();
 
-          if (order) {
+          if (order && order.usuario_id) {
             if (newEstado === 'pago_aprobado') {
               await supabase
                 .from('notificaciones')
                 .insert({
                   usuario_id: order.usuario_id,
                   tipo: 'pedido',
-                  titulo: `¡Pago aprobado! Pedido #${order.numero_pedido}`,
-                  mensaje: `Tu pago de $${order.total} fue aprobado. Tu pedido está siendo procesado.`,
-                  metadata: { pedido_id: order.id, numero_pedido: order.numero_pedido, action_url: `/cuenta/pedidos/${order.id}` },
+                  titulo: `¡Compra realizada! Pedido #${order.numero_pedido}`,
+                  mensaje: `Tu pago con tarjeta/MercadoPago de $${order.total} fue aprobado. Tu pedido está siendo procesado.`,
+                  metadata: { pedido_id: order.id, numero_pedido: order.numero_pedido, metodo_pago: 'mercadopago', action_url: `/cuenta/pedidos/${order.id}` },
                 });
             } else if (newEstado === 'pago_rechazado') {
               await supabase
@@ -107,9 +107,9 @@ export async function POST(req: NextRequest) {
                 .insert({
                   usuario_id: order.usuario_id,
                   tipo: 'pedido',
-                  titulo: `Pago no procesado - Pedido #${order.numero_pedido}`,
-                  mensaje: 'Tu pago no pudo ser procesado. Podés intentar nuevamente desde tu pedido.',
-                  metadata: { pedido_id: order.id, numero_pedido: order.numero_pedido, action_url: `/cuenta/pedidos/${order.id}` },
+                  titulo: `Pago rechazado - Pedido #${order.numero_pedido}`,
+                  mensaje: 'Tu pago con tarjeta/MercadoPago no pudo ser procesado. Podés intentar nuevamente desde tu pedido.',
+                  metadata: { pedido_id: order.id, numero_pedido: order.numero_pedido, metodo_pago: 'mercadopago', action_url: `/cuenta/pedidos/${order.id}` },
                 });
             }
             console.log(`Payment notification created for order ${order.numero_pedido} (${newEstado})`);

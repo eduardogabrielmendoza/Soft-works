@@ -24,7 +24,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { getOrderById, updateOrderStatus, approvePayment, rejectPayment, addShippingInfo } from '@/lib/api/orders';
 import { formatPrice, formatDateTime, getOrderStatusLabel, getOrderStatusColor } from '@/lib/utils/helpers';
-import { sendOrderEmail, getCarrierDisplayName } from '@/lib/utils/emailClient';
+import { getCarrierDisplayName } from '@/lib/utils/emailClient';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { OrderWithItems } from '@/lib/types/database.types';
 
@@ -90,35 +90,19 @@ export default function AdminPedidoDetailPage({ params }: { params: Promise<{ id
     try {
       await approvePayment(order.verificacion.id);
       
-      // Enviar email de pago aprobado
-      if (order.cliente_email) {
-        await sendOrderEmail('payment_approved', {
-          email: order.cliente_email,
-          customerName: order.cliente_nombre || 'Cliente',
-          orderNumber: order.numero_pedido,
-          orderId: order.id,
-          total: order.total,
-          items: order.items.map(item => ({
-            producto_nombre: item.producto_nombre,
-            producto_imagen: item.producto_imagen,
-            talle: item.talle,
-            cantidad: item.cantidad,
-            producto_precio: item.producto_precio,
-          })),
-        });
+      // Notificación in-app (transferencia aprobada)
+      if (order.usuario_id) {
+        try {
+          const supabase = getSupabaseClient();
+          await (supabase as any).from('notificaciones').insert({
+            usuario_id: order.usuario_id,
+            tipo: 'pedido',
+            titulo: `¡Transferencia aprobada! Pedido #${order.numero_pedido}`,
+            mensaje: `Tu transferencia de ${formatPrice(order.total)} fue verificada y aprobada. Tu pedido está siendo procesado.`,
+            metadata: { pedido_id: order.id, numero_pedido: order.numero_pedido, metodo_pago: 'transferencia', action_url: `/cuenta/pedidos/${order.id}` },
+          });
+        } catch {}
       }
-
-      // Notificación in-app
-      try {
-        const supabase = getSupabaseClient();
-        await (supabase as any).from('notificaciones').insert({
-          usuario_id: order.usuario_id,
-          tipo: 'pedido',
-          titulo: `¡Pago aprobado! Pedido #${order.numero_pedido}`,
-          mensaje: `Tu pago de ${formatPrice(order.total)} fue aprobado. Tu pedido está siendo procesado.`,
-          metadata: { pedido_id: order.id, numero_pedido: order.numero_pedido, action_url: `/cuenta/pedidos/${order.id}` },
-        });
-      } catch {}
       
       setSuccess('Pago aprobado correctamente. Se envió notificación al cliente.');
       await loadOrder();
@@ -139,35 +123,19 @@ export default function AdminPedidoDetailPage({ params }: { params: Promise<{ id
     try {
       await rejectPayment(order.verificacion.id, rejectionReason);
       
-      // Enviar email de pago rechazado
-      if (order.cliente_email) {
-        await sendOrderEmail('payment_rejected', {
-          email: order.cliente_email,
-          customerName: order.cliente_nombre || 'Cliente',
-          orderNumber: order.numero_pedido,
-          orderId: order.id,
-          reason: rejectionReason,
-          items: order.items.map(item => ({
-            producto_nombre: item.producto_nombre,
-            producto_imagen: item.producto_imagen,
-            talle: item.talle,
-            cantidad: item.cantidad,
-            producto_precio: item.producto_precio,
-          })),
-        });
+      // Notificación in-app (transferencia rechazada)
+      if (order.usuario_id) {
+        try {
+          const supabase = getSupabaseClient();
+          await (supabase as any).from('notificaciones').insert({
+            usuario_id: order.usuario_id,
+            tipo: 'pedido',
+            titulo: `Transferencia rechazada - Pedido #${order.numero_pedido}`,
+            mensaje: rejectionReason ? `Tu transferencia fue rechazada. Motivo: ${rejectionReason}` : 'Tu transferencia fue rechazada. Podés intentar nuevamente.',
+            metadata: { pedido_id: order.id, numero_pedido: order.numero_pedido, metodo_pago: 'transferencia', action_url: `/cuenta/pedidos/${order.id}` },
+          });
+        } catch {}
       }
-
-      // Notificación in-app
-      try {
-        const supabase = getSupabaseClient();
-        await (supabase as any).from('notificaciones').insert({
-          usuario_id: order.usuario_id,
-          tipo: 'pedido',
-          titulo: `Pago rechazado - Pedido #${order.numero_pedido}`,
-          mensaje: rejectionReason ? `Tu pago fue rechazado. Motivo: ${rejectionReason}` : 'Tu pago fue rechazado. Podés intentar nuevamente.',
-          metadata: { pedido_id: order.id, numero_pedido: order.numero_pedido, action_url: `/cuenta/pedidos/${order.id}` },
-        });
-      } catch {}
       
       setSuccess('Pago rechazado. Se envió notificación al cliente.');
       setShowRejectForm(false);
@@ -202,38 +170,20 @@ export default function AdminPedidoDetailPage({ params }: { params: Promise<{ id
           : undefined,
       });
       
-      // Enviar email de pedido enviado
-      if (order!.cliente_email) {
-        await sendOrderEmail('order_shipped', {
-          items: order!.items.map(item => ({
-            producto_nombre: item.producto_nombre,
-            producto_imagen: item.producto_imagen,
-            talle: item.talle,
-            cantidad: item.cantidad,
-            producto_precio: item.producto_precio,
-          })),
-          email: order!.cliente_email,
-          customerName: order!.cliente_nombre || 'Cliente',
-          orderNumber: order!.numero_pedido,
-          orderId: order!.id,
-          trackingNumber: shippingData.tracking_number,
-          trackingUrl: shippingResult?.url_seguimiento || shippingData.tracking_url,
-          carrier: getCarrierDisplayName(shippingData.transportista),
-        });
-      }
-
       // Notificación in-app
-      try {
-        const supabase = getSupabaseClient();
-        const trackingMsg = shippingData.tracking_number ? ` Código de seguimiento: ${shippingData.tracking_number}` : '';
-        await (supabase as any).from('notificaciones').insert({
-          usuario_id: order!.usuario_id,
-          tipo: 'pedido',
-          titulo: `¡Pedido #${order!.numero_pedido} enviado!`,
-          mensaje: `Tu pedido fue despachado por ${getCarrierDisplayName(shippingData.transportista)}.${trackingMsg}`,
-          metadata: { pedido_id: order!.id, numero_pedido: order!.numero_pedido, action_url: `/cuenta/pedidos/${order!.id}` },
-        });
-      } catch {}
+      if (order!.usuario_id) {
+        try {
+          const supabase = getSupabaseClient();
+          const trackingMsg = shippingData.tracking_number ? ` Código de seguimiento: ${shippingData.tracking_number}` : '';
+          await (supabase as any).from('notificaciones').insert({
+            usuario_id: order!.usuario_id,
+            tipo: 'pedido',
+            titulo: `¡Pedido #${order!.numero_pedido} enviado!`,
+            mensaje: `Tu pedido fue despachado por ${getCarrierDisplayName(shippingData.transportista)}.${trackingMsg}`,
+            metadata: { pedido_id: order!.id, numero_pedido: order!.numero_pedido, action_url: `/cuenta/pedidos/${order!.id}` },
+          });
+        } catch {}
+      }
       
       setSuccess('Pedido marcado como enviado. Se envió notificación al cliente.');
       setShowShippingForm(false);
@@ -260,34 +210,19 @@ export default function AdminPedidoDetailPage({ params }: { params: Promise<{ id
     try {
       await updateOrderStatus(order!.id, 'entregado');
       
-      // Enviar email de pedido entregado
-      if (order!.cliente_email) {
-        await sendOrderEmail('order_delivered', {
-          email: order!.cliente_email,
-          customerName: order!.cliente_nombre || 'Cliente',
-          orderNumber: order!.numero_pedido,
-          orderId: order!.id,
-          items: order!.items.map(item => ({
-            producto_nombre: item.producto_nombre,
-            producto_imagen: item.producto_imagen,
-            talle: item.talle,
-            cantidad: item.cantidad,
-            producto_precio: item.producto_precio,
-          })),
-        });
-      }
-
       // Notificación in-app
-      try {
-        const supabase = getSupabaseClient();
-        await (supabase as any).from('notificaciones').insert({
-          usuario_id: order!.usuario_id,
-          tipo: 'pedido',
-          titulo: `Pedido #${order!.numero_pedido} entregado`,
-          mensaje: '¡Tu pedido fue entregado! Esperamos que disfrutes tu compra.',
-          metadata: { pedido_id: order!.id, numero_pedido: order!.numero_pedido, action_url: `/cuenta/pedidos/${order!.id}` },
-        });
-      } catch {}
+      if (order!.usuario_id) {
+        try {
+          const supabase = getSupabaseClient();
+          await (supabase as any).from('notificaciones').insert({
+            usuario_id: order!.usuario_id,
+            tipo: 'pedido',
+            titulo: `Pedido #${order!.numero_pedido} entregado`,
+            mensaje: '¡Tu pedido fue entregado! Esperamos que disfrutes tu compra.',
+            metadata: { pedido_id: order!.id, numero_pedido: order!.numero_pedido, action_url: `/cuenta/pedidos/${order!.id}` },
+          });
+        } catch {}
+      }
       
       setSuccess('Pedido marcado como entregado. Se envió notificación al cliente.');
       await loadOrder();

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Bell, Check, X as XIcon, Loader2, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNotifications } from '@/lib/hooks/useNotifications';
@@ -216,7 +217,8 @@ export default function NotificationBell() {
       </AnimatePresence>
     </div>
 
-    {/* Notification Detail Modal */}
+    {/* Notification Detail Modal - rendered via portal to escape Navbar stacking context */}
+    {typeof document !== 'undefined' && createPortal(
     <AnimatePresence>
       {selectedNotif && (
         <motion.div
@@ -329,7 +331,9 @@ export default function NotificationBell() {
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
+    )}
     </>
   );
 }
