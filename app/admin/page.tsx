@@ -43,6 +43,8 @@ export default function AdminDashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [resetRequests, setResetRequests] = useState<any[]>([]);
+  const [securityAnswers, setSecurityAnswers] = useState<Record<string, string>>({});
+  const [securityErrors, setSecurityErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
 
   // Cargar datos cuando el usuario sea admin
@@ -341,12 +343,44 @@ export default function AdminDashboardPage() {
                           {new Date(req.fecha_creacion).toLocaleDateString('es-AR')}
                         </span>
                       </div>
+                      {req.pregunta_seguridad && (
+                        <div className="mb-3">
+                          <p className="text-xs font-medium text-gray-700 mb-1">
+                            Pregunta de seguridad: <span className="text-foreground">{req.pregunta_seguridad}</span>
+                          </p>
+                          <input
+                            type="text"
+                            placeholder="Respuesta del usuario..."
+                            value={securityAnswers[req.id] || ''}
+                            onChange={(e) => {
+                              setSecurityAnswers((prev) => ({ ...prev, [req.id]: e.target.value }));
+                              setSecurityErrors((prev) => ({ ...prev, [req.id]: '' }));
+                            }}
+                            className="w-full px-3 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-gray-400"
+                          />
+                          {securityErrors[req.id] && (
+                            <p className="text-xs text-red-600 mt-1">{securityErrors[req.id]}</p>
+                          )}
+                        </div>
+                      )}
                       {req.pregunta_seguridad_verificada && (
                         <p className="text-xs text-green-600 mb-2">✓ Pregunta de seguridad verificada</p>
                       )}
                       <div className="flex gap-2">
                         <button
                           onClick={async () => {
+                            // Verify security answer before approving
+                            if (req.pregunta_seguridad && req.respuesta_seguridad) {
+                              const answer = (securityAnswers[req.id] || '').trim().toLowerCase();
+                              if (!answer) {
+                                setSecurityErrors((prev) => ({ ...prev, [req.id]: 'Ingresá la respuesta de seguridad para aprobar' }));
+                                return;
+                              }
+                              if (answer !== req.respuesta_seguridad) {
+                                setSecurityErrors((prev) => ({ ...prev, [req.id]: 'Respuesta incorrecta' }));
+                                return;
+                              }
+                            }
                             await fetch('/api/auth/admin-reset', {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },

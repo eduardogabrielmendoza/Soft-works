@@ -4,14 +4,13 @@ import { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Loader2, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import { X, Loader2, Eye, EyeOff, CheckCircle, Clock } from 'lucide-react';
 import { useAuth } from '@/lib/hooks/useAuth';
 
 function CuentaContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect') || '/cuenta/perfil';
-  const justRegistered = searchParams.get('registered') === 'true';
   
   const { signIn, isLoading: authLoading } = useAuth();
   
@@ -29,6 +28,8 @@ function CuentaContent() {
   const [resetSent, setResetSent] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
   const [resetMessage, setResetMessage] = useState('');
+  const [pendingRequest, setPendingRequest] = useState<{ estado: string; fecha: string } | null>(null);
+  const [checkingPending, setCheckingPending] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,12 +72,37 @@ function CuentaContent() {
         }),
       });
       const data = await res.json();
+      if (data.message?.includes('solicitud pendiente')) {
+        setPendingRequest({ estado: 'pendiente', fecha: '' });
+      }
       setResetMessage(data.message || 'Tu solicitud fue registrada.');
       setResetSent(true);
     } catch {
       setResetMessage('Ocurrió un error. Intentá de nuevo.');
     } finally {
       setResetLoading(false);
+    }
+  };
+
+  const checkPendingRequest = async (emailToCheck: string) => {
+    if (!emailToCheck) return;
+    setCheckingPending(true);
+    try {
+      const res = await fetch('/api/auth/check-reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailToCheck }),
+      });
+      const data = await res.json();
+      if (data.estado === 'pendiente') {
+        setPendingRequest({ estado: data.estado, fecha: data.fecha });
+      } else {
+        setPendingRequest(null);
+      }
+    } catch {
+      setPendingRequest(null);
+    } finally {
+      setCheckingPending(false);
     }
   };
 
@@ -112,13 +138,6 @@ function CuentaContent() {
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-medium mb-6 sm:mb-8 text-foreground">
               Iniciar Sesión
             </h1>
-
-            {justRegistered && (
-              <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-md text-green-700 text-sm flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 flex-shrink-0" />
-                ¡Cuenta creada exitosamente! Ya podés iniciar sesión.
-              </div>
-            )}
 
             {error && (
               <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
@@ -184,6 +203,9 @@ function CuentaContent() {
                   onClick={() => {
                     setShowResetModal(true);
                     setResetEmail(email);
+                    setPendingRequest(null);
+                    setResetSent(false);
+                    if (email) checkPendingRequest(email);
                   }}
                   className="text-sm text-gray-600 hover:text-black transition-colors underline"
                 >
@@ -227,7 +249,7 @@ function CuentaContent() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-            onClick={() => { setShowResetModal(false); setResetSent(false); }}
+            onClick={() => { setShowResetModal(false); setResetSent(false); setPendingRequest(null); }}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
@@ -237,7 +259,7 @@ function CuentaContent() {
               onClick={(e) => e.stopPropagation()}
             >
               <button
-                onClick={() => { setShowResetModal(false); setResetSent(false); }}
+                onClick={() => { setShowResetModal(false); setResetSent(false); setPendingRequest(null); }}
                 className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
               >
                 <X className="w-5 h-5" />
@@ -257,11 +279,38 @@ function CuentaContent() {
                     </Link>.
                   </p>
                   <button
-                    onClick={() => { setShowResetModal(false); setResetSent(false); }}
+                    onClick={() => { setShowResetModal(false); setResetSent(false); setPendingRequest(null); }}
                     className="px-6 py-3 bg-foreground text-white rounded-md hover:bg-foreground/90 transition-colors font-medium"
                   >
                     Entendido
                   </button>
+                </div>
+              ) : checkingPending ? (
+                <div className="flex flex-col items-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-gray-400 mb-3" />
+                  <p className="text-sm text-gray-500">Verificando solicitudes...</p>
+                </div>
+              ) : pendingRequest ? (
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <Clock className="w-8 h-8 text-yellow-600" />
+                  </div>
+                  <h3 className="text-2xl font-medium mb-4">Solicitud Pendiente</h3>
+                  <p className="text-gray-700 leading-relaxed mb-4">
+                    Ya tenés una solicitud de recuperación pendiente. Un administrador la revisará pronto.
+                  </p>
+                  {pendingRequest.fecha && (
+                    <p className="text-xs text-gray-500 mb-6">
+                      Enviada el {new Date(pendingRequest.fecha).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </p>
+                  )}
+                  <Link
+                    href="/cuenta/reset-password"
+                    onClick={() => { setShowResetModal(false); setPendingRequest(null); }}
+                    className="inline-block px-6 py-3 bg-foreground text-white rounded-md hover:bg-foreground/90 transition-colors font-medium"
+                  >
+                    Ver estado de solicitud
+                  </Link>
                 </div>
               ) : (
                 <>
@@ -308,6 +357,15 @@ function CuentaContent() {
                         'Solicitar Recuperación'
                       )}
                     </button>
+                    <div className="text-center mt-3">
+                      <Link
+                        href="/cuenta/reset-password"
+                        onClick={() => { setShowResetModal(false); setPendingRequest(null); }}
+                        className="text-sm text-gray-600 underline hover:text-black transition-colors"
+                      >
+                        Consultar estado de solicitud
+                      </Link>
+                    </div>
                   </form>
                 </>
               )}

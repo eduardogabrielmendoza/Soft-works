@@ -1,14 +1,17 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Bell } from 'lucide-react';
+import { Bell, Check, X as XIcon, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNotifications } from '@/lib/hooks/useNotifications';
+import { useAuth } from '@/lib/hooks/useAuth';
 import Link from 'next/link';
 
 export default function NotificationBell() {
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, refresh } = useNotifications();
+  const { isAdmin } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const [processingId, setProcessingId] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   // Close on outside click
@@ -23,6 +26,41 @@ export default function NotificationBell() {
   }, []);
 
   const recentNotifs = notifications.slice(0, 10);
+
+  const handleAdminAction = async (solicitudEmail: string, action: 'aprobar' | 'rechazar', notifId: string) => {
+    setProcessingId(notifId);
+    try {
+      // Find the solicitud by email
+      const checkRes = await fetch('/api/auth/check-reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: solicitudEmail }),
+      });
+      const checkData = await checkRes.json();
+      if (checkData.estado !== 'pendiente') {
+        await markAsRead(notifId);
+        await refresh();
+        return;
+      }
+
+      // Get solicitud ID from admin endpoint (need to find it)
+      const findRes = await fetch(`/api/auth/admin-reset-find?email=${encodeURIComponent(solicitudEmail)}`);
+      const findData = await findRes.json();
+      if (!findData.solicitudId) return;
+
+      await fetch('/api/auth/admin-reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ solicitudId: findData.solicitudId, action }),
+      });
+      await markAsRead(notifId);
+      await refresh();
+    } catch (err) {
+      console.error('Error processing admin action:', err);
+    } finally {
+      setProcessingId(null);
+    }
+  };
 
   const formatTime = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -83,11 +121,15 @@ export default function NotificationBell() {
               ) : (
                 recentNotifs.map((notif) => {
                   const actionUrl = notif.metadata?.action_url as string | undefined;
+                  const isRecoveryRequest = isAdmin && notif.metadata?.solicitud_tipo === 'recuperacion';
+                  const solicitudEmail = notif.metadata?.usuario_email as string | undefined;
+                  const isProcessing = processingId === notif.id;
+
                   const Content = (
                     <div
                       key={notif.id}
                       onClick={() => {
-                        if (!notif.leida) markAsRead(notif.id);
+                        if (!notif.leida && !isRecoveryRequest) markAsRead(notif.id);
                       }}
                       className={`px-4 py-3 border-b border-gray-50 hover:bg-gray-50 cursor-pointer transition-colors ${
                         !notif.leida ? 'bg-blue-50/50' : ''
@@ -101,12 +143,44 @@ export default function NotificationBell() {
                           <p className="text-sm font-medium text-gray-900">{notif.titulo}</p>
                           <p className="text-xs text-gray-600 mt-0.5 line-clamp-2">{notif.mensaje}</p>
                           <p className="text-[10px] text-gray-400 mt-1">{formatTime(notif.fecha_creacion)}</p>
+                          {isRecoveryRequest && solicitudEmail && (
+                            <div className="flex gap-2 mt-2" onClick={(e) => e.preventDefault()}>
+                              {isProcessing ? (
+                                <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                              ) : (
+                                <>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      e.preventDefault();
+                                      handleAdminAction(solicitudEmail, 'aprobar', notif.id);
+                                    }}
+                                    className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                                  >
+                                    <Check className="w-3 h-3" />
+                                    Aprobar
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      e.preventDefault();
+                                      handleAdminAction(solicitudEmail, 'rechazar', notif.id);
+                                    }}
+                                    className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                                  >
+                                    <XIcon className="w-3 h-3" />
+                                    Rechazar
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
                   );
 
-                  if (actionUrl) {
+                  if (actionUrl && !isRecoveryRequest) {
                     return (
                       <Link key={notif.id} href={actionUrl} onClick={() => setIsOpen(false)}>
                         {Content}

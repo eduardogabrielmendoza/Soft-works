@@ -129,8 +129,8 @@ export default function RegistroPage() {
         return;
       }
 
-      // Cuenta creada exitosamente — redirigir al login
-      router.push('/cuenta?registered=true');
+      // Cuenta creada exitosamente — redirigir a la cuenta
+      router.push('/cuenta/perfil');
     } catch {
       setError('Ocurrió un error inesperado');
     } finally {

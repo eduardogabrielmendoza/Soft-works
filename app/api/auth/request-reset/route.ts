@@ -59,6 +59,8 @@ export async function POST(request: NextRequest) {
         nombre_ingresado: nombreIngresado.trim(),
         estado: 'pendiente',
         pregunta_seguridad_verificada: securityVerified,
+        pregunta_seguridad: profile.pregunta_seguridad || null,
+        respuesta_seguridad: profile.respuesta_seguridad || null,
       })
 
     if (insertError) {
