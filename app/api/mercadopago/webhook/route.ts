@@ -82,17 +82,16 @@ export async function POST(req: NextRequest) {
       } else {
         console.log(`Order ${orderId} updated to ${newEstado} via webhook (payment ${paymentId})`);
 
-        // Send notification when payment is approved
-        if (newEstado === 'pago_aprobado') {
-          try {
-            const { data: order } = await supabase
-              .from('pedidos')
-              .select('*, items:pedido_items(*)')
-              .eq('id', orderId)
-              .single();
+        // Send notification based on payment status
+        try {
+          const { data: order } = await supabase
+            .from('pedidos')
+            .select('*, items:pedido_items(*)')
+            .eq('id', orderId)
+            .single();
 
-            if (order) {
-              // Create in-app notification
+          if (order) {
+            if (newEstado === 'pago_aprobado') {
               await supabase
                 .from('notificaciones')
                 .insert({
@@ -100,13 +99,23 @@ export async function POST(req: NextRequest) {
                   tipo: 'pedido',
                   titulo: `¡Pago aprobado! Pedido #${order.numero_pedido}`,
                   mensaje: `Tu pago de $${order.total} fue aprobado. Tu pedido está siendo procesado.`,
-                  metadata: { pedido_id: order.id, numero_pedido: order.numero_pedido },
+                  metadata: { pedido_id: order.id, numero_pedido: order.numero_pedido, action_url: `/cuenta/pedidos/${order.id}` },
                 });
-              console.log(`Payment notification created for order ${order.numero_pedido}`);
+            } else if (newEstado === 'pago_rechazado') {
+              await supabase
+                .from('notificaciones')
+                .insert({
+                  usuario_id: order.usuario_id,
+                  tipo: 'pedido',
+                  titulo: `Pago no procesado - Pedido #${order.numero_pedido}`,
+                  mensaje: 'Tu pago no pudo ser procesado. Podés intentar nuevamente desde tu pedido.',
+                  metadata: { pedido_id: order.id, numero_pedido: order.numero_pedido, action_url: `/cuenta/pedidos/${order.id}` },
+                });
             }
-          } catch (notifError) {
-            console.error('Error creating payment notification:', notifError);
+            console.log(`Payment notification created for order ${order.numero_pedido} (${newEstado})`);
           }
+        } catch (notifError) {
+          console.error('Error creating payment notification:', notifError);
         }
       }
     }

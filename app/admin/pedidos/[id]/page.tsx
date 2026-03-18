@@ -25,6 +25,7 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import { getOrderById, updateOrderStatus, approvePayment, rejectPayment, addShippingInfo } from '@/lib/api/orders';
 import { formatPrice, formatDateTime, getOrderStatusLabel, getOrderStatusColor } from '@/lib/utils/helpers';
 import { sendOrderEmail, getCarrierDisplayName } from '@/lib/utils/emailClient';
+import { getSupabaseClient } from '@/lib/supabase/client';
 import type { OrderWithItems } from '@/lib/types/database.types';
 
 // Mapeo de transportistas
@@ -106,6 +107,18 @@ export default function AdminPedidoDetailPage({ params }: { params: Promise<{ id
           })),
         });
       }
+
+      // Notificación in-app
+      try {
+        const supabase = getSupabaseClient();
+        await (supabase as any).from('notificaciones').insert({
+          usuario_id: order.usuario_id,
+          tipo: 'pedido',
+          titulo: `¡Pago aprobado! Pedido #${order.numero_pedido}`,
+          mensaje: `Tu pago de ${formatPrice(order.total)} fue aprobado. Tu pedido está siendo procesado.`,
+          metadata: { pedido_id: order.id, numero_pedido: order.numero_pedido, action_url: `/cuenta/pedidos/${order.id}` },
+        });
+      } catch {}
       
       setSuccess('Pago aprobado correctamente. Se envió notificación al cliente.');
       await loadOrder();
@@ -143,6 +156,18 @@ export default function AdminPedidoDetailPage({ params }: { params: Promise<{ id
           })),
         });
       }
+
+      // Notificación in-app
+      try {
+        const supabase = getSupabaseClient();
+        await (supabase as any).from('notificaciones').insert({
+          usuario_id: order.usuario_id,
+          tipo: 'pedido',
+          titulo: `Pago rechazado - Pedido #${order.numero_pedido}`,
+          mensaje: rejectionReason ? `Tu pago fue rechazado. Motivo: ${rejectionReason}` : 'Tu pago fue rechazado. Podés intentar nuevamente.',
+          metadata: { pedido_id: order.id, numero_pedido: order.numero_pedido, action_url: `/cuenta/pedidos/${order.id}` },
+        });
+      } catch {}
       
       setSuccess('Pago rechazado. Se envió notificación al cliente.');
       setShowRejectForm(false);
@@ -196,6 +221,19 @@ export default function AdminPedidoDetailPage({ params }: { params: Promise<{ id
           carrier: getCarrierDisplayName(shippingData.transportista),
         });
       }
+
+      // Notificación in-app
+      try {
+        const supabase = getSupabaseClient();
+        const trackingMsg = shippingData.tracking_number ? ` Código de seguimiento: ${shippingData.tracking_number}` : '';
+        await (supabase as any).from('notificaciones').insert({
+          usuario_id: order!.usuario_id,
+          tipo: 'pedido',
+          titulo: `¡Pedido #${order!.numero_pedido} enviado!`,
+          mensaje: `Tu pedido fue despachado por ${getCarrierDisplayName(shippingData.transportista)}.${trackingMsg}`,
+          metadata: { pedido_id: order!.id, numero_pedido: order!.numero_pedido, action_url: `/cuenta/pedidos/${order!.id}` },
+        });
+      } catch {}
       
       setSuccess('Pedido marcado como enviado. Se envió notificación al cliente.');
       setShowShippingForm(false);
@@ -238,6 +276,18 @@ export default function AdminPedidoDetailPage({ params }: { params: Promise<{ id
           })),
         });
       }
+
+      // Notificación in-app
+      try {
+        const supabase = getSupabaseClient();
+        await (supabase as any).from('notificaciones').insert({
+          usuario_id: order!.usuario_id,
+          tipo: 'pedido',
+          titulo: `Pedido #${order!.numero_pedido} entregado`,
+          mensaje: '¡Tu pedido fue entregado! Esperamos que disfrutes tu compra.',
+          metadata: { pedido_id: order!.id, numero_pedido: order!.numero_pedido, action_url: `/cuenta/pedidos/${order!.id}` },
+        });
+      } catch {}
       
       setSuccess('Pedido marcado como entregado. Se envió notificación al cliente.');
       await loadOrder();
