@@ -203,6 +203,9 @@ export default function ChatBubble() {
         if (payload.new.estado === 'resuelto') {
           setIsResolved(true);
           setResolvedAt(payload.new.fecha_actualizacion);
+        } else if (payload.new.estado === 'activo') {
+          setIsResolved(false);
+          setResolvedAt(null);
         }
       })
       .subscribe();
@@ -214,6 +217,16 @@ export default function ChatBubble() {
     if (!newMessage.trim() || !chatId || isSending) return;
     setIsSending(true);
     const supabase = getSupabaseClient();
+
+    // If chat was resolved, reactivate it before sending
+    if (isResolved) {
+      await (supabase as any).from('chats').update({
+        estado: 'activo',
+        fecha_actualizacion: new Date().toISOString(),
+      }).eq('id', chatId);
+      setIsResolved(false);
+      setResolvedAt(null);
+    }
 
     const { error } = await (supabase as any)
       .from('chat_mensajes')
@@ -340,31 +353,27 @@ export default function ChatBubble() {
 
               {/* Input */}
               <div className="px-3 py-2 border-t border-gray-200 flex-shrink-0">
-                {isResolved ? (
-                  <div className="text-center py-2">
-                    <p className="text-xs text-gray-500">✓ Esta consulta fue resuelta</p>
-                    <p className="text-[10px] text-gray-400 mt-0.5">El chat se archivará automáticamente</p>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      placeholder="Escribí tu mensaje..."
-                      className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleSend}
-                      disabled={!newMessage.trim() || isSending}
-                      className="p-2 bg-foreground text-white rounded-md hover:bg-foreground/90 transition-colors disabled:opacity-50"
-                    >
-                      {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                    </button>
-                  </div>
+                {isResolved && (
+                  <p className="text-[10px] text-center text-gray-400 mb-1">✓ Consulta resuelta — escribí si necesitás más ayuda</p>
                 )}
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder={isResolved ? '¿Tenés otra consulta?' : 'Escribí tu mensaje...'}
+                    className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSend}
+                    disabled={!newMessage.trim() || isSending}
+                    className="p-2 bg-foreground text-white rounded-md hover:bg-foreground/90 transition-colors disabled:opacity-50"
+                  >
+                    {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
             </motion.div>
           )}

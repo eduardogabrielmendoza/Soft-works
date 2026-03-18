@@ -148,6 +148,15 @@ export default function AdminChatIcon() {
     setIsSending(true);
     const supabase = getSupabaseClient();
 
+    // If chat was resolved, reactivate it when admin sends a new message
+    const currentChat = chats.find((c) => c.id === selectedChatId);
+    if (currentChat?.estado === 'resuelto') {
+      await (supabase as any).from('chats').update({
+        estado: 'activo',
+        fecha_actualizacion: new Date().toISOString(),
+      }).eq('id', selectedChatId);
+    }
+
     const { error } = await (supabase as any).from('chat_mensajes').insert({
       chat_id: selectedChatId,
       autor_id: user!.id,
@@ -311,31 +320,27 @@ export default function AdminChatIcon() {
 
                 {/* Input */}
                 <div className="px-3 py-2 border-t border-gray-200 flex-shrink-0">
-                  {selectedChat?.estado === 'resuelto' ? (
-                    <div className="text-center py-2">
-                      <p className="text-xs text-gray-500">✓ Consulta resuelta</p>
-                      <p className="text-[10px] text-gray-400 mt-0.5">El chat se archivará automáticamente en menos de 1 hora</p>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder="Escribí tu respuesta..."
-                        className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleSend}
-                        disabled={!newMessage.trim() || isSending}
-                        className="p-2 bg-foreground text-white rounded-md hover:bg-foreground/90 transition-colors disabled:opacity-50"
-                      >
-                        {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                      </button>
-                    </div>
+                  {selectedChat?.estado === 'resuelto' && (
+                    <p className="text-[10px] text-center text-gray-400 mb-1">✓ Consulta resuelta — el cliente puede reabrir escribiendo</p>
                   )}
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Escribí tu respuesta..."
+                      className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleSend}
+                      disabled={!newMessage.trim() || isSending}
+                      className="p-2 bg-foreground text-white rounded-md hover:bg-foreground/90 transition-colors disabled:opacity-50"
+                    >
+                      {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : (
