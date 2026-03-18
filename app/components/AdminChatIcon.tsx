@@ -40,10 +40,12 @@ export default function AdminChatIcon() {
   const ref = useRef<HTMLDivElement>(null);
   const userIdRef = useRef<string | null>(null);
   const selectedChatIdRef = useRef<string | null>(null);
+  const chatsRef = useRef<Chat[]>([]);
 
   // Keep refs in sync
   useEffect(() => { userIdRef.current = user?.id ?? null; }, [user?.id]);
   useEffect(() => { selectedChatIdRef.current = selectedChatId; }, [selectedChatId]);
+  useEffect(() => { chatsRef.current = chats; }, [chats]);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -105,10 +107,11 @@ export default function AdminChatIcon() {
 
   useEffect(() => { loadChats(); }, [loadChats]);
 
-  // Realtime: chats + messages in a single stable subscription
+  // Realtime + polling fallback for chat list
   useEffect(() => {
     if (!isAdmin) return;
     const supabase = getSupabaseClient();
+
     const channel = supabase
       .channel('admin-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chats' }, () => {
@@ -120,7 +123,6 @@ export default function AdminChatIcon() {
         table: 'chat_mensajes',
       }, (payload: any) => {
         const newMsg = payload.new;
-        // Track unread if not from admin and not the currently viewed chat
         if (newMsg.autor_id !== userIdRef.current && newMsg.chat_id !== selectedChatIdRef.current) {
           setUnreadChatIds((prev) => {
             const next = new Set(prev);
@@ -128,18 +130,56 @@ export default function AdminChatIcon() {
             return next;
           });
         }
-        // Refresh chat list to update ultimo_mensaje
         loadChats();
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    // Polling fallback every 3s - reload chat list and detect new unread
+    const poll = setInterval(async () => {
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      const { data: chatList } = await (supabase as any)
+        .from('chats')
+        .select('id, usuario_id, estado, fecha_creacion, fecha_actualizacion')
+        .or(`estado.eq.activo,and(estado.eq.resuelto,fecha_actualizacion.gte.${oneHourAgo})`)
+        .order('fecha_actualizacion', { ascending: false });
+
+      if (chatList) {
+        // Check each chat for new messages since last known update
+        for (const chat of chatList) {
+          const existing = chatsRef.current.find((c: Chat) => c.id === chat.id);
+          if (existing && chat.fecha_actualizacion !== existing.fecha_actualizacion && chat.id !== selectedChatIdRef.current) {
+            // Chat was updated — check if there's a new client message
+            const { data: lastMsg } = await (supabase as any)
+              .from('chat_mensajes')
+              .select('autor_id')
+              .eq('chat_id', chat.id)
+              .order('fecha_creacion', { ascending: false })
+              .limit(1);
+            if (lastMsg?.[0]?.autor_id !== userIdRef.current) {
+              setUnreadChatIds((prev) => {
+                const next = new Set(prev);
+                next.add(chat.id);
+                return next;
+              });
+            }
+          }
+        }
+        // Reload full chat list
+        loadChats();
+      }
+    }, 3000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(poll);
+    };
   }, [isAdmin, loadChats]);
 
-  // Realtime for selected chat messages
+  // Realtime for selected chat messages + polling fallback
   useEffect(() => {
     if (!selectedChatId) return;
     const supabase = getSupabaseClient();
+
     const channel = supabase
       .channel(`admin-chat-msgs-${selectedChatId}`)
       .on('postgres_changes', {
@@ -154,7 +194,26 @@ export default function AdminChatIcon() {
         });
       })
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+
+    // Poll messages for the open chat every 3s
+    const poll = setInterval(async () => {
+      const { data } = await (supabase as any)
+        .from('chat_mensajes')
+        .select('*')
+        .eq('chat_id', selectedChatId)
+        .order('fecha_creacion', { ascending: true });
+      if (data) {
+        setMessages((prev) => {
+          if (data.length === prev.length && data.length > 0 && data[data.length - 1].id === prev[prev.length - 1]?.id) return prev;
+          return data;
+        });
+      }
+    }, 3000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(poll);
+    };
   }, [selectedChatId]);
 
   const openChat = async (chatId: string) => {

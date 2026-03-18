@@ -161,10 +161,12 @@ export default function ChatBubble() {
     if (data) setMessages(data);
   };
 
-  // Realtime subscription
+  // Realtime subscription + polling fallback
   useEffect(() => {
     if (!chatId) return;
     const supabase = getSupabaseClient();
+
+    // Realtime channel
     const channel = supabase
       .channel(`chat-${chatId}`)
       .on('postgres_changes', {
@@ -178,20 +180,44 @@ export default function ChatBubble() {
           if (prev.some(m => m.id === newMsg.id)) return prev;
           return [...prev, newMsg];
         });
-        // Track unread when window is closed and message is from someone else
         if (!isOpenRef.current && newMsg.autor_id !== user?.id) {
           setUnreadCount((prev) => prev + 1);
         }
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
-  }, [chatId]);
+    // Polling fallback every 3s
+    const poll = setInterval(async () => {
+      const { data } = await (supabase as any)
+        .from('chat_mensajes')
+        .select('*')
+        .eq('chat_id', chatId)
+        .order('fecha_creacion', { ascending: true });
+      if (data) {
+        setMessages((prev) => {
+          if (data.length === prev.length && data.length > 0 && data[data.length - 1].id === prev[prev.length - 1]?.id) return prev;
+          // Count truly new messages from others
+          const prevIds = new Set(prev.map((m: ChatMessage) => m.id));
+          const newFromOthers = data.filter((m: ChatMessage) => !prevIds.has(m.id) && m.autor_id !== user?.id);
+          if (!isOpenRef.current && newFromOthers.length > 0) {
+            setUnreadCount((c: number) => c + newFromOthers.length);
+          }
+          return data;
+        });
+      }
+    }, 3000);
 
-  // Listen for chat state changes (resolved)
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(poll);
+    };
+  }, [chatId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Listen for chat state changes (resolved) + polling fallback
   useEffect(() => {
     if (!chatId) return;
     const supabase = getSupabaseClient();
+
     const channel = supabase
       .channel(`chat-state-${chatId}`)
       .on('postgres_changes', {
@@ -210,7 +236,28 @@ export default function ChatBubble() {
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    // Poll chat state every 3s
+    const poll = setInterval(async () => {
+      const { data } = await (supabase as any)
+        .from('chats')
+        .select('estado, fecha_actualizacion')
+        .eq('id', chatId)
+        .single();
+      if (data) {
+        if (data.estado === 'resuelto') {
+          setIsResolved(true);
+          setResolvedAt(data.fecha_actualizacion);
+        } else {
+          setIsResolved(false);
+          setResolvedAt(null);
+        }
+      }
+    }, 3000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(poll);
+    };
   }, [chatId]);
 
   const handleSend = async () => {

@@ -12,7 +12,14 @@ let browserClient: ReturnType<typeof createSupabaseBrowserClient> | null = null
 export function createClient() {
   return createSupabaseBrowserClient(
     SUPABASE_URL,
-    SUPABASE_ANON_KEY
+    SUPABASE_ANON_KEY,
+    {
+      realtime: {
+        params: {
+          eventsPerSecond: 10,
+        },
+      },
+    }
   ) as any
 }
 
