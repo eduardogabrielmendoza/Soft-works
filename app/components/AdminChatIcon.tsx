@@ -38,6 +38,12 @@ export default function AdminChatIcon() {
   const [unreadChatIds, setUnreadChatIds] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const ref = useRef<HTMLDivElement>(null);
+  const userIdRef = useRef<string | null>(null);
+  const selectedChatIdRef = useRef<string | null>(null);
+
+  // Keep refs in sync
+  useEffect(() => { userIdRef.current = user?.id ?? null; }, [user?.id]);
+  useEffect(() => { selectedChatIdRef.current = selectedChatId; }, [selectedChatId]);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -99,42 +105,36 @@ export default function AdminChatIcon() {
 
   useEffect(() => { loadChats(); }, [loadChats]);
 
-  // Realtime: new chats + updates
+  // Realtime: chats + messages in a single stable subscription
   useEffect(() => {
     if (!isAdmin) return;
     const supabase = getSupabaseClient();
-    const chatChannel = supabase
-      .channel('admin-chats-realtime')
+    const channel = supabase
+      .channel('admin-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chats' }, () => {
         loadChats();
       })
-      .subscribe();
-
-    // Listen for new messages across ALL chats to track unread
-    const msgChannel = supabase
-      .channel('admin-all-msgs-realtime')
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
         table: 'chat_mensajes',
       }, (payload: any) => {
         const newMsg = payload.new;
-        // Only mark as unread if the message is NOT from the admin
-        if (newMsg.autor_id !== user?.id) {
+        // Track unread if not from admin and not the currently viewed chat
+        if (newMsg.autor_id !== userIdRef.current && newMsg.chat_id !== selectedChatIdRef.current) {
           setUnreadChatIds((prev) => {
             const next = new Set(prev);
             next.add(newMsg.chat_id);
             return next;
           });
         }
+        // Refresh chat list to update ultimo_mensaje
+        loadChats();
       })
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(chatChannel);
-      supabase.removeChannel(msgChannel);
-    };
-  }, [isAdmin, loadChats, user?.id]);
+    return () => { supabase.removeChannel(channel); };
+  }, [isAdmin, loadChats]);
 
   // Realtime for selected chat messages
   useEffect(() => {
