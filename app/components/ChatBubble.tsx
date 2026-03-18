@@ -62,11 +62,12 @@ export default function ChatBubble() {
         const chatIdFound = activeChats[0].id;
         setChatId(chatIdFound);
         const msgs = await loadMessages(chatIdFound);
-        // Count unread messages from admin (not from this user)
-        if (msgs) {
-          const adminMsgs = msgs.filter((m: ChatMessage) => m.autor_id !== user.id && m.tipo === 'mensaje');
-          if (adminMsgs.length > 0) {
-            setUnreadCount(adminMsgs.length);
+        // Count unread: only admin messages AFTER the client's last message
+        if (msgs && msgs.length > 0) {
+          const lastClientIdx = msgs.map((m: ChatMessage) => m.autor_id).lastIndexOf(user.id);
+          const unread = msgs.slice(lastClientIdx + 1).filter((m: ChatMessage) => m.autor_id !== user.id && m.tipo === 'mensaje');
+          if (unread.length > 0) {
+            setUnreadCount(unread.length);
           }
         }
         return;
@@ -205,11 +206,13 @@ export default function ChatBubble() {
       if (data) {
         setMessages((prev) => {
           if (data.length === prev.length && data.length > 0 && data[data.length - 1].id === prev[prev.length - 1]?.id) return prev;
-          // Count truly new messages from others
-          const prevIds = new Set(prev.map((m: ChatMessage) => m.id));
-          const newFromOthers = data.filter((m: ChatMessage) => !prevIds.has(m.id) && m.autor_id !== user?.id);
-          if (!isOpenRef.current && newFromOthers.length > 0) {
-            setUnreadCount((c: number) => c + newFromOthers.length);
+          // Only increment unread for genuinely new messages not yet in state
+          if (!isOpenRef.current) {
+            const prevIds = new Set(prev.map((m: ChatMessage) => m.id));
+            const newFromOthers = data.filter((m: ChatMessage) => !prevIds.has(m.id) && m.autor_id !== user?.id && m.tipo === 'mensaje');
+            if (newFromOthers.length > 0) {
+              setUnreadCount((c: number) => c + newFromOthers.length);
+            }
           }
           return data;
         });
