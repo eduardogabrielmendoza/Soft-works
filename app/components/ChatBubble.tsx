@@ -24,7 +24,11 @@ export default function ChatBubble() {
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isResolved, setIsResolved] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [resolvedAt, setResolvedAt] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isOpenRef = useRef(false);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -34,9 +38,83 @@ export default function ChatBubble() {
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
+  // Sync isOpen ref for use in realtime callbacks
+  useEffect(() => { isOpenRef.current = isOpen; }, [isOpen]);
+
+  // Auto-detect active or recently resolved chat on mount
+  useEffect(() => {
+    if (!user || isAdmin) return;
+
+    const detectChat = async () => {
+      const supabase = getSupabaseClient();
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+
+      // Check for active chat
+      const { data: activeChats } = await (supabase as any)
+        .from('chats')
+        .select('id, estado, fecha_actualizacion')
+        .eq('usuario_id', user.id)
+        .eq('estado', 'activo')
+        .order('fecha_creacion', { ascending: false })
+        .limit(1);
+
+      if (activeChats && activeChats.length > 0) {
+        setChatId(activeChats[0].id);
+        await loadMessages(activeChats[0].id);
+        return;
+      }
+
+      // Check for recently resolved chat (within 1 hour)
+      const { data: resolvedChats } = await (supabase as any)
+        .from('chats')
+        .select('id, estado, fecha_actualizacion')
+        .eq('usuario_id', user.id)
+        .eq('estado', 'resuelto')
+        .gte('fecha_actualizacion', oneHourAgo)
+        .order('fecha_actualizacion', { ascending: false })
+        .limit(1);
+
+      if (resolvedChats && resolvedChats.length > 0) {
+        setChatId(resolvedChats[0].id);
+        setIsResolved(true);
+        setResolvedAt(resolvedChats[0].fecha_actualizacion);
+        await loadMessages(resolvedChats[0].id);
+      }
+    };
+
+    detectChat();
+  }, [user, isAdmin]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-clear resolved chat after 1-hour grace period
+  useEffect(() => {
+    if (!isResolved || !resolvedAt) return;
+
+    const resolvedTime = new Date(resolvedAt).getTime();
+    const expiresAt = resolvedTime + 60 * 60 * 1000;
+    const remaining = expiresAt - Date.now();
+
+    if (remaining <= 0) {
+      setChatId(null);
+      setMessages([]);
+      setIsResolved(false);
+      setResolvedAt(null);
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      setChatId(null);
+      setMessages([]);
+      setIsResolved(false);
+      setResolvedAt(null);
+    }, remaining);
+
+    return () => clearTimeout(timeout);
+  }, [isResolved, resolvedAt]);
+
   // Load or create chat when opened
   const openChat = async () => {
     setIsOpen(true);
+    setUnreadCount(0);
     if (chatId) return;
     setIsLoading(true);
 
@@ -95,10 +173,15 @@ export default function ChatBubble() {
         table: 'chat_mensajes',
         filter: `chat_id=eq.${chatId}`,
       }, (payload: any) => {
+        const newMsg = payload.new as ChatMessage;
         setMessages((prev) => {
-          if (prev.some(m => m.id === payload.new.id)) return prev;
-          return [...prev, payload.new as ChatMessage];
+          if (prev.some(m => m.id === newMsg.id)) return prev;
+          return [...prev, newMsg];
         });
+        // Track unread when window is closed and message is from someone else
+        if (!isOpenRef.current && newMsg.autor_id !== user?.id) {
+          setUnreadCount((prev) => prev + 1);
+        }
       })
       .subscribe();
 
@@ -118,9 +201,8 @@ export default function ChatBubble() {
         filter: `id=eq.${chatId}`,
       }, (payload: any) => {
         if (payload.new.estado === 'resuelto') {
-          // Chat was resolved, reset so next open creates a new one
-          setChatId(null);
-          setMessages([]);
+          setIsResolved(true);
+          setResolvedAt(payload.new.fecha_actualizacion);
         }
       })
       .subscribe();
@@ -145,6 +227,10 @@ export default function ChatBubble() {
     if (error) {
       console.error('Error sending message:', error);
     } else {
+      // Update chat timestamp to trigger admin realtime updates
+      await (supabase as any).from('chats').update({
+        fecha_actualizacion: new Date().toISOString(),
+      }).eq('id', chatId);
       setNewMessage('');
     }
     setIsSending(false);
@@ -175,6 +261,11 @@ export default function ChatBubble() {
         aria-label="Chat de soporte"
       >
         {isOpen ? <XIcon className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
+        {!isOpen && unreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </span>
+        )}
       </button>
 
       {/* Chat window */}
@@ -249,24 +340,31 @@ export default function ChatBubble() {
 
               {/* Input */}
               <div className="px-3 py-2 border-t border-gray-200 flex-shrink-0">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Escribí tu mensaje..."
-                    className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleSend}
-                    disabled={!newMessage.trim() || isSending}
-                    className="p-2 bg-foreground text-white rounded-md hover:bg-foreground/90 transition-colors disabled:opacity-50"
-                  >
-                    {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                  </button>
-                </div>
+                {isResolved ? (
+                  <div className="text-center py-2">
+                    <p className="text-xs text-gray-500">✓ Esta consulta fue resuelta</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">El chat se archivará automáticamente</p>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Escribí tu mensaje..."
+                      className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleSend}
+                      disabled={!newMessage.trim() || isSending}
+                      className="p-2 bg-foreground text-white rounded-md hover:bg-foreground/90 transition-colors disabled:opacity-50"
+                    >
+                      {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    </button>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}

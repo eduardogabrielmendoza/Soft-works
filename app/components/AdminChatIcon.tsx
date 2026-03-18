@@ -61,10 +61,11 @@ export default function AdminChatIcon() {
     setIsLoading(true);
     const supabase = getSupabaseClient();
 
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     const { data: chatList } = await (supabase as any)
       .from('chats')
       .select('*')
-      .eq('estado', 'activo')
+      .or(`estado.eq.activo,and(estado.eq.resuelto,fecha_actualizacion.gte.${oneHourAgo})`)
       .order('fecha_actualizacion', { ascending: false });
 
     if (chatList) {
@@ -95,7 +96,7 @@ export default function AdminChatIcon() {
     setIsLoading(false);
   }, [isAdmin]);
 
-  useEffect(() => { if (isOpen) loadChats(); }, [isOpen, loadChats]);
+  useEffect(() => { loadChats(); }, [loadChats]);
 
   // Realtime: new chats + updates
   useEffect(() => {
@@ -182,8 +183,12 @@ export default function AdminChatIcon() {
       fecha_actualizacion: new Date().toISOString(),
     }).eq('id', selectedChatId);
 
-    setSelectedChatId(null);
-    setMessages([]);
+    // Update local state instead of clearing
+    setChats((prev) =>
+      prev.map((c) =>
+        c.id === selectedChatId ? { ...c, estado: 'resuelto' as const } : c
+      )
+    );
     setIsResolving(false);
     loadChats();
   };
@@ -203,7 +208,7 @@ export default function AdminChatIcon() {
   };
 
   const selectedChat = chats.find((c) => c.id === selectedChatId);
-  const activeCount = chats.length;
+  const activeCount = chats.filter((c) => c.estado === 'activo').length;
 
   if (!isAdmin) return null;
 
@@ -250,19 +255,21 @@ export default function AdminChatIcon() {
                       <p className="text-[11px] opacity-80">Chat de soporte</p>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleResolve}
-                    disabled={isResolving}
-                    className="p-1.5 hover:bg-white/20 rounded flex items-center gap-1 text-[11px]"
-                    title="Marcar como resuelto"
-                  >
-                    {isResolving ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <CheckCircle className="w-4 h-4" />
-                    )}
-                  </button>
+                  {selectedChat?.estado !== 'resuelto' && (
+                    <button
+                      type="button"
+                      onClick={handleResolve}
+                      disabled={isResolving}
+                      className="p-1.5 hover:bg-white/20 rounded flex items-center gap-1 text-[11px]"
+                      title="Marcar como resuelto"
+                    >
+                      {isResolving ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <CheckCircle className="w-4 h-4" />
+                      )}
+                    </button>
+                  )}
                 </div>
 
                 {/* Messages */}
@@ -304,24 +311,31 @@ export default function AdminChatIcon() {
 
                 {/* Input */}
                 <div className="px-3 py-2 border-t border-gray-200 flex-shrink-0">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      placeholder="Escribí tu respuesta..."
-                      className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleSend}
-                      disabled={!newMessage.trim() || isSending}
-                      className="p-2 bg-foreground text-white rounded-md hover:bg-foreground/90 transition-colors disabled:opacity-50"
-                    >
-                      {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                    </button>
-                  </div>
+                  {selectedChat?.estado === 'resuelto' ? (
+                    <div className="text-center py-2">
+                      <p className="text-xs text-gray-500">✓ Consulta resuelta</p>
+                      <p className="text-[10px] text-gray-400 mt-0.5">El chat se archivará automáticamente en menos de 1 hora</p>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder="Escribí tu respuesta..."
+                        className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleSend}
+                        disabled={!newMessage.trim() || isSending}
+                        className="p-2 bg-foreground text-white rounded-md hover:bg-foreground/90 transition-colors disabled:opacity-50"
+                      >
+                        {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
@@ -347,10 +361,17 @@ export default function AdminChatIcon() {
                         type="button"
                         key={chat.id}
                         onClick={() => openChat(chat.id)}
-                        className="w-full px-4 py-3 border-b border-gray-50 hover:bg-gray-50 text-left transition-colors"
+                        className={`w-full px-4 py-3 border-b border-gray-50 hover:bg-gray-50 text-left transition-colors ${
+                          chat.estado === 'resuelto' ? 'opacity-60' : ''
+                        }`}
                       >
                         <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium text-gray-900">{chat.usuario_nombre}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium text-gray-900">{chat.usuario_nombre}</p>
+                            {chat.estado === 'resuelto' && (
+                              <span className="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">Resuelto</span>
+                            )}
+                          </div>
                           <span className="text-[10px] text-gray-400">
                             {new Date(chat.fecha_actualizacion).toLocaleDateString('es-AR')}
                           </span>
