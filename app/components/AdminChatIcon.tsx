@@ -35,6 +35,7 @@ export default function AdminChatIcon() {
   const [isSending, setIsSending] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isResolving, setIsResolving] = useState(false);
+  const [unreadChatIds, setUnreadChatIds] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -108,8 +109,32 @@ export default function AdminChatIcon() {
         loadChats();
       })
       .subscribe();
-    return () => { supabase.removeChannel(chatChannel); };
-  }, [isAdmin, loadChats]);
+
+    // Listen for new messages across ALL chats to track unread
+    const msgChannel = supabase
+      .channel('admin-all-msgs-realtime')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'chat_mensajes',
+      }, (payload: any) => {
+        const newMsg = payload.new;
+        // Only mark as unread if the message is NOT from the admin
+        if (newMsg.autor_id !== user?.id) {
+          setUnreadChatIds((prev) => {
+            const next = new Set(prev);
+            next.add(newMsg.chat_id);
+            return next;
+          });
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(chatChannel);
+      supabase.removeChannel(msgChannel);
+    };
+  }, [isAdmin, loadChats, user?.id]);
 
   // Realtime for selected chat messages
   useEffect(() => {
@@ -134,6 +159,12 @@ export default function AdminChatIcon() {
 
   const openChat = async (chatId: string) => {
     setSelectedChatId(chatId);
+    // Mark this chat as read
+    setUnreadChatIds((prev) => {
+      const next = new Set(prev);
+      next.delete(chatId);
+      return next;
+    });
     const supabase = getSupabaseClient();
     const { data } = await (supabase as any)
       .from('chat_mensajes')
@@ -217,7 +248,7 @@ export default function AdminChatIcon() {
   };
 
   const selectedChat = chats.find((c) => c.id === selectedChatId);
-  const activeCount = chats.filter((c) => c.estado === 'activo').length;
+  const unreadCount = unreadChatIds.size;
 
   if (!isAdmin) return null;
 
@@ -230,9 +261,9 @@ export default function AdminChatIcon() {
         aria-label="Chats de soporte"
       >
         <MessageSquare className="w-5 h-5" />
-        {activeCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-blue-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-            {activeCount > 9 ? '9+' : activeCount}
+        {unreadCount > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+            {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
@@ -303,7 +334,7 @@ export default function AdminChatIcon() {
                           }`}
                         >
                           {msg.autor_id !== user!.id && (
-                            <p className="text-[10px] font-medium text-gray-500 mb-0.5">Cliente</p>
+                            <p className="text-[10px] font-medium text-gray-500 mb-0.5">{selectedChat?.usuario_nombre || 'Cliente'}</p>
                           )}
                           <p className="whitespace-pre-wrap">{msg.contenido}</p>
                           <p className={`text-[10px] mt-1 ${

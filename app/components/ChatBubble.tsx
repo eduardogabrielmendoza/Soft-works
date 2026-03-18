@@ -335,7 +335,7 @@ export default function ChatBubble() {
                           }`}
                         >
                           {msg.autor_id !== user!.id && (
-                            <p className="text-[10px] font-medium text-gray-500 mb-0.5">Soporte</p>
+                            <p className="text-[10px] font-medium text-gray-500 mb-0.5">Administración</p>
                           )}
                           <p className="whitespace-pre-wrap">{msg.contenido}</p>
                           <p className={`text-[10px] mt-1 ${
