@@ -59,8 +59,16 @@ export default function ChatBubble() {
         .limit(1);
 
       if (activeChats && activeChats.length > 0) {
-        setChatId(activeChats[0].id);
-        await loadMessages(activeChats[0].id);
+        const chatIdFound = activeChats[0].id;
+        setChatId(chatIdFound);
+        const msgs = await loadMessages(chatIdFound);
+        // Count unread messages from admin (not from this user)
+        if (msgs) {
+          const adminMsgs = msgs.filter((m: ChatMessage) => m.autor_id !== user.id && m.tipo === 'mensaje');
+          if (adminMsgs.length > 0) {
+            setUnreadCount(adminMsgs.length);
+          }
+        }
         return;
       }
 
@@ -159,6 +167,7 @@ export default function ChatBubble() {
       .eq('chat_id', id)
       .order('fecha_creacion', { ascending: true });
     if (data) setMessages(data);
+    return data as ChatMessage[] | null;
   };
 
   // Realtime subscription + polling fallback

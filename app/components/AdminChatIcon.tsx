@@ -89,10 +89,19 @@ export default function AdminChatIcon() {
 
           const { data: lastMsg } = await (supabase as any)
             .from('chat_mensajes')
-            .select('contenido, tipo')
+            .select('contenido, tipo, autor_id')
             .eq('chat_id', chat.id)
             .order('fecha_creacion', { ascending: false })
             .limit(1);
+
+          // On first load, seed unread for chats whose last message is from the client
+          if (!hasLoadedRef.current && lastMsg?.[0]?.autor_id && lastMsg[0].autor_id !== userIdRef.current && lastMsg[0].tipo === 'mensaje') {
+            setUnreadChatIds((prev) => {
+              const next = new Set(prev);
+              next.add(chat.id);
+              return next;
+            });
+          }
 
           return {
             ...chat,
