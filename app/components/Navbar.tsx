@@ -15,6 +15,7 @@ import SearchDrawer from './SearchDrawer';
 import CartDrawer from './CartDrawer';
 import AnnouncementBar from './AnnouncementBar';
 import NotificationBell from './NotificationBell';
+import AdminChatIcon from './AdminChatIcon';
 
 // Altura de la barra de anuncios (incluye mt-2)
 const ANNOUNCEMENT_HEIGHT = 44; // 36px altura + 8px margin-top
@@ -260,6 +261,7 @@ export default function Navbar() {
               
               {/* Notificaciones */}
               {user && <NotificationBell />}
+              {user && <AdminChatIcon />}
 
               {/* Buscar */}
               <button
@@ -288,6 +290,7 @@ export default function Navbar() {
             {/* Mobile Right Actions */}
             <div className="lg:hidden flex items-center space-x-1 ml-auto">
               {user && <NotificationBell />}
+              {user && <AdminChatIcon />}
               <button
                 onClick={() => setShowSearchDrawer(true)}
                 className={`p-2 rounded-lg transition-colors ${

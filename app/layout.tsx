@@ -6,6 +6,7 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import BrandSection from "./components/BrandSection";
 import CookieBanner from "./components/CookieBanner";
+import ChatBubble from "./components/ChatBubble";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -34,6 +35,7 @@ export default function RootLayout({
           <BrandSection />
           <Footer />
           <CookieBanner />
+          <ChatBubble />
         </Providers>
       </body>
     </html>
