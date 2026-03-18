@@ -41,6 +41,7 @@ export default function AdminChatIcon() {
   const userIdRef = useRef<string | null>(null);
   const selectedChatIdRef = useRef<string | null>(null);
   const chatsRef = useRef<Chat[]>([]);
+  const hasLoadedRef = useRef(false);
 
   // Keep refs in sync
   useEffect(() => { userIdRef.current = user?.id ?? null; }, [user?.id]);
@@ -67,7 +68,7 @@ export default function AdminChatIcon() {
   // Load active chats
   const loadChats = useCallback(async () => {
     if (!isAdmin) return;
-    setIsLoading(true);
+    if (!hasLoadedRef.current) setIsLoading(true);
     const supabase = getSupabaseClient();
 
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
@@ -103,6 +104,7 @@ export default function AdminChatIcon() {
       setChats(enriched);
     }
     setIsLoading(false);
+    hasLoadedRef.current = true;
   }, [isAdmin]);
 
   useEffect(() => { loadChats(); }, [loadChats]);
