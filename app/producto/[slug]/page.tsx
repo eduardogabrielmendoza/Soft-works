@@ -48,6 +48,10 @@ export default function ProductoPage({ params }: { params: Promise<{ slug: strin
   const [showAddedMessage, setShowAddedMessage] = useState(false);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
 
+  const isGuestAccepted = () => {
+    try { return localStorage.getItem('softworks_guest_accepted') === 'true'; } catch { return false; }
+  };
+
   const sizes = ['XS', 'S', 'M', 'L', 'XL'];
 
   // Cargar producto desde Supabase
@@ -515,7 +519,7 @@ export default function ProductoPage({ params }: { params: Promise<{ slug: strin
               disabled={!selectedSize || isOutOfStock}
               onClick={() => {
                 if (selectedSize && product && !isOutOfStock) {
-                  if (!user) {
+                  if (!user && !isGuestAccepted()) {
                     setShowAuthPrompt(true);
                     return;
                   }
@@ -576,6 +580,7 @@ export default function ProductoPage({ params }: { params: Promise<{ slug: strin
         isOpen={showAuthPrompt}
         onClose={() => setShowAuthPrompt(false)}
         onGuestContinue={() => {
+          try { localStorage.setItem('softworks_guest_accepted', 'true'); } catch {}
           if (selectedSize && product && !isOutOfStock) {
             addItem(product, selectedSize, quantity);
             setShowAddedMessage(true);

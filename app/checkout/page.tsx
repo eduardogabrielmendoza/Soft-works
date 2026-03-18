@@ -31,7 +31,9 @@ export default function CheckoutPage() {
   const isGuest = !authLoading && !user;
   const [showGuestPrompt, setShowGuestPrompt] = useState(false);
   const [showGuestWarning, setShowGuestWarning] = useState(false);
-  const [guestAccepted, setGuestAccepted] = useState(false);
+  const [guestAccepted, setGuestAccepted] = useState(() => {
+    try { return typeof window !== 'undefined' && localStorage.getItem('softworks_guest_accepted') === 'true'; } catch { return false; }
+  });
   const [guestInfo, setGuestInfo] = useState({
     nombre: '',
     email: '',
@@ -765,7 +767,7 @@ export default function CheckoutPage() {
               </p>
               <div className="space-y-3">
                 <button
-                  onClick={() => { setShowGuestWarning(false); setGuestAccepted(true); }}
+                  onClick={() => { setShowGuestWarning(false); setGuestAccepted(true); try { localStorage.setItem('softworks_guest_accepted', 'true'); } catch {} }}
                   className="block w-full py-3 bg-foreground text-white rounded-md hover:bg-foreground/90 transition-colors font-medium"
                 >
                   Entendido, continuar
