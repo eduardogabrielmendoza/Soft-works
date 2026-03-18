@@ -383,7 +383,7 @@ export default function AdminChatIcon() {
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                <div className="flex-1 overflow-y-auto overscroll-contain p-4 space-y-3">
                   {messages.map((msg) => (
                     msg.tipo === 'milestone' ? (
                       <div key={msg.id} className="flex justify-center">
@@ -451,7 +451,7 @@ export default function AdminChatIcon() {
                   <h3 className="font-medium text-sm">Chats de soporte</h3>
                 </div>
 
-                <div className="max-h-80 overflow-y-auto">
+                <div className="max-h-80 overflow-y-auto overscroll-contain">
                   {isLoading ? (
                     <div className="flex items-center justify-center h-32">
                       <Loader2 className="w-6 h-6 animate-spin text-gray-400" />

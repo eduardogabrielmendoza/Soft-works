@@ -28,18 +28,38 @@ export default function ChatBubble() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [resolvedAt, setResolvedAt] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const isOpenRef = useRef(false);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
+  // Scroll to bottom instantly when opening (no animation)
+  const scrollToBottomInstant = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'instant' as ScrollBehavior });
+  }, []);
+
   useEffect(() => {
     scrollToBottom();
-  }, [messages, scrollToBottom]);
+    // Keep last-read marker up to date while chat is open
+    if (isOpenRef.current && chatId && messages.length > 0) {
+      localStorage.setItem(`chat-lastread-${chatId}`, messages[messages.length - 1].id);
+    }
+  }, [messages, scrollToBottom, chatId]);
 
   // Sync isOpen ref for use in realtime callbacks
-  useEffect(() => { isOpenRef.current = isOpen; }, [isOpen]);
+  useEffect(() => {
+    isOpenRef.current = isOpen;
+    if (isOpen) {
+      // Scroll to bottom when opening chat
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          scrollToBottomInstant();
+        });
+      });
+    }
+  }, [isOpen, scrollToBottomInstant]);
 
   // Auto-detect active or recently resolved chat on mount
   useEffect(() => {
@@ -62,12 +82,22 @@ export default function ChatBubble() {
         const chatIdFound = activeChats[0].id;
         setChatId(chatIdFound);
         const msgs = await loadMessages(chatIdFound);
-        // Count unread: only admin messages AFTER the client's last message
+        // Count unread: only admin messages AFTER the client's last read point
         if (msgs && msgs.length > 0) {
-          const lastClientIdx = msgs.map((m: ChatMessage) => m.autor_id).lastIndexOf(user.id);
-          const unread = msgs.slice(lastClientIdx + 1).filter((m: ChatMessage) => m.autor_id !== user.id && m.tipo === 'mensaje');
-          if (unread.length > 0) {
-            setUnreadCount(unread.length);
+          const lastReadId = localStorage.getItem(`chat-lastread-${chatIdFound}`);
+          if (lastReadId) {
+            const lastReadIdx = msgs.findIndex((m: ChatMessage) => m.id === lastReadId);
+            if (lastReadIdx >= 0) {
+              const unread = msgs.slice(lastReadIdx + 1).filter((m: ChatMessage) => m.autor_id !== user.id && m.tipo === 'mensaje');
+              setUnreadCount(unread.length);
+            }
+          } else {
+            // No read marker yet — count admin msgs after last client msg
+            const lastClientIdx = msgs.map((m: ChatMessage) => m.autor_id).lastIndexOf(user.id);
+            const unread = msgs.slice(lastClientIdx + 1).filter((m: ChatMessage) => m.autor_id !== user.id && m.tipo === 'mensaje');
+            if (unread.length > 0) {
+              setUnreadCount(unread.length);
+            }
           }
         }
         return;
@@ -124,6 +154,10 @@ export default function ChatBubble() {
   const openChat = async () => {
     setIsOpen(true);
     setUnreadCount(0);
+    // Save last read position
+    if (chatId && messages.length > 0) {
+      localStorage.setItem(`chat-lastread-${chatId}`, messages[messages.length - 1].id);
+    }
     if (chatId) return;
     setIsLoading(true);
 
@@ -362,7 +396,7 @@ export default function ChatBubble() {
               </div>
 
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              <div ref={messagesContainerRef} className="flex-1 overflow-y-auto overscroll-contain p-4 space-y-3">
                 {isLoading ? (
                   <div className="flex items-center justify-center h-full">
                     <Loader2 className="w-6 h-6 animate-spin text-gray-400" />

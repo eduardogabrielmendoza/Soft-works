@@ -143,7 +143,7 @@ export default function NotificationBell() {
             </div>
 
             {/* List */}
-            <div className="max-h-80 overflow-y-auto">
+            <div className="max-h-80 overflow-y-auto overscroll-contain">
               {recentNotifs.length === 0 ? (
                 <div className="px-4 py-8 text-center text-gray-400 text-sm">
                   No tenés notificaciones
