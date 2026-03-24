@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle, XCircle, Clock, Copy, Check, Loader2, ArrowRight, CreditCard } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Copy, Check, Loader2, ArrowRight, CreditCard, AlertTriangle, Mail } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/useAuth';
@@ -20,6 +20,7 @@ function ConfirmacionContent() {
   const [order, setOrder] = useState<OrderWithItems | null>(null);
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isGuest, setIsGuest] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
   const isMercadoPago = !!mpStatus || order?.metodo_pago === 'mercadopago';
@@ -27,13 +28,21 @@ function ConfirmacionContent() {
   const isRejected = mpStatus === 'rejected';
   const isPending = mpStatus === 'pending';
 
+  // Load data for authenticated users
   useEffect(() => {
-    if (user && orderId) {
-      loadData();
+    if (!authLoading && user && orderId) {
+      loadAuthData();
     }
-  }, [user, orderId]);
+  }, [user, authLoading, orderId]);
 
-  const loadData = async () => {
+  // Load data for guest users
+  useEffect(() => {
+    if (!authLoading && !user && orderId) {
+      loadGuestData();
+    }
+  }, [user, authLoading, orderId]);
+
+  const loadAuthData = async () => {
     setIsLoading(true);
     const [orderData, accounts] = await Promise.all([
       getOrderById(orderId!),
@@ -41,6 +50,23 @@ function ConfirmacionContent() {
     ]);
     setOrder(orderData);
     setBankAccounts(accounts);
+    setIsGuest(false);
+    setIsLoading(false);
+  };
+
+  const loadGuestData = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`/api/checkout/guest-order?id=${encodeURIComponent(orderId!)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setOrder(data.order);
+        setBankAccounts(data.bankAccounts || []);
+        setIsGuest(true);
+      }
+    } catch (err) {
+      console.error('Error loading guest order:', err);
+    }
     setIsLoading(false);
   };
 
@@ -70,6 +96,8 @@ function ConfirmacionContent() {
       </div>
     );
   }
+
+  const guestEmail = order.cliente_email;
 
   return (
     <div className="pt-20 px-4 py-12">
@@ -280,8 +308,28 @@ function ConfirmacionContent() {
             </div>
           )}
 
+          {/* Guest Warning Banner */}
+          {isGuest && !isMercadoPago && (
+            <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-6 mb-6">
+              <div className="flex items-center gap-2 mb-3">
+                <AlertTriangle className="w-5 h-5 text-orange-600" />
+                <h2 className="text-lg font-medium text-orange-800">¡Importante! No cierres esta ventana</h2>
+              </div>
+              <p className="text-orange-700 mb-3">
+                Como no tenés una cuenta en Softworks, esta es la única vez que verás los datos bancarios para realizar la transferencia.
+                <strong> Guardá esta información o hacé una captura de pantalla antes de cerrar la página.</strong>
+              </p>
+              <div className="flex items-center gap-2 text-orange-700">
+                <Mail className="w-4 h-4 flex-shrink-0" />
+                <p className="text-sm">
+                  Una vez que tu pago sea verificado, recibirás un correo electrónico a <strong>{guestEmail}</strong> con los datos de seguimiento de tu pedido.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Next Steps — different for each method */}
-          {!isMercadoPago && (
+          {!isMercadoPago && !isGuest && (
             <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
               <h2 className="text-lg font-medium mb-4">Próximos Pasos</h2>
               <div className="space-y-4">
@@ -315,6 +363,48 @@ function ConfirmacionContent() {
                     <p className="font-medium">Esperá la verificación</p>
                     <p className="text-sm text-gray-600">
                       Verificaremos tu pago en un plazo de 24-48 horas hábiles y recibirás una notificación en tu cuenta de Softworks.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Guest Next Steps */}
+          {!isMercadoPago && isGuest && (
+            <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+              <h2 className="text-lg font-medium mb-4">Próximos Pasos</h2>
+              <div className="space-y-4">
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 bg-foreground text-white rounded-full flex items-center justify-center flex-shrink-0 text-sm font-medium">
+                    1
+                  </div>
+                  <div>
+                    <p className="font-medium">Guardá esta información</p>
+                    <p className="text-sm text-gray-600">
+                      Hacé una captura de pantalla o anotá los datos bancarios y tu número de pedido: <strong>{order.numero_pedido}</strong>
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 bg-foreground text-white rounded-full flex items-center justify-center flex-shrink-0 text-sm font-medium">
+                    2
+                  </div>
+                  <div>
+                    <p className="font-medium">Realizá la transferencia</p>
+                    <p className="text-sm text-gray-600">
+                      Usá los datos bancarios de arriba para transferir el monto exacto.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 bg-foreground text-white rounded-full flex items-center justify-center flex-shrink-0 text-sm font-medium">
+                    3
+                  </div>
+                  <div>
+                    <p className="font-medium">Esperá el correo de confirmación</p>
+                    <p className="text-sm text-gray-600">
+                      Verificaremos tu pago en un plazo de 24-48 horas hábiles y recibirás un correo electrónico a <strong>{guestEmail}</strong> con los datos de seguimiento.
                     </p>
                   </div>
                 </div>
@@ -406,7 +496,7 @@ function ConfirmacionContent() {
 
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-4">
-            {!isMercadoPago && (
+            {!isMercadoPago && !isGuest && (
               <Link
                 href={`/cuenta/pedidos/${order.id}`}
                 className="flex-1 py-3 bg-foreground text-white rounded-md hover:bg-foreground/90 transition-colors flex items-center justify-center gap-2"
@@ -415,23 +505,31 @@ function ConfirmacionContent() {
                 <ArrowRight className="w-4 h-4" />
               </Link>
             )}
-            <Link
-              href="/cuenta/pedidos"
-              className={`${isMercadoPago ? 'flex-1 py-3 bg-foreground text-white rounded-md hover:bg-foreground/90' : 'flex-1 py-3 border border-gray-300 rounded-md hover:bg-gray-50'} transition-colors text-center`}
-            >
-              Ver Mis Pedidos
-            </Link>
+            {!isGuest && (
+              <Link
+                href="/cuenta/pedidos"
+                className={`${isMercadoPago ? 'flex-1 py-3 bg-foreground text-white rounded-md hover:bg-foreground/90' : 'flex-1 py-3 border border-gray-300 rounded-md hover:bg-gray-50'} transition-colors text-center`}
+              >
+                Ver Mis Pedidos
+              </Link>
+            )}
             <Link
               href="/colecciones"
-              className="flex-1 py-3 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-center"
+              className={`${isGuest && !isMercadoPago ? 'flex-1 py-3 bg-foreground text-white rounded-md hover:bg-foreground/90' : 'flex-1 py-3 border border-gray-300 rounded-md hover:bg-gray-50'} transition-colors text-center`}
             >
               Seguir Comprando
             </Link>
           </div>
 
-          <p className="text-center text-sm text-gray-500 mt-6">
-            Recibirás notificaciones sobre tu pedido en tu cuenta de Softworks.
-          </p>
+          {isGuest ? (
+            <p className="text-center text-sm text-gray-500 mt-6">
+              Recibirás actualizaciones sobre tu pedido en <strong>{guestEmail}</strong>.
+            </p>
+          ) : (
+            <p className="text-center text-sm text-gray-500 mt-6">
+              Recibirás notificaciones sobre tu pedido en tu cuenta de Softworks.
+            </p>
+          )}
         </motion.div>
       </div>
     </div>
