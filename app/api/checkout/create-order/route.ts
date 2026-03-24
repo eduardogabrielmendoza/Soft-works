@@ -50,7 +50,14 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = getSupabaseAdmin();
-    const user = await getAuthUser(req);
+
+    // Get authenticated user (null for guests)
+    let user = null;
+    try {
+      user = await getAuthUser(req);
+    } catch {
+      // Guest checkout - no auth cookies available
+    }
 
     let usuario_id: string | null = null;
     let cliente_nombre = guest_nombre || '';
@@ -86,6 +93,7 @@ export async function POST(req: NextRequest) {
     // Create order (service role bypasses RLS)
     const orderPayload: Record<string, unknown> = {
       numero_pedido,
+      usuario_id: usuario_id,  // null for guest orders
       estado: 'pendiente_pago',
       cliente_nombre,
       cliente_email,
@@ -99,10 +107,6 @@ export async function POST(req: NextRequest) {
       metodo_pago: metodo_pago || 'transferencia',
     };
 
-    if (usuario_id) {
-      orderPayload.usuario_id = usuario_id;
-    }
-
     const { data: order, error: orderError } = await supabase
       .from('pedidos')
       .insert(orderPayload)
@@ -111,7 +115,7 @@ export async function POST(req: NextRequest) {
 
     if (orderError) {
       console.error('Error creating order:', orderError);
-      return NextResponse.json({ error: 'Error al crear el pedido' }, { status: 500 });
+      return NextResponse.json({ error: `Error al crear el pedido: ${orderError.message}` }, { status: 500 });
     }
 
     // Create order items
