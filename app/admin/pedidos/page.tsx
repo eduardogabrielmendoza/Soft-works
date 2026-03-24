@@ -72,7 +72,7 @@ function AdminPedidosContent() {
     try {
       let query = supabase
         .from('pedidos')
-        .select('id, numero_pedido, estado, total, fecha_creacion, cliente_nombre, cliente_email, direccion_envio', { count: 'exact' });
+        .select('id, numero_pedido, usuario_id, estado, total, fecha_creacion, cliente_nombre, cliente_email, direccion_envio', { count: 'exact' });
 
       if (statusFilter && statusFilter.trim() !== '') {
         query = query.eq('estado', statusFilter);
@@ -265,6 +265,11 @@ function AdminPedidosContent() {
                           <div>
                             <p className="font-medium">{order.cliente_nombre}</p>
                             <p className="text-sm text-gray-500">{order.cliente_email}</p>
+                            {!order.usuario_id && (
+                              <span className="inline-block mt-1 px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-medium rounded">
+                                Sin cuenta
+                              </span>
+                            )}
                           </div>
                         </td>
                         <td className="px-4 py-3">

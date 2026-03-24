@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
           tipo: 'sistema',
           titulo: 'Solicitud de recuperación aprobada',
           mensaje: 'Tu solicitud fue aprobada. Podés ingresar a la página de recuperación para crear una nueva contraseña.',
-          metadata: { action_url: '/cuenta/reset-password' },
+          metadata: {},
         })
 
       return NextResponse.json({ success: true, message: 'Solicitud aprobada' })

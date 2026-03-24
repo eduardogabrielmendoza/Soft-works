@@ -125,7 +125,7 @@ export type MetodoPago = 'transferencia' | 'mercadopago'
 export interface Pedido {
   id: string
   numero_pedido: string
-  usuario_id: string
+  usuario_id: string | null
   estado: EstadoPedido
   cliente_nombre: string | null
   cliente_email: string | null

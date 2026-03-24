@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, Loader2, Minus, Plus, Trash2, MapPin, Truck, CreditCard, ShoppingBag, Building2, UserPlus } from 'lucide-react';
 import Link from 'next/link';
@@ -47,8 +47,10 @@ export default function CheckoutPage() {
   });
 
   // Show guest prompt when unauthenticated user arrives
+  const guestPromptShownRef = useRef(false);
   useEffect(() => {
-    if (!authLoading && !user && !guestAccepted) {
+    if (!authLoading && !user && !guestAccepted && !guestPromptShownRef.current) {
+      guestPromptShownRef.current = true;
       setShowGuestPrompt(true);
     }
   }, [authLoading, user, guestAccepted]);

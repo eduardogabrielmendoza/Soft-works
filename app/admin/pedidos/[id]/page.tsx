@@ -434,7 +434,7 @@ export default function AdminPedidoDetailPage({ params }: { params: Promise<{ id
               )}
 
               {/* Mark as Shipped Section */}
-              {order.estado === 'pago_aprobado' && (
+              {order.estado === 'pago_aprobado' && !!order.usuario_id && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-6">
                   <h2 className="text-lg font-medium text-green-800 mb-4 flex items-center gap-2">
                     <Truck className="w-5 h-5" />
@@ -545,8 +545,21 @@ export default function AdminPedidoDetailPage({ params }: { params: Promise<{ id
                 </div>
               )}
 
+              {/* Guest order notice - no shipping/delivery actions */}
+              {!order.usuario_id && (order.estado === 'pago_aprobado' || order.estado === 'enviado' || order.estado === 'entregado') && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
+                  <h2 className="text-lg font-medium text-amber-800 mb-2 flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5" />
+                    Pedido sin cuenta registrada
+                  </h2>
+                  <p className="text-sm text-amber-700">
+                    Este pedido fue realizado sin una cuenta registrada. No se puede marcar como enviado o entregado ya que el cliente no recibirá notificaciones.
+                  </p>
+                </div>
+              )}
+
               {/* Mark as Delivered */}
-              {order.estado === 'enviado' && (
+              {order.estado === 'enviado' && !!order.usuario_id && (
                 <div className="bg-purple-50 border border-purple-200 rounded-lg p-6">
                   <h2 className="text-lg font-medium text-purple-800 mb-4 flex items-center gap-2">
                     <Truck className="w-5 h-5" />
@@ -653,6 +666,11 @@ export default function AdminPedidoDetailPage({ params }: { params: Promise<{ id
                   <p className="font-medium">{order.cliente_nombre}</p>
                   <p className="text-gray-600">{order.cliente_email}</p>
                   {order.cliente_telefono && <p className="text-gray-600">{order.cliente_telefono}</p>}
+                  {!order.usuario_id && (
+                    <span className="inline-block mt-2 px-2 py-1 bg-amber-100 text-amber-700 text-xs font-medium rounded">
+                      Compra sin cuenta registrada
+                    </span>
+                  )}
                 </div>
               </div>
 
