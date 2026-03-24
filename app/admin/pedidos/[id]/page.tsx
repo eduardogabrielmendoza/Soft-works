@@ -227,6 +227,22 @@ export default function AdminPedidoDetailPage({ params }: { params: Promise<{ id
     }
   };
 
+  const handleMarkAsFinalized = async () => {
+    setIsUpdating(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      await updateOrderStatus(order!.id, 'finalizado');
+      setSuccess('Pedido marcado como finalizado.');
+      await loadOrder();
+    } catch (err) {
+      setError('Error al finalizar el pedido');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const handleMarkAsDelivered = async () => {
     setIsUpdating(true);
     setError(null);
@@ -265,6 +281,7 @@ export default function AdminPedidoDetailPage({ params }: { params: Promise<{ id
       pago_rechazado: XCircle,
       enviado: Truck,
       entregado: CheckCircle,
+      finalizado: CheckCircle,
     };
     const Icon = icons[status] || Package;
     return <Icon className="w-5 h-5" />;
@@ -633,6 +650,33 @@ export default function AdminPedidoDetailPage({ params }: { params: Promise<{ id
                       <>
                         <CheckCircle className="w-5 h-5" />
                         Marcar como Entregado
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {/* Mark as Finalizado — available for entregado or pago_aprobado (guest) */}
+              {(order.estado === 'entregado' || (order.estado === 'pago_aprobado' && !order.usuario_id)) && (
+                <div className="bg-green-50 border-2 border-green-300 rounded-lg p-6">
+                  <h2 className="text-lg font-medium text-green-900 mb-4 flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5" />
+                    Finalizar Pedido
+                  </h2>
+                  <p className="text-sm text-green-800 mb-4">
+                    Marcar este pedido como finalizado confirma que todo el proceso fue completado correctamente. Esta es la fase final del pedido.
+                  </p>
+                  <button
+                    onClick={handleMarkAsFinalized}
+                    disabled={isUpdating}
+                    className="py-3 px-6 bg-green-700 text-white rounded-md hover:bg-green-800 transition-colors disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {isUpdating ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <>
+                        <CheckCircle className="w-5 h-5" />
+                        Marcar como Finalizado
                       </>
                     )}
                   </button>

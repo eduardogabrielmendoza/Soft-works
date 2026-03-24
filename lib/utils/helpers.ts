@@ -43,7 +43,8 @@ export function getOrderStatusLabel(status: EstadoPedido): string {
     enviado: 'Enviado',
     entregado: 'Entregado',
     cancelado: 'Cancelado',
-    archivado: 'Archivado'
+    archivado: 'Archivado',
+    finalizado: 'Finalizado'
   }
   return labels[status] || status
 }
@@ -58,7 +59,8 @@ export function getOrderStatusColor(status: EstadoPedido): string {
     enviado: 'bg-purple-100 text-purple-800',
     entregado: 'bg-green-100 text-green-800',
     cancelado: 'bg-red-100 text-red-800',
-    archivado: 'bg-gray-100 text-gray-800'
+    archivado: 'bg-gray-100 text-gray-800',
+    finalizado: 'bg-green-200 text-green-900'
   }
   return colors[status] || 'bg-gray-100 text-gray-800'
 }

@@ -76,7 +76,8 @@ export default function AdminDashboardPage() {
       // Get recent orders (tabla: pedidos)
       const { data: recent, error: recentError } = await supabase
         .from('pedidos')
-        .select('id, numero_pedido, estado, total, fecha_creacion, cliente_nombre, cliente_email, usuario_id')
+        .select('id, numero_pedido, estado, total, fecha_creacion, cliente_nombre, cliente_email, usuario_id, metodo_pago')
+        .not('estado', 'in', '(pago_rechazado)')
         .order('fecha_creacion', { ascending: false })
         .limit(10);
 
@@ -149,6 +150,7 @@ export default function AdminDashboardPage() {
       pago_rechazado: { color: 'bg-red-100 text-red-800', label: 'Rechazado', icon: XCircle },
       enviado: { color: 'bg-purple-100 text-purple-800', label: 'Enviado', icon: Truck },
       entregado: { color: 'bg-green-100 text-green-800', label: 'Entregado', icon: CheckCircle },
+      finalizado: { color: 'bg-green-200 text-green-900', label: 'Finalizado', icon: CheckCircle },
       cancelado: { color: 'bg-red-100 text-red-800', label: 'Cancelado', icon: XCircle },
       archivado: { color: 'bg-gray-100 text-gray-800', label: 'Archivado', icon: Package },
     };

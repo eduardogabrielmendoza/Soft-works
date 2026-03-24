@@ -26,6 +26,7 @@ export type EstadoPedido =
   | 'entregado'
   | 'cancelado'
   | 'archivado'
+  | 'finalizado'
 
 export type EstadoVerificacion = 'pendiente' | 'aprobado' | 'rechazado'
 

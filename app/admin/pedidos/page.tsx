@@ -31,6 +31,7 @@ const ORDER_STATUSES = [
   { value: 'pago_rechazado', label: 'Pago Rechazado' },
   { value: 'enviado', label: 'Enviado' },
   { value: 'entregado', label: 'Entregado' },
+  { value: 'finalizado', label: 'Finalizado' },
   { value: 'cancelado', label: 'Cancelado' },
 ];
 
@@ -72,10 +73,23 @@ function AdminPedidosContent() {
     try {
       let query = supabase
         .from('pedidos')
-        .select('id, numero_pedido, usuario_id, estado, total, fecha_creacion, cliente_nombre, cliente_email, direccion_envio', { count: 'exact' });
+        .select('id, numero_pedido, usuario_id, estado, total, fecha_creacion, cliente_nombre, cliente_email, direccion_envio, metodo_pago', { count: 'exact' });
 
       if (statusFilter && statusFilter.trim() !== '') {
         query = query.eq('estado', statusFilter);
+      } else {
+        // By default, hide MP-rejected orders (only show admin-rejected transfers)
+        // We use a not filter: exclude rows where metodo_pago=mercadopago AND estado=pago_rechazado
+        query = query.not('estado', 'in', '(pago_rechazado)');
+      }
+
+      // When filtering by pago_rechazado explicitly, only show transfer rejections
+      if (statusFilter === 'pago_rechazado') {
+        query = supabase
+          .from('pedidos')
+          .select('id, numero_pedido, usuario_id, estado, total, fecha_creacion, cliente_nombre, cliente_email, direccion_envio, metodo_pago', { count: 'exact' })
+          .eq('estado', 'pago_rechazado')
+          .eq('metodo_pago', 'transferencia');
       }
 
       if (searchQuery && searchQuery.trim() !== '') {
@@ -156,6 +170,7 @@ function AdminPedidosContent() {
       pago_rechazado: XCircle,
       enviado: Truck,
       entregado: CheckCircle,
+      finalizado: CheckCircle,
       cancelado: XCircle,
     };
     const Icon = icons[status] || Package;
