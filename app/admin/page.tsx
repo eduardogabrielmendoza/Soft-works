@@ -76,9 +76,9 @@ export default function AdminDashboardPage() {
       // Get recent orders (tabla: pedidos)
       const { data: recent, error: recentError } = await supabase
         .from('pedidos')
-        .select('id, numero_pedido, estado, total, fecha_creacion, cliente_nombre, cliente_email')
+        .select('id, numero_pedido, estado, total, fecha_creacion, cliente_nombre, cliente_email, usuario_id')
         .order('fecha_creacion', { ascending: false })
-        .limit(5);
+        .limit(10);
 
       if (recentError) {
         console.error('Error cargando pedidos recientes:', recentError);
@@ -143,12 +143,14 @@ export default function AdminDashboardPage() {
 
   const getStatusBadge = (status: string) => {
     const badges: Record<string, { color: string; label: string; icon: any }> = {
-      pending_payment: { color: 'bg-yellow-100 text-yellow-800', label: 'Pendiente', icon: Clock },
-      awaiting_verification: { color: 'bg-blue-100 text-blue-800', label: 'Verificación', icon: AlertCircle },
-      payment_approved: { color: 'bg-green-100 text-green-800', label: 'Aprobado', icon: CheckCircle },
-      payment_rejected: { color: 'bg-red-100 text-red-800', label: 'Rechazado', icon: XCircle },
-      shipped: { color: 'bg-purple-100 text-purple-800', label: 'Enviado', icon: Truck },
-      delivered: { color: 'bg-gray-100 text-gray-800', label: 'Entregado', icon: CheckCircle },
+      pendiente_pago: { color: 'bg-yellow-100 text-yellow-800', label: 'Pendiente', icon: Clock },
+      esperando_verificacion: { color: 'bg-blue-100 text-blue-800', label: 'Verificación', icon: AlertCircle },
+      pago_aprobado: { color: 'bg-emerald-100 text-emerald-800', label: 'Aprobado', icon: CheckCircle },
+      pago_rechazado: { color: 'bg-red-100 text-red-800', label: 'Rechazado', icon: XCircle },
+      enviado: { color: 'bg-purple-100 text-purple-800', label: 'Enviado', icon: Truck },
+      entregado: { color: 'bg-green-100 text-green-800', label: 'Entregado', icon: CheckCircle },
+      cancelado: { color: 'bg-red-100 text-red-800', label: 'Cancelado', icon: XCircle },
+      archivado: { color: 'bg-gray-100 text-gray-800', label: 'Archivado', icon: Package },
     };
     const badge = badges[status] || { color: 'bg-gray-100 text-gray-800', label: status, icon: Package };
     const Icon = badge.icon;
@@ -246,45 +248,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
 
-          {/* Order Status Overview */}
-          <div className="grid md:grid-cols-3 gap-4 mb-8">
-            <Link
-              href="/admin/pedidos?status=esperando_verificacion"
-              className="bg-blue-50 border border-blue-200 rounded-lg p-4 hover:bg-blue-100 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <AlertCircle className="w-8 h-8 text-blue-600" />
-                <div>
-                  <p className="text-sm text-blue-600">Esperando Verificación</p>
-                  <p className="text-2xl font-bold text-blue-800">{stats?.awaitingVerification || 0}</p>
-                </div>
-              </div>
-            </Link>
-            <Link
-              href="/admin/pedidos?status=pago_aprobado"
-              className="bg-green-50 border border-green-200 rounded-lg p-4 hover:bg-green-100 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <CheckCircle className="w-8 h-8 text-green-600" />
-                <div>
-                  <p className="text-sm text-green-600">Listos para Enviar</p>
-                  <p className="text-2xl font-bold text-green-800">{stats?.paymentApproved || 0}</p>
-                </div>
-              </div>
-            </Link>
-            <Link
-              href="/admin/pedidos?status=enviado"
-              className="bg-purple-50 border border-purple-200 rounded-lg p-4 hover:bg-purple-100 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <Truck className="w-8 h-8 text-purple-600" />
-                <div>
-                  <p className="text-sm text-purple-600">En Tránsito</p>
-                  <p className="text-2xl font-bold text-purple-800">{stats?.shipped || 0}</p>
-                </div>
-              </div>
-            </Link>
-          </div>
+
 
           {/* Monthly Revenue Chart */}
           <div className="mb-8">
@@ -311,12 +275,17 @@ export default function AdminDashboardPage() {
                       className="py-3 flex items-center justify-between hover:bg-gray-50 -mx-2 px-2 rounded transition-colors"
                     >
                       <div>
-                        <p className="font-medium">{order.numero_pedido}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{order.numero_pedido}</p>
+                          {!order.usuario_id && (
+                            <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-medium rounded">Sin cuenta</span>
+                          )}
+                        </div>
                         <p className="text-sm text-gray-500">{order.cliente_nombre}</p>
                       </div>
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-3">
                         {getStatusBadge(order.estado)}
-                        <span className="font-medium">{formatPrice(order.total)}</span>
+                        <span className="font-medium text-sm">{formatPrice(order.total)}</span>
                       </div>
                     </Link>
                   ))}

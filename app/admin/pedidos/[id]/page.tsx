@@ -203,6 +203,30 @@ export default function AdminPedidoDetailPage({ params }: { params: Promise<{ id
     }
   };
 
+  const handleGuestApprovePayment = async () => {
+    setIsUpdating(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const supabase = getSupabaseClient();
+      const { error: updateError } = await supabase
+        .from('pedidos')
+        .update({ estado: 'pago_aprobado', pagado_el: new Date().toISOString() })
+        .eq('id', order!.id);
+
+      if (updateError) throw updateError;
+
+      setSuccess('Pago marcado como recibido. El pedido ahora está aprobado.');
+      await loadOrder();
+    } catch (err: any) {
+      console.error('Error approving guest payment:', err);
+      setError(err.message || 'Error al aprobar el pago');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const handleMarkAsDelivered = async () => {
     setIsUpdating(true);
     setError(null);
@@ -545,6 +569,33 @@ export default function AdminPedidoDetailPage({ params }: { params: Promise<{ id
                 </div>
               )}
 
+              {/* Guest order: mark transfer as paid */}
+              {!order.usuario_id && order.estado === 'pendiente_pago' && order.metodo_pago === 'transferencia' && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
+                  <h2 className="text-lg font-medium text-amber-800 mb-4 flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5" />
+                    Pedido de cliente sin cuenta — Transferencia pendiente
+                  </h2>
+                  <p className="text-sm text-amber-700 mb-4">
+                    Este pedido fue realizado sin cuenta registrada. Una vez que verifiques que la transferencia fue realizada, podés marcar el pago como recibido.
+                  </p>
+                  <button
+                    onClick={handleGuestApprovePayment}
+                    disabled={isUpdating}
+                    className="py-3 px-6 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {isUpdating ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <>
+                        <CheckCircle className="w-5 h-5" />
+                        Marcar pago como recibido
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+
               {/* Guest order notice - no shipping/delivery actions */}
               {!order.usuario_id && (order.estado === 'pago_aprobado' || order.estado === 'enviado' || order.estado === 'entregado') && (
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
@@ -553,7 +604,7 @@ export default function AdminPedidoDetailPage({ params }: { params: Promise<{ id
                     Pedido sin cuenta registrada
                   </h2>
                   <p className="text-sm text-amber-700">
-                    Este pedido fue realizado sin una cuenta registrada. No se puede marcar como enviado o entregado ya que el cliente no recibirá notificaciones.
+                    Este pedido fue realizado sin una cuenta registrada. Las notificaciones se enviarán por correo electrónico a {order.cliente_email}.
                   </p>
                 </div>
               )}

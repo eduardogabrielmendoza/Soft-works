@@ -177,7 +177,7 @@ function ConfirmacionContent() {
           )}
 
           {/* MercadoPago Status Messages */}
-          {isMercadoPago && isApproved && (
+          {isMercadoPago && isApproved && !isGuest && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
               <div className="flex items-center gap-2 mb-3">
                 <CheckCircle className="w-5 h-5 text-green-700" />
@@ -187,6 +187,25 @@ function ConfirmacionContent() {
                 Tu pago con tarjeta fue aprobado correctamente. Vamos a preparar tu pedido para enviarlo lo antes posible.
                 Recibirás una notificación en tu cuenta de Softworks cuando tu pedido sea despachado.
               </p>
+            </div>
+          )}
+
+          {isMercadoPago && isApproved && isGuest && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
+              <div className="flex items-center gap-2 mb-3">
+                <CheckCircle className="w-5 h-5 text-green-700" />
+                <h2 className="text-lg font-medium text-green-800">Pago Exitoso</h2>
+              </div>
+              <p className="text-green-700 mb-3">
+                Tu pago con tarjeta fue aprobado correctamente. Vamos a preparar tu pedido para enviarlo lo antes posible.
+              </p>
+              <div className="flex items-center gap-2 text-green-700 bg-green-100 rounded-lg p-3">
+                <Mail className="w-4 h-4 flex-shrink-0" />
+                <p className="text-sm">
+                  Como no tenés una cuenta en Softworks, recibirás todas las actualizaciones de tu pedido por correo electrónico a <strong>{guestEmail}</strong>.
+                  Guardá tu número de pedido: <strong>{order.numero_pedido}</strong>
+                </p>
+              </div>
             </div>
           )}
 
@@ -412,7 +431,7 @@ function ConfirmacionContent() {
             </div>
           )}
 
-          {isMercadoPago && isApproved && (
+          {isMercadoPago && isApproved && !isGuest && (
             <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
               <h2 className="text-lg font-medium mb-4">¿Qué sigue?</h2>
               <div className="space-y-4">
@@ -435,6 +454,47 @@ function ConfirmacionContent() {
                     <p className="font-medium">Envío</p>
                     <p className="text-sm text-gray-600">
                       Recibirás una notificación en tu cuenta de Softworks cuando tu pedido sea despachado con el código de seguimiento.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {isMercadoPago && isApproved && isGuest && (
+            <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+              <h2 className="text-lg font-medium mb-4">¿Qué sigue?</h2>
+              <div className="space-y-4">
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 bg-foreground text-white rounded-full flex items-center justify-center flex-shrink-0 text-sm font-medium">
+                    1
+                  </div>
+                  <div>
+                    <p className="font-medium">Guardá tu número de pedido</p>
+                    <p className="text-sm text-gray-600">
+                      Anotá tu número de pedido <strong>{order.numero_pedido}</strong> para futuras consultas.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 bg-foreground text-white rounded-full flex items-center justify-center flex-shrink-0 text-sm font-medium">
+                    2
+                  </div>
+                  <div>
+                    <p className="font-medium">Preparamos tu pedido</p>
+                    <p className="text-sm text-gray-600">
+                      Nuestro equipo comenzará a preparar tu pedido.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 bg-foreground text-white rounded-full flex items-center justify-center flex-shrink-0 text-sm font-medium">
+                    3
+                  </div>
+                  <div>
+                    <p className="font-medium">Recibirás un correo electrónico</p>
+                    <p className="text-sm text-gray-600">
+                      Te enviaremos actualizaciones y el código de seguimiento a <strong>{guestEmail}</strong> cuando tu pedido sea despachado.
                     </p>
                   </div>
                 </div>

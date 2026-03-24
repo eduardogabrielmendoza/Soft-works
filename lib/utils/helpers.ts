@@ -53,12 +53,12 @@ export function getOrderStatusColor(status: EstadoPedido): string {
   const colors: Record<EstadoPedido, string> = {
     pendiente_pago: 'bg-yellow-100 text-yellow-800',
     esperando_verificacion: 'bg-blue-100 text-blue-800',
-    pago_aprobado: 'bg-green-100 text-green-800',
+    pago_aprobado: 'bg-emerald-100 text-emerald-800',
     pago_rechazado: 'bg-red-100 text-red-800',
     enviado: 'bg-purple-100 text-purple-800',
-    entregado: 'bg-gray-100 text-gray-800',
+    entregado: 'bg-green-100 text-green-800',
     cancelado: 'bg-red-100 text-red-800',
-    archivado: 'bg-amber-100 text-amber-800'
+    archivado: 'bg-gray-100 text-gray-800'
   }
   return colors[status] || 'bg-gray-100 text-gray-800'
 }
