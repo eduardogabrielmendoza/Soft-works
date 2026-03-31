@@ -16,6 +16,7 @@ import CartDrawer from './CartDrawer';
 import AnnouncementBar from './AnnouncementBar';
 import NotificationBell from './NotificationBell';
 import AdminChatIcon from './AdminChatIcon';
+import { useNotifications } from '@/lib/hooks/useNotifications';
 
 // Altura de la barra de anuncios (incluye mt-2)
 const ANNOUNCEMENT_HEIGHT = 44; // 36px altura + 8px margin-top
@@ -46,6 +47,7 @@ export default function Navbar() {
   const { itemCount } = useCart();
   const { user, isAdmin } = useAuth();
   const { layout, isLoading: layoutLoading } = useLayoutContent();
+  const { unreadCount: unreadNotifications } = useNotifications();
 
   // Smart sticky behavior con AnnouncementBar
   const handleScroll = useCallback(() => {
@@ -163,7 +165,7 @@ export default function Navbar() {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className={`lg:hidden p-2 rounded-lg transition-colors ${
+              className={`lg:hidden p-2 rounded-lg transition-colors relative ${
                 isTransparent ? 'hover:bg-white/10' : 'hover:bg-gray-100'
               } ${isTransparent ? 'text-white' : 'text-gray-700'}`}
               aria-label="Menú"
@@ -172,6 +174,9 @@ export default function Navbar() {
                 <X className="w-6 h-6" />
               ) : (
                 <Menu className="w-6 h-6" />
+              )}
+              {!isMenuOpen && user && unreadNotifications > 0 && (
+                <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full" />
               )}
             </button>
 

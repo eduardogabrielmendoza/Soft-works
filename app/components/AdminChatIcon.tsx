@@ -350,12 +350,15 @@ export default function AdminChatIcon() {
 
       <AnimatePresence>
         {isOpen && (
+          <>
+          {/* Mobile backdrop */}
+          <div className="fixed inset-0 bg-black/20 z-[59] lg:hidden" onClick={() => setIsOpen(false)} />
           <motion.div
             initial={{ opacity: 0, y: -10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50 overflow-hidden"
+            className="fixed left-3 right-3 top-20 max-h-[70vh] lg:absolute lg:left-auto lg:right-0 lg:top-auto lg:mt-2 lg:w-96 lg:max-h-none bg-white rounded-lg shadow-xl border border-gray-200 z-[60] overflow-hidden"
           >
             {selectedChatId ? (
               /* Individual chat view */
@@ -500,6 +503,7 @@ export default function AdminChatIcon() {
               </>
             )}
           </motion.div>
+          </>
         )}
       </AnimatePresence>
     </div>

@@ -1324,7 +1324,7 @@ function LayoutEditor({ content, onChange }: { content: LayoutContent; onChange:
               <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${content.brandSection.enabled ? 'translate-x-5' : ''}`} />
             </button>
           </div>
-          <Field label="Texto" {...ts('brand-text')}><TextInput value={content.brandSection.text} onChange={v => onChange({ ...content, brandSection: { ...content.brandSection, text: v } })} placeholder="Softworks" /></Field>
+          <p className="text-[10px] text-foreground/40">El texto y tamaño se adaptan automáticamente a todas las resoluciones.</p>
         </div>
       </SectionCard>
 

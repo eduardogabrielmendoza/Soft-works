@@ -27,6 +27,7 @@ export default function ChatBubble() {
   const [isResolved, setIsResolved] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [resolvedAt, setResolvedAt] = useState<string | null>(null);
+  const [isWaitingForReply, setIsWaitingForReply] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const isOpenRef = useRef(false);
@@ -46,7 +47,19 @@ export default function ChatBubble() {
     if (isOpenRef.current && chatId && messages.length > 0) {
       localStorage.setItem(`chat-lastread-${chatId}`, messages[messages.length - 1].id);
     }
-  }, [messages, scrollToBottom, chatId]);
+    // Determine if user is waiting for admin reply
+    if (user && messages.length > 0) {
+      const realMessages = messages.filter(m => m.tipo === 'mensaje');
+      if (realMessages.length > 0) {
+        const lastMsg = realMessages[realMessages.length - 1];
+        setIsWaitingForReply(lastMsg.autor_id === user.id);
+      } else {
+        setIsWaitingForReply(false);
+      }
+    } else {
+      setIsWaitingForReply(false);
+    }
+  }, [messages, scrollToBottom, chatId, user]);
 
   // Sync isOpen ref for use in realtime callbacks
   useEffect(() => {
@@ -449,24 +462,39 @@ export default function ChatBubble() {
                 {isResolved && (
                   <p className="text-[10px] text-center text-gray-400 mb-1">✓ Consulta resuelta — escribí si necesitás más ayuda</p>
                 )}
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder={isResolved ? '¿Tenés otra consulta?' : 'Escribí tu mensaje...'}
-                    className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleSend}
-                    disabled={!newMessage.trim() || isSending}
-                    className="p-2 bg-foreground text-white rounded-md hover:bg-foreground/90 transition-colors disabled:opacity-50"
-                  >
-                    {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                  </button>
-                </div>
+                {isWaitingForReply && !isResolved ? (
+                  <div className="text-center py-2">
+                    <div className="flex items-center justify-center gap-2 text-gray-400">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <p className="text-xs">Esperando respuesta del equipo de soporte</p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value.slice(0, 300))}
+                        onKeyDown={handleKeyDown}
+                        maxLength={300}
+                        placeholder={isResolved ? '¿Tenés otra consulta?' : 'Describí tu consulta...'}
+                        className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleSend}
+                        disabled={!newMessage.trim() || isSending}
+                        className="p-2 bg-foreground text-white rounded-md hover:bg-foreground/90 transition-colors disabled:opacity-50"
+                      >
+                        {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    <p className={`text-[10px] text-right mt-1 ${newMessage.length >= 280 ? 'text-red-400' : 'text-gray-400'}`}>
+                      {newMessage.length}/300
+                    </p>
+                  </>
+                )}
               </div>
             </motion.div>
           )}
