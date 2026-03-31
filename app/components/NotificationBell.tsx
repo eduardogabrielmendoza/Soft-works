@@ -120,17 +120,116 @@ export default function NotificationBell() {
         )}
       </button>
 
+      {/* Desktop dropdown - stays inside the header for proper positioning */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+            className="hidden lg:block absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-[60] overflow-hidden"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+              <h3 className="font-medium text-sm">Notificaciones</h3>
+              {unreadCount > 0 && (
+                <button
+                  onClick={() => markAllAsRead()}
+                  className="text-xs text-gray-500 hover:text-black transition-colors"
+                >
+                  Marcar todas como leídas
+                </button>
+              )}
+            </div>
+
+            {/* List */}
+            <div className="max-h-80 overflow-y-auto overscroll-contain">
+              {recentNotifs.length === 0 ? (
+                <div className="px-4 py-8 text-center text-gray-400 text-sm">
+                  No tenés notificaciones
+                </div>
+              ) : (
+                recentNotifs.map((notif) => {
+                  const isRecoveryRequest = isAdmin && notif.metadata?.solicitud_tipo === 'recuperacion';
+                  const solicitudEmail = notif.metadata?.usuario_email as string | undefined;
+                  const solicitudId = notif.metadata?.solicitud_id as string | undefined;
+                  const isProcessing = processingId === notif.id;
+
+                  return (
+                    <div
+                      key={notif.id}
+                      onClick={() => openNotification(notif)}
+                      className={`px-4 py-3 border-b border-gray-50 hover:bg-gray-50 cursor-pointer transition-colors ${
+                        !notif.leida ? 'bg-blue-50/50' : ''
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        {!notif.leida && (
+                          <span className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 flex-shrink-0" />
+                        )}
+                        <div className={!notif.leida ? '' : 'ml-5'}>
+                          <p className="text-sm font-medium text-gray-900">{notif.titulo}</p>
+                          <p className="text-xs text-gray-600 mt-0.5 line-clamp-2">{notif.mensaje}</p>
+                          <p className="text-[10px] text-gray-400 mt-1">{formatTime(notif.fecha_creacion)}</p>
+                          {isRecoveryRequest && (solicitudId || solicitudEmail) && !notif.leida && (
+                            <div className="flex gap-2 mt-2">
+                              {isProcessing ? (
+                                <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                              ) : (
+                                <>
+                                  <button
+                                    type="button"
+                                    onMouseDown={(e) => {
+                                      e.stopPropagation();
+                                      e.preventDefault();
+                                      handleAdminAction(notif.id, 'aprobar', solicitudId, solicitudEmail);
+                                    }}
+                                    className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                                  >
+                                    <Check className="w-3 h-3" />
+                                    Aprobar
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onMouseDown={(e) => {
+                                      e.stopPropagation();
+                                      e.preventDefault();
+                                      handleAdminAction(notif.id, 'rechazar', solicitudId, solicitudEmail);
+                                    }}
+                                    className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                                  >
+                                    <XIcon className="w-3 h-3" />
+                                    Rechazar
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+
+    {/* Mobile dropdown - portaled to body to escape header stacking context */}
+    {typeof document !== 'undefined' && createPortal(
       <AnimatePresence>
         {isOpen && (
           <>
-          {/* Mobile backdrop */}
           <div className="fixed inset-0 bg-black/20 z-[59] lg:hidden" onClick={() => setIsOpen(false)} />
           <motion.div
             initial={{ opacity: 0, y: -10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="fixed left-3 right-3 top-20 max-h-[70vh] lg:absolute lg:left-auto lg:right-0 lg:top-auto lg:mt-2 lg:w-96 lg:max-h-none bg-white rounded-lg shadow-xl border border-gray-200 z-[60] overflow-hidden"
+            className="fixed inset-x-3 top-1/2 -translate-y-1/2 max-h-[70vh] bg-white rounded-lg shadow-xl border border-gray-200 z-[60] overflow-hidden lg:hidden"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
@@ -218,8 +317,9 @@ export default function NotificationBell() {
           </motion.div>
           </>
         )}
-      </AnimatePresence>
-    </div>
+      </AnimatePresence>,
+      document.body
+    )}
 
     {/* Notification Detail Modal - rendered via portal to escape Navbar stacking context */}
     {typeof document !== 'undefined' && createPortal(

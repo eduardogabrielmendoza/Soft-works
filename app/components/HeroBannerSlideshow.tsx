@@ -160,7 +160,7 @@ export default function HeroBannerSlideshow() {
                     alt={slides[currentSlide].title}
                     fill
                     priority
-                    quality={90}
+                    quality={100}
                     className="object-cover"
                     sizes="100vw"
                   />

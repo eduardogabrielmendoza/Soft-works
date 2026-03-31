@@ -257,6 +257,7 @@ export default function ColeccionesPage() {
                           src={getMainImage(product)}
                           alt={product.nombre}
                           fill
+                          quality={100}
                           className={`object-cover group-hover:scale-105 transition-transform duration-500 ${outOfStock ? 'grayscale' : ''}`}
                         />
                       ) : (

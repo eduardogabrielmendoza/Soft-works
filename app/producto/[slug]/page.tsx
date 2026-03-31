@@ -157,6 +157,7 @@ export default function ProductoPage({ params }: { params: Promise<{ slug: strin
                     src={images[selectedImage].src}
                     alt={`${product.nombre} - ${images[selectedImage].etiqueta}`}
                     fill
+                    quality={100}
                     className={`object-cover ${isOutOfStock ? 'grayscale' : ''}`}
                     priority
                   />
@@ -189,6 +190,7 @@ export default function ProductoPage({ params }: { params: Promise<{ slug: strin
                         src={image.src}
                         alt={image.etiqueta}
                         fill
+                        quality={100}
                         className="object-cover"
                       />
                     </button>

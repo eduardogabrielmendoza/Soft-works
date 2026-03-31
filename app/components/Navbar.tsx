@@ -137,8 +137,8 @@ export default function Navbar() {
           y: isHidden ? '-100%' : 0,
           top: !isInAdminArea && showAnnouncement && !isHidden ? (isHomePage ? ANNOUNCEMENT_HEIGHT : ANNOUNCEMENT_HEIGHT + 16) : 0
         }}
-        transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-        className={`fixed left-0 right-0 z-50 transition-colors duration-300 ${bgClass}`}
+        transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+        className={`fixed left-0 right-0 z-50 transition-colors duration-500 ease-in-out ${bgClass}`}
       >
         <div className="max-w-[1600px] mx-auto px-6 lg:px-12">
           <div className="flex items-end h-16 lg:h-20 pb-2">

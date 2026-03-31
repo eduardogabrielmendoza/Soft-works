@@ -45,25 +45,6 @@ export interface NosotrosContent {
   textStyles?: Record<string, TextStyle>;
 }
 
-// Producción Page
-export interface ProduccionContent {
-  hero: {
-    title: string;
-    description: string;
-    buttons?: CustomButton[];
-    buttonAlignment?: ButtonAlignment;
-  };
-  pillars: Array<{
-    title: string;
-    description: string;
-    image: string;
-    buttons?: CustomButton[];
-    buttonAlignment?: ButtonAlignment;
-  }>;
-  customSections?: CustomSection[];
-  textStyles?: Record<string, TextStyle>;
-}
-
 // Eventos Page
 export interface EventoItem {
   id: string;
@@ -174,19 +155,6 @@ const defaultNosotrosContent: NosotrosContent = {
   customSections: []
 };
 
-const defaultProduccionContent: ProduccionContent = {
-  hero: {
-    title: 'Nuestra Producción',
-    description: 'Cada prenda es fabricada con dedicación y precisión en nuestro taller. Nos comprometemos con la calidad artesanal y procesos responsables.'
-  },
-  pillars: [
-    { title: 'Diseño Artesanal', description: 'Cada pieza diseñada con atención al detalle', image: '' },
-    { title: 'Calidad Premium', description: 'Materiales seleccionados y procesos cuidadosos', image: '' },
-    { title: 'Producción Local', description: 'Fabricado en Argentina con orgullo', image: '' }
-  ],
-  customSections: []
-};
-
 const defaultEventosContent: EventosContent = {
   title: 'Eventos',
   subtitle: 'Únete a nosotros en nuestros próximos eventos y experiencias',
@@ -263,7 +231,6 @@ const defaultContactoContent: ContactoContent = {
 
 interface PagesContentContextType {
   nosotros: NosotrosContent;
-  produccion: ProduccionContent;
   eventos: EventosContent;
   ubicaciones: UbicacionesContent;
   contacto: ContactoContent;
@@ -275,7 +242,6 @@ const PagesContentContext = createContext<PagesContentContextType | undefined>(u
 
 export function PagesContentProvider({ children }: { children: ReactNode }) {
   const [nosotros, setNosotros] = useState<NosotrosContent>(defaultNosotrosContent);
-  const [produccion, setProduccion] = useState<ProduccionContent>(defaultProduccionContent);
   const [eventos, setEventos] = useState<EventosContent>(defaultEventosContent);
   const [ubicaciones, setUbicaciones] = useState<UbicacionesContent>(defaultUbicacionesContent);
   const [contacto, setContacto] = useState<ContactoContent>(defaultContactoContent);
@@ -289,7 +255,7 @@ export function PagesContentProvider({ children }: { children: ReactNode }) {
       const { data } = await supabase
         .from('configuracion_sitio')
         .select('clave, valor')
-        .in('clave', ['contenido_nosotros', 'contenido_produccion', 'contenido_eventos', 'contenido_ubicaciones', 'contenido_contacto']);
+        .in('clave', ['contenido_nosotros', 'contenido_eventos', 'contenido_ubicaciones', 'contenido_contacto']);
 
       if (data) {
         data.forEach((row: { clave: string; valor: string }) => {
@@ -298,9 +264,6 @@ export function PagesContentProvider({ children }: { children: ReactNode }) {
             switch (row.clave) {
               case 'contenido_nosotros':
                 setNosotros({ ...defaultNosotrosContent, ...parsed });
-                break;
-              case 'contenido_produccion':
-                setProduccion({ ...defaultProduccionContent, ...parsed });
                 break;
               case 'contenido_eventos':
                 setEventos({ ...defaultEventosContent, ...parsed });
@@ -338,9 +301,6 @@ export function PagesContentProvider({ children }: { children: ReactNode }) {
             case 'contenido_nosotros':
               setNosotros({ ...defaultNosotrosContent, ...val });
               break;
-            case 'contenido_produccion':
-              setProduccion({ ...defaultProduccionContent, ...val });
-              break;
             case 'contenido_eventos':
               setEventos({ ...defaultEventosContent, ...val });
               break;
@@ -363,7 +323,6 @@ export function PagesContentProvider({ children }: { children: ReactNode }) {
   return (
     <PagesContentContext.Provider value={{
       nosotros,
-      produccion,
       eventos,
       ubicaciones,
       contacto,
@@ -386,7 +345,6 @@ export function usePagesContent() {
 // Export defaults for use in admin
 export const defaultContents = {
   nosotros: defaultNosotrosContent,
-  produccion: defaultProduccionContent,
   eventos: defaultEventosContent,
   ubicaciones: defaultUbicacionesContent,
   contacto: defaultContactoContent
