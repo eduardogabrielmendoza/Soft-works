@@ -229,7 +229,7 @@ export default function NotificationBell() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-x-3 top-1/2 -translate-y-1/2 max-h-[70vh] bg-white rounded-lg shadow-xl border border-gray-200 z-[60] overflow-hidden lg:hidden"
+            className="fixed inset-x-3 top-[64px] max-h-[calc(100vh-80px)] bg-white rounded-lg shadow-xl border border-gray-200 z-[60] overflow-hidden lg:hidden"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">

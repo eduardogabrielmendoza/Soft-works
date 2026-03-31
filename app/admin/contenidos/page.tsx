@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/hooks/useAuth';
-import { useIndexContent, type IndexContent, type HeroSlide, type ProductCard, type LifestyleImage, type ContentItem } from '@/lib/hooks/useIndexContent';
+import { useIndexContent, type IndexContent, type HeroSlide, type ProductCard, type LifestyleImage } from '@/lib/hooks/useIndexContent';
 import { usePagesContent, type NosotrosContent, type EventosContent, type EventoItem, type UbicacionesContent, type ContactoContent } from '@/lib/hooks/usePagesContent';
 import { useLayoutContent, type LayoutContent, type NavLink, type FooterLinkColumn, defaultLayoutContent } from '@/lib/hooks/useLayoutContent';
 import { getSupabaseClient } from '@/lib/supabase/client';
@@ -629,11 +629,6 @@ function IndexEditor({ content, onChange }: { content: IndexContent; onChange: (
     onChange({ ...content, lifestyleImages: imgs });
   };
 
-  const updateGridItem = (idx: number, updates: Partial<ContentItem>) => {
-    const items = content.contentGrid.map((item, i) => i === idx ? { ...item, ...updates } : item);
-    onChange({ ...content, contentGrid: items });
-  };
-
   return (
     <div className="space-y-4">
       {/* Hero Slides */}
@@ -734,29 +729,6 @@ function IndexEditor({ content, onChange }: { content: IndexContent; onChange: (
             alignment={content.fullWidthBanner.buttonAlignment}
             onAlignmentChange={a => onChange({ ...content, fullWidthBanner: { ...content.fullWidthBanner, buttonAlignment: a } })}
           />
-        </div>
-      </SectionCard>
-
-      {/* Content Grid */}
-      <SectionCard title="📊 Grid de Contenido" defaultOpen={false}>
-        <div className="space-y-4 pt-3">
-          {content.contentGrid.map((item, idx) => (
-            <div key={item.id} className="p-4 bg-gray-50 rounded-lg space-y-3">
-              <span className="text-xs font-semibold text-foreground/70">Item {idx + 1}</span>
-              <ImageInput value={item.image} onChange={v => updateGridItem(idx, { image: v })} />
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Título" {...ts(`grid-${item.id}-title`)}><TextInput value={item.title} onChange={v => updateGridItem(idx, { title: v })} /></Field>
-                <Field label="Link"><UrlInput value={item.link} onChange={v => updateGridItem(idx, { link: v })} /></Field>
-              </div>
-              <Field label="Descripción" {...ts(`grid-${item.id}-desc`)}><TextInput value={item.description} onChange={v => updateGridItem(idx, { description: v })} /></Field>
-              <ButtonEditor
-                buttons={item.buttons || []}
-                onChange={buttons => updateGridItem(idx, { buttons })}
-                alignment={item.buttonAlignment}
-                onAlignmentChange={a => updateGridItem(idx, { buttonAlignment: a })}
-              />
-            </div>
-          ))}
         </div>
       </SectionCard>
 

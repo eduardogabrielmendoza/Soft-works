@@ -187,40 +187,6 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* Grid de Contenido - 3 Columnas */}
-      <section className="py-16 lg:py-24 max-w-7xl mx-auto px-4">
-        <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
-          {content.contentGrid.map((item, index) => (
-            <motion.div
-              key={item.id}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-              className="text-center"
-            >
-              <Link href={item.link}>
-                <div className="aspect-square rounded-lg mb-6 relative overflow-hidden group cursor-pointer">
-                  <Image
-                    src={item.image}
-                    alt={item.title}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                </div>
-              </Link>
-              <h3 className="text-xl font-medium mb-2" style={textStyleCSS(content.textStyles, `grid-${item.id}-title`)}>{item.title}</h3>
-              <p className="text-foreground/70" style={textStyleCSS(content.textStyles, `grid-${item.id}-desc`)}>{item.description}</p>
-              {item.buttons && item.buttons.length > 0 && (
-                <div className={`flex flex-wrap gap-3 mt-4 ${BTN_ALIGN_CLASS[item.buttonAlignment || 'center']}`}>
-                  {item.buttons.map(btn => <SectionButton key={btn.id} btn={btn} />)}
-                </div>
-              )}
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
       <CustomSectionsRenderer sections={content.customSections} />
     </div>
   );

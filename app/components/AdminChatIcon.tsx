@@ -359,7 +359,7 @@ export default function AdminChatIcon() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-x-3 top-1/2 -translate-y-1/2 max-h-[70vh] lg:absolute lg:inset-x-auto lg:top-auto lg:translate-y-0 lg:right-0 lg:mt-2 lg:w-96 lg:max-h-none bg-white rounded-lg shadow-xl border border-gray-200 z-[60] overflow-hidden"
+            className="fixed inset-x-3 top-[64px] max-h-[calc(100vh-80px)] lg:absolute lg:inset-x-auto lg:top-auto lg:right-0 lg:mt-2 lg:w-96 lg:max-h-none bg-white rounded-lg shadow-xl border border-gray-200 z-[60] overflow-hidden"
           >
             {selectedChatId ? (
               /* Individual chat view */

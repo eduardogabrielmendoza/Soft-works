@@ -67,7 +67,6 @@ export interface IndexContent {
   philosophySection: PhilosophySection;
   lifestyleImages: LifestyleImage[];
   fullWidthBanner: BannerSection;
-  contentGrid: ContentItem[];
   customSections?: CustomSection[];
   textStyles?: Record<string, TextStyle>;
 }
@@ -145,11 +144,6 @@ const defaultContent: IndexContent = {
     title: 'Diseñado para durar',
     subtitle: 'Calidad atemporal, estilo consciente',
   },
-  contentGrid: [
-    { id: '1', title: 'Nuestra Misión', description: 'Restaurar, diseñar y crear', image: '', link: '/nosotros' },
-    { id: '2', title: 'Filantropía', description: 'Apoyando estilos de vida', image: '', link: '/futuros-softworks' },
-    { id: '3', title: 'Sostenibilidad', description: 'Moda consciente y responsable', image: '', link: '/produccion' },
-  ],
   customSections: [],
 };
 

@@ -65,7 +65,7 @@ export const defaultLayoutContent: LayoutContent = {
     navLinks: [
       { id: '1', label: 'Colecciones', href: '/colecciones' },
       { id: '2', label: 'Nosotros', href: '/nosotros' },
-      { id: '3', label: 'Preguntas Frecuentes', href: '/preguntas-frecuentes' },
+      { id: '3', label: 'FAQ', href: '/preguntas-frecuentes' },
     ],
     logoUrl: '',
   },
