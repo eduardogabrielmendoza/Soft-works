@@ -20,52 +20,26 @@ interface Slide {
   buttons?: CustomButton[];
 }
 
-// Variantes para transición horizontal suave sin parpadeos
+// Crossfade suave para las imágenes
 const slideVariants = {
-  enter: (direction: number) => ({
-    x: direction > 0 ? '100%' : '-100%',
-    opacity: 1,
-  }),
-  center: {
-    x: 0,
-    opacity: 1,
-    zIndex: 1,
-  },
-  exit: (direction: number) => ({
-    x: direction > 0 ? '-100%' : '100%',
-    opacity: 1, // Mantener opacidad completa para evitar fundido a blanco
-    zIndex: 0,
-  }),
+  enter: { opacity: 0 },
+  center: { opacity: 1, zIndex: 1 },
+  exit: { opacity: 0, zIndex: 0 },
 };
 
-// Variantes para el contenido con animaciones sincronizadas
-const contentVariants = {
-  enter: (direction: number) => ({
-    x: direction > 0 ? 60 : -60,
-    opacity: 0,
-  }),
+// Fade suave para textos (título, subtítulo)
+const textVariants = {
+  enter: { opacity: 0, y: 12 },
   center: {
-    x: 0,
     opacity: 1,
-    transition: {
-      duration: 0.5,
-      ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
-      staggerChildren: 0.08,
-      delayChildren: 0.1,
-    },
+    y: 0,
+    transition: { duration: 0.6, ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number] },
   },
-  exit: (direction: number) => ({
-    x: direction > 0 ? -40 : 40,
+  exit: {
     opacity: 0,
-    transition: { duration: 0.3 },
-  }),
-};
-
-// Variantes para elementos hijos (título, botón, subtítulo)
-const childVariants = {
-  enter: { opacity: 0, y: 20 },
-  center: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -10 },
+    y: -8,
+    transition: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number] },
+  },
 };
 
 export default function HeroBannerSlideshow() {
@@ -73,7 +47,6 @@ export default function HeroBannerSlideshow() {
   const slides = content.heroSlides;
   
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [direction, setDirection] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Parallax effect con scroll - el contenedor se desvanece y la imagen se mueve
@@ -84,7 +57,6 @@ export default function HeroBannerSlideshow() {
   const imageScale = useTransform(scrollY, [0, 500], [1, 1.15]);
 
   const paginate = useCallback((newDirection: number) => {
-    setDirection(newDirection);
     setCurrentSlide((prev) => {
       const next = prev + newDirection;
       if (next < 0) return slides.length - 1;
@@ -94,9 +66,8 @@ export default function HeroBannerSlideshow() {
   }, [slides.length]);
 
   const goToSlide = useCallback((index: number) => {
-    setDirection(index > currentSlide ? 1 : -1);
     setCurrentSlide(index);
-  }, [currentSlide]);
+  }, []);
 
   // Swipe handlers para móvil
   const [touchStart, setTouchStart] = useState(0);
@@ -147,18 +118,14 @@ export default function HeroBannerSlideshow() {
           {/* Aspect ratio container */}
           <div className="relative aspect-[3/4] sm:aspect-[4/3] lg:aspect-[21/9]">
             {/* Slides con transición horizontal */}
-            <AnimatePresence initial={false} custom={direction}>
+            <AnimatePresence initial={false}>
               <motion.div
                 key={currentSlide}
-                custom={direction}
                 variants={slideVariants}
                 initial="enter"
                 animate="center"
                 exit="exit"
-                transition={{
-                  x: { type: 'spring', stiffness: 200, damping: 30 },
-                  opacity: { duration: 0.4 },
-                }}
+                transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
                 className="absolute inset-0"
               >
                 {/* Imagen con parallax interno */}
@@ -182,56 +149,60 @@ export default function HeroBannerSlideshow() {
               </motion.div>
             </AnimatePresence>
 
-            {/* Contenido con animaciones sincronizadas via staggerChildren */}
+            {/* Contenido del slide */}
             <div className="absolute inset-0 flex items-center justify-center z-10">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={currentSlide}
-                  custom={direction}
-                  variants={contentVariants}
-                  initial="enter"
-                  animate="center"
-                  exit="exit"
-                  style={{ y: contentY }}
-                  className="text-center px-6 max-w-4xl mx-auto"
-                >
-                  {/* Título principal - sincronizado con stagger */}
-                  <motion.h1 
-                    variants={childVariants}
+              <motion.div
+                style={{ y: contentY }}
+                className="text-center px-6 max-w-4xl mx-auto"
+              >
+                {/* Título - fade suave entre slides */}
+                <AnimatePresence mode="wait">
+                  <motion.h1
+                    key={`title-${currentSlide}`}
+                    variants={textVariants}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
                     className="text-3xl sm:text-5xl lg:text-8xl font-medium text-white mb-4 sm:mb-8 tracking-tight"
                     style={textStyleCSS(content.textStyles, `slide-${slides[currentSlide].id}-title`)}
                   >
                     {slides[currentSlide].title}
                   </motion.h1>
+                </AnimatePresence>
                   
-                  {/* CTA Button - sincronizado con stagger */}
-                  <motion.div variants={childVariants}>
-                    <Link
-                      href={slides[currentSlide].ctaLink}
-                      className="inline-block px-8 py-3 sm:px-12 sm:py-4 bg-white text-black rounded-full font-medium text-sm sm:text-lg shadow-xl hover:bg-white/95 hover:scale-105 active:scale-100 transition-all duration-200"
-                      style={textStyleCSS(content.textStyles, `slide-${slides[currentSlide].id}-cta`)}
-                    >
-                      {slides[currentSlide].ctaText}
-                    </Link>
-                  </motion.div>
+                {/* CTA Button - fijo, sin transición */}
+                <div>
+                  <Link
+                    href={slides[currentSlide].ctaLink}
+                    className="inline-block px-8 py-3 sm:px-12 sm:py-4 bg-white text-black rounded-full font-medium text-sm sm:text-lg shadow-xl hover:bg-white/95 hover:scale-105 active:scale-100 transition-all duration-200"
+                    style={textStyleCSS(content.textStyles, `slide-${slides[currentSlide].id}-cta`)}
+                  >
+                    {slides[currentSlide].ctaText}
+                  </Link>
+                </div>
 
-                  {/* Botones adicionales del slide */}
-                  {slides[currentSlide].buttons && slides[currentSlide].buttons!.length > 0 && (
-                    <motion.div variants={childVariants} className={`flex flex-wrap gap-3 mt-4 ${BTN_ALIGN_CLASS[slides[currentSlide].buttonAlignment || 'center']}`}>
-                      {slides[currentSlide].buttons!.map(btn => <SectionButton key={btn.id} btn={btn} />)}
-                    </motion.div>
-                  )}
+                {/* Botones adicionales del slide */}
+                {slides[currentSlide].buttons && slides[currentSlide].buttons!.length > 0 && (
+                  <div className={`flex flex-wrap gap-3 mt-4 ${BTN_ALIGN_CLASS[slides[currentSlide].buttonAlignment || 'center']}`}>
+                    {slides[currentSlide].buttons!.map(btn => <SectionButton key={btn.id} btn={btn} />)}
+                  </div>
+                )}
                   
-                  {/* Subtítulo - sincronizado con stagger */}
-                  <motion.p 
-                    variants={childVariants}
+                {/* Subtítulo - fade suave entre slides */}
+                <AnimatePresence mode="wait">
+                  <motion.p
+                    key={`subtitle-${currentSlide}`}
+                    variants={textVariants}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
                     className="text-xs sm:text-base lg:text-lg text-white/60 mt-4 sm:mt-8 tracking-widest uppercase"
                     style={textStyleCSS(content.textStyles, `slide-${slides[currentSlide].id}-subtitle`)}
                   >
                     {slides[currentSlide].subtitle}
                   </motion.p>
-                </motion.div>
-              </AnimatePresence>
+                </AnimatePresence>
+              </motion.div>
             </div>
 
             {/* Botones de navegación laterales - Minimalistas */}
