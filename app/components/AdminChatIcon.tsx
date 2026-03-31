@@ -37,8 +37,11 @@ export default function AdminChatIcon() {
   const [isLoading, setIsLoading] = useState(false);
   const [isResolving, setIsResolving] = useState(false);
   const [unreadChatIds, setUnreadChatIds] = useState<Set<string>>(new Set());
+  const [mobileTop, setMobileTop] = useState(64);
+  const [isMobile, setIsMobile] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const ref = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const userIdRef = useRef<string | null>(null);
   const selectedChatIdRef = useRef<string | null>(null);
   const chatsRef = useRef<Chat[]>([]);
@@ -48,6 +51,15 @@ export default function AdminChatIcon() {
   useEffect(() => { userIdRef.current = user?.id ?? null; }, [user?.id]);
   useEffect(() => { selectedChatIdRef.current = selectedChatId; }, [selectedChatId]);
   useEffect(() => { chatsRef.current = chats; }, [chats]);
+
+  // Track mobile state for conditional inline styles
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1023px)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -336,8 +348,15 @@ export default function AdminChatIcon() {
   return (
     <div ref={ref} className="relative">
       <button
+        ref={buttonRef}
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          if (buttonRef.current) {
+            const rect = buttonRef.current.getBoundingClientRect();
+            setMobileTop(rect.bottom + 8);
+          }
+          setIsOpen(!isOpen);
+        }}
         className="relative p-2 hover:bg-gray-100 rounded-full transition-colors"
         aria-label="Chats de soporte"
       >
@@ -359,7 +378,8 @@ export default function AdminChatIcon() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-x-3 top-[64px] max-h-[calc(100vh-80px)] lg:absolute lg:inset-x-auto lg:top-auto lg:right-0 lg:mt-2 lg:w-96 lg:max-h-none bg-white rounded-lg shadow-xl border border-gray-200 z-[60] overflow-hidden"
+            className="fixed inset-x-3 max-h-[calc(100vh-80px)] lg:absolute lg:inset-x-auto lg:top-auto lg:right-0 lg:mt-2 lg:w-96 lg:max-h-none bg-white rounded-lg shadow-xl border border-gray-200 z-[60] overflow-hidden"
+            style={isMobile ? { top: mobileTop } : undefined}
           >
             {selectedChatId ? (
               /* Individual chat view */

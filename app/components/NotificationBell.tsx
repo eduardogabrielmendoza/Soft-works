@@ -25,7 +25,9 @@ export default function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [selectedNotif, setSelectedNotif] = useState<Notification | null>(null);
+  const [mobileTop, setMobileTop] = useState(64);
   const ref = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   // Close on outside click
   useEffect(() => {
@@ -108,7 +110,14 @@ export default function NotificationBell() {
     <>
     <div ref={ref} className="relative">
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        ref={buttonRef}
+        onClick={() => {
+          if (buttonRef.current) {
+            const rect = buttonRef.current.getBoundingClientRect();
+            setMobileTop(rect.bottom + 8);
+          }
+          setIsOpen(!isOpen);
+        }}
         className="relative p-2 hover:bg-gray-100 rounded-full transition-colors"
         aria-label="Notificaciones"
       >
@@ -229,7 +238,8 @@ export default function NotificationBell() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-x-3 top-[64px] max-h-[calc(100vh-80px)] bg-white rounded-lg shadow-xl border border-gray-200 z-[60] overflow-hidden lg:hidden"
+            style={{ top: mobileTop }}
+            className="fixed inset-x-3 max-h-[calc(100vh-80px)] bg-white rounded-lg shadow-xl border border-gray-200 z-[60] overflow-hidden lg:hidden"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">

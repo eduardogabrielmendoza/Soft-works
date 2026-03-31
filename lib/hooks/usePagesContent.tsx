@@ -150,7 +150,7 @@ const defaultNosotrosContent: NosotrosContent = {
     title: 'Conoce más sobre nuestro impacto',
     description: 'Descubre cómo estamos trabajando para crear un futuro más sostenible y equitativo',
     buttonText: 'Ver más',
-    buttonLink: '/produccion'
+    buttonLink: '/impacto'
   },
   customSections: []
 };
