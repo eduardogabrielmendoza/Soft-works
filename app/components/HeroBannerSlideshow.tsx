@@ -69,7 +69,7 @@ const childVariants = {
 };
 
 export default function HeroBannerSlideshow() {
-  const { content } = useIndexContent();
+  const { content, isLoading } = useIndexContent();
   const slides = content.heroSlides;
   
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -91,7 +91,7 @@ export default function HeroBannerSlideshow() {
       if (next >= slides.length) return 0;
       return next;
     });
-  }, []);
+  }, [slides.length]);
 
   const goToSlide = useCallback((index: number) => {
     setDirection(index > currentSlide ? 1 : -1);
@@ -119,6 +119,17 @@ export default function HeroBannerSlideshow() {
     }
   };
 
+  // Don't render until content is loaded to avoid flash of defaults
+  if (isLoading) {
+    return (
+      <div className="px-4 lg:px-8 pt-0 pb-4">
+        <div className="relative overflow-hidden rounded-2xl lg:rounded-3xl bg-neutral-900 animate-pulse">
+          <div className="aspect-[3/4] sm:aspect-[4/3] lg:aspect-[21/9]" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <motion.section 
       ref={containerRef}
@@ -134,9 +145,9 @@ export default function HeroBannerSlideshow() {
           onTouchEnd={handleTouchEnd}
         >
           {/* Aspect ratio container */}
-          <div className="relative aspect-[4/3] lg:aspect-[21/9]">
+          <div className="relative aspect-[3/4] sm:aspect-[4/3] lg:aspect-[21/9]">
             {/* Slides con transición horizontal */}
-            <AnimatePresence initial={false} custom={direction} mode="popLayout">
+            <AnimatePresence initial={false} custom={direction}>
               <motion.div
                 key={currentSlide}
                 custom={direction}
@@ -187,7 +198,7 @@ export default function HeroBannerSlideshow() {
                   {/* Título principal - sincronizado con stagger */}
                   <motion.h1 
                     variants={childVariants}
-                    className="text-5xl sm:text-6xl lg:text-8xl font-medium text-white mb-8 tracking-tight"
+                    className="text-3xl sm:text-5xl lg:text-8xl font-medium text-white mb-4 sm:mb-8 tracking-tight"
                     style={textStyleCSS(content.textStyles, `slide-${slides[currentSlide].id}-title`)}
                   >
                     {slides[currentSlide].title}
@@ -197,7 +208,7 @@ export default function HeroBannerSlideshow() {
                   <motion.div variants={childVariants}>
                     <Link
                       href={slides[currentSlide].ctaLink}
-                      className="inline-block px-12 py-4 bg-white text-black rounded-full font-medium text-lg shadow-xl hover:bg-white/95 hover:scale-105 active:scale-100 transition-all duration-200"
+                      className="inline-block px-8 py-3 sm:px-12 sm:py-4 bg-white text-black rounded-full font-medium text-sm sm:text-lg shadow-xl hover:bg-white/95 hover:scale-105 active:scale-100 transition-all duration-200"
                       style={textStyleCSS(content.textStyles, `slide-${slides[currentSlide].id}-cta`)}
                     >
                       {slides[currentSlide].ctaText}
@@ -214,7 +225,7 @@ export default function HeroBannerSlideshow() {
                   {/* Subtítulo - sincronizado con stagger */}
                   <motion.p 
                     variants={childVariants}
-                    className="text-base lg:text-lg text-white/60 mt-8 tracking-widest uppercase"
+                    className="text-xs sm:text-base lg:text-lg text-white/60 mt-4 sm:mt-8 tracking-widest uppercase"
                     style={textStyleCSS(content.textStyles, `slide-${slides[currentSlide].id}-subtitle`)}
                   >
                     {slides[currentSlide].subtitle}
@@ -226,21 +237,21 @@ export default function HeroBannerSlideshow() {
             {/* Botones de navegación laterales - Minimalistas */}
             <button
               onClick={() => paginate(-1)}
-              className="absolute left-4 lg:left-8 top-1/2 -translate-y-1/2 z-20 w-11 h-11 lg:w-12 lg:h-12 flex items-center justify-center bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full transition-all duration-200 hover:scale-105 active:scale-95"
+              className="absolute left-3 lg:left-8 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-11 sm:h-11 lg:w-12 lg:h-12 flex items-center justify-center bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full transition-all duration-200 hover:scale-105 active:scale-95"
               aria-label="Slide anterior"
             >
-              <ChevronLeft className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
+              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white" />
             </button>
             <button
               onClick={() => paginate(1)}
-              className="absolute right-4 lg:right-8 top-1/2 -translate-y-1/2 z-20 w-11 h-11 lg:w-12 lg:h-12 flex items-center justify-center bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full transition-all duration-200 hover:scale-105 active:scale-95"
+              className="absolute right-3 lg:right-8 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-11 sm:h-11 lg:w-12 lg:h-12 flex items-center justify-center bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full transition-all duration-200 hover:scale-105 active:scale-95"
               aria-label="Siguiente slide"
             >
-              <ChevronRight className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
+              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white" />
             </button>
 
             {/* Indicadores de navegación - Dots simples */}
-            <div className="absolute bottom-8 lg:bottom-10 left-1/2 -translate-x-1/2 z-20 flex gap-3">
+            <div className="absolute bottom-4 sm:bottom-8 lg:bottom-10 left-1/2 -translate-x-1/2 z-20 flex gap-2 sm:gap-3">
               {slides.map((_, index) => (
                 <button
                   key={index}
