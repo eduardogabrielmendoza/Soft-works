@@ -9,14 +9,19 @@ import { LayoutContentProvider } from '@/lib/hooks/useLayoutContent'
 import { NotificationsProvider } from '@/lib/hooks/useNotifications'
 import SmoothScroll from '@/app/components/SmoothScroll'
 
-export function Providers({ children }: { children: React.ReactNode }) {
+interface ProvidersProps {
+  children: React.ReactNode
+  initialData?: Record<string, any>
+}
+
+export function Providers({ children, initialData }: ProvidersProps) {
   return (
     <AuthProvider>
       <NotificationsProvider>
         <SmoothScroll />
-        <SiteConfigProvider>
-          <LayoutContentProvider>
-            <IndexContentProvider>
+        <SiteConfigProvider initialData={initialData?.siteConfig}>
+          <LayoutContentProvider initialData={initialData?.layout}>
+            <IndexContentProvider initialData={initialData?.index}>
               <PagesContentProvider>
                 <CartProvider>
                   {children}

@@ -3,6 +3,9 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import { getCached, setCache, isCacheFresh } from '@/lib/utils/cache';
+
+const CACHE_KEY = 'site_config';
 
 export interface SiteConfig {
   // Información general
@@ -71,12 +74,14 @@ interface SiteConfigContextType {
 
 const SiteConfigContext = createContext<SiteConfigContextType | undefined>(undefined);
 
-export function SiteConfigProvider({ children }: { children: ReactNode }) {
-  const [config, setConfig] = useState<SiteConfig>(defaultConfig);
-  const [isLoading, setIsLoading] = useState(true);
+export function SiteConfigProvider({ children, initialData }: { children: ReactNode; initialData?: Partial<SiteConfig> }) {
+  const serverData = initialData ? { ...defaultConfig, ...initialData } : null;
+  const cached = serverData || getCached<SiteConfig>(CACHE_KEY);
+  const [config, setConfig] = useState<SiteConfig>(cached || defaultConfig);
+  const [isLoading, setIsLoading] = useState(!cached);
   const pathname = usePathname();
 
-  const loadConfig = async () => {
+  const loadConfig = useCallback(async () => {
     const supabase = getSupabaseClient();
     
     try {
@@ -94,22 +99,26 @@ export function SiteConfigProvider({ children }: { children: ReactNode }) {
           }
         });
 
-        setConfig(prev => ({ ...prev, ...loadedConfig }));
+        const merged = { ...defaultConfig, ...loadedConfig };
+        setConfig(merged);
+        setCache(CACHE_KEY, merged);
       }
     } catch {
       // Usar valores por defecto si hay error
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const refreshConfig = async () => {
+  const refreshConfig = useCallback(async () => {
     await loadConfig();
-  };
+  }, [loadConfig]);
 
   useEffect(() => {
+    if (serverData) setCache(CACHE_KEY, serverData);
+    if (isCacheFresh(CACHE_KEY)) return; // skip if cache is fresh
     loadConfig();
-  }, []);
+  }, [loadConfig]);
 
   // Actualizar el título del documento cuando cambie el nombre del sitio o la ruta
   useEffect(() => {

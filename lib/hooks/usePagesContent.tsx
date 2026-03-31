@@ -2,7 +2,10 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import { getCached, setCache, isCacheFresh } from '@/lib/utils/cache';
 import type { CustomSection, CustomButton, TextStyle, ButtonAlignment } from '@/lib/types/sections';
+
+const CACHE_KEY = 'pages_content';
 
 // ============ TIPOS PARA CADA PÁGINA ============
 
@@ -240,12 +243,20 @@ interface PagesContentContextType {
 
 const PagesContentContext = createContext<PagesContentContextType | undefined>(undefined);
 
+interface CachedPagesData {
+  nosotros: NosotrosContent;
+  eventos: EventosContent;
+  ubicaciones: UbicacionesContent;
+  contacto: ContactoContent;
+}
+
 export function PagesContentProvider({ children }: { children: ReactNode }) {
-  const [nosotros, setNosotros] = useState<NosotrosContent>(defaultNosotrosContent);
-  const [eventos, setEventos] = useState<EventosContent>(defaultEventosContent);
-  const [ubicaciones, setUbicaciones] = useState<UbicacionesContent>(defaultUbicacionesContent);
-  const [contacto, setContacto] = useState<ContactoContent>(defaultContactoContent);
-  const [isLoading, setIsLoading] = useState(true);
+  const cached = getCached<CachedPagesData>(CACHE_KEY);
+  const [nosotros, setNosotros] = useState<NosotrosContent>(cached?.nosotros || defaultNosotrosContent);
+  const [eventos, setEventos] = useState<EventosContent>(cached?.eventos || defaultEventosContent);
+  const [ubicaciones, setUbicaciones] = useState<UbicacionesContent>(cached?.ubicaciones || defaultUbicacionesContent);
+  const [contacto, setContacto] = useState<ContactoContent>(cached?.contacto || defaultContactoContent);
+  const [isLoading, setIsLoading] = useState(!cached);
 
   const loadContent = async () => {
     setIsLoading(true);
@@ -257,22 +268,27 @@ export function PagesContentProvider({ children }: { children: ReactNode }) {
         .select('clave, valor')
         .in('clave', ['contenido_nosotros', 'contenido_eventos', 'contenido_ubicaciones', 'contenido_contacto']);
 
+      let nos = defaultNosotrosContent;
+      let evt = defaultEventosContent;
+      let ubi = defaultUbicacionesContent;
+      let con = defaultContactoContent;
+
       if (data) {
         data.forEach((row: { clave: string; valor: string }) => {
           try {
             const parsed = JSON.parse(row.valor);
             switch (row.clave) {
               case 'contenido_nosotros':
-                setNosotros({ ...defaultNosotrosContent, ...parsed });
+                nos = { ...defaultNosotrosContent, ...parsed };
                 break;
               case 'contenido_eventos':
-                setEventos({ ...defaultEventosContent, ...parsed });
+                evt = { ...defaultEventosContent, ...parsed };
                 break;
               case 'contenido_ubicaciones':
-                setUbicaciones({ ...defaultUbicacionesContent, ...parsed });
+                ubi = { ...defaultUbicacionesContent, ...parsed };
                 break;
               case 'contenido_contacto':
-                setContacto({ ...defaultContactoContent, ...parsed });
+                con = { ...defaultContactoContent, ...parsed };
                 break;
             }
           } catch (e) {
@@ -280,6 +296,12 @@ export function PagesContentProvider({ children }: { children: ReactNode }) {
           }
         });
       }
+
+      setNosotros(nos);
+      setEventos(evt);
+      setUbicaciones(ubi);
+      setContacto(con);
+      setCache(CACHE_KEY, { nosotros: nos, eventos: evt, ubicaciones: ubi, contacto: con });
     } catch (error) {
       console.error('Error loading pages content:', error);
     } finally {
@@ -288,6 +310,7 @@ export function PagesContentProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    if (isCacheFresh(CACHE_KEY)) return;
     loadContent();
   }, []);
 

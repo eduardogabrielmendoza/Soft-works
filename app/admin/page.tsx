@@ -21,10 +21,15 @@ import {
   Bug
 } from 'lucide-react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { formatPrice } from '@/lib/utils/helpers';
-import MonthlyRevenueChart from '@/app/components/MonthlyRevenueChart';
+
+const MonthlyRevenueChart = dynamic(() => import('@/app/components/MonthlyRevenueChart'), {
+  loading: () => <div className="h-80 bg-gray-100 animate-pulse rounded-lg" />,
+  ssr: false,
+});
 
 interface DashboardStats {
   totalOrders: number;

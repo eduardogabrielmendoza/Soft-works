@@ -27,15 +27,7 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  // IMPORTANT: Avoid writing any logic between createServerClient and
-  // supabase.auth.getUser(). A simple mistake could make it very hard to debug
-  // issues with users being randomly logged out.
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  // Rutas protegidas que requieren autenticación
+  // Determine if this route needs full auth verification
   const protectedRoutes = ['/cuenta/perfil', '/cuenta/direcciones', '/cuenta/pedidos']
   const adminRoutes = ['/admin']
   
@@ -45,6 +37,22 @@ export async function updateSession(request: NextRequest) {
   const isAdminRoute = adminRoutes.some(route => 
     request.nextUrl.pathname.startsWith(route)
   )
+
+  const needsAuth = isProtectedRoute || isAdminRoute || 
+    request.nextUrl.pathname === '/cuenta' || 
+    request.nextUrl.pathname === '/cuenta/registro'
+
+  // For public routes, use getSession() (local, no HTTP call) just to refresh cookies
+  // For protected routes, use getUser() (validates with Supabase Auth server)
+  let user = null
+  if (needsAuth) {
+    const { data: { user: verifiedUser } } = await supabase.auth.getUser()
+    user = verifiedUser
+  } else {
+    // Just refresh the session cookie without an HTTP round-trip
+    await supabase.auth.getSession()
+    return supabaseResponse
+  }
 
   // Redirigir a login si no está autenticado en rutas protegidas
   if (isProtectedRoute && !user) {

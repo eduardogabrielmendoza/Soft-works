@@ -2,7 +2,10 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import { getCached, setCache, isCacheFresh } from '@/lib/utils/cache';
 import type { CustomSection, CustomButton, TextStyle, ButtonAlignment } from '@/lib/types/sections';
+
+const CACHE_KEY = 'index_content';
 
 // Tipos para el contenido del index
 export interface HeroSlide {
@@ -155,9 +158,11 @@ interface IndexContentContextType {
 
 const IndexContentContext = createContext<IndexContentContextType | undefined>(undefined);
 
-export function IndexContentProvider({ children }: { children: ReactNode }) {
-  const [content, setContent] = useState<IndexContent>(defaultContent);
-  const [isLoading, setIsLoading] = useState(true);
+export function IndexContentProvider({ children, initialData }: { children: ReactNode; initialData?: Partial<IndexContent> }) {
+  const serverData = initialData ? { ...defaultContent, ...initialData } : null;
+  const cached = serverData || getCached<IndexContent>(CACHE_KEY);
+  const [content, setContent] = useState<IndexContent>(cached || defaultContent);
+  const [isLoading, setIsLoading] = useState(!cached);
 
   const loadContent = useCallback(async () => {
     try {
@@ -174,7 +179,9 @@ export function IndexContentProvider({ children }: { children: ReactNode }) {
 
       if (data?.valor) {
         const parsed = typeof data.valor === 'string' ? JSON.parse(data.valor) : data.valor;
-        setContent({ ...defaultContent, ...parsed });
+        const merged = { ...defaultContent, ...parsed };
+        setContent(merged);
+        setCache(CACHE_KEY, merged);
       }
     } catch (error) {
       console.error('Error:', error);
@@ -184,6 +191,8 @@ export function IndexContentProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (serverData) setCache(CACHE_KEY, serverData);
+    if (isCacheFresh(CACHE_KEY)) return;
     loadContent();
   }, [loadContent]);
 

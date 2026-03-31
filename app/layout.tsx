@@ -7,6 +7,7 @@ import Footer from "./components/Footer";
 import BrandSection from "./components/BrandSection";
 import CookieBanner from "./components/CookieBanner";
 import ChatBubble from "./components/ChatBubble";
+import { createClient } from "@/lib/supabase/server";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -27,15 +28,43 @@ export const metadata: Metadata = {
   manifest: '/site.webmanifest',
 };
 
-export default function RootLayout({
+async function getInitialData() {
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from('configuracion_sitio')
+      .select('clave, valor') as { data: Array<{ clave: string; valor: any }> | null };
+
+    if (!data) return {};
+
+    const result: Record<string, any> = {};
+    for (const row of data) {
+      if (row.clave === 'contenido_layout') {
+        result.layout = typeof row.valor === 'string' ? JSON.parse(row.valor) : row.valor;
+      } else if (row.clave === 'contenido_index') {
+        result.index = typeof row.valor === 'string' ? JSON.parse(row.valor) : row.valor;
+      } else if (row.valor && typeof row.valor === 'object') {
+        if (!result.siteConfig) result.siteConfig = {};
+        Object.assign(result.siteConfig, row.valor);
+      }
+    }
+    return result;
+  } catch {
+    return {};
+  }
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const initialData = await getInitialData();
+
   return (
     <html lang="es" className="overflow-x-hidden">
       <body className={`${inter.className} antialiased overflow-x-hidden`}>
-        <Providers>
+        <Providers initialData={initialData}>
           <Navbar />
           <main className="min-h-screen overflow-x-hidden">
             {children}

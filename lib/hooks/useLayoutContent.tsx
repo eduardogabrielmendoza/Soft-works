@@ -2,7 +2,10 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import { getCached, setCache, isCacheFresh } from '@/lib/utils/cache';
 import type { CustomButton, TextStyle, ButtonAlignment } from '@/lib/types/sections';
+
+const CACHE_KEY = 'layout_content';
 
 // ============================================================
 // Types for editable layout sections (Header, Footer, BrandSection)
@@ -131,9 +134,11 @@ interface LayoutContentContextType {
 
 const LayoutContentContext = createContext<LayoutContentContextType | undefined>(undefined);
 
-export function LayoutContentProvider({ children }: { children: ReactNode }) {
-  const [layout, setLayout] = useState<LayoutContent>(defaultLayoutContent);
-  const [isLoading, setIsLoading] = useState(true);
+export function LayoutContentProvider({ children, initialData }: { children: ReactNode; initialData?: Partial<LayoutContent> }) {
+  const serverData = initialData ? { ...defaultLayoutContent, ...initialData } : null;
+  const cached = serverData || getCached<LayoutContent>(CACHE_KEY);
+  const [layout, setLayout] = useState<LayoutContent>(cached || defaultLayoutContent);
+  const [isLoading, setIsLoading] = useState(!cached);
 
   const loadLayout = useCallback(async () => {
     try {
@@ -150,7 +155,9 @@ export function LayoutContentProvider({ children }: { children: ReactNode }) {
 
       if (data?.valor) {
         const parsed = typeof data.valor === 'string' ? JSON.parse(data.valor) : data.valor;
-        setLayout({ ...defaultLayoutContent, ...parsed });
+        const merged = { ...defaultLayoutContent, ...parsed };
+        setLayout(merged);
+        setCache(CACHE_KEY, merged);
       }
     } catch (error) {
       console.error('Error:', error);
@@ -160,6 +167,8 @@ export function LayoutContentProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (serverData) setCache(CACHE_KEY, serverData);
+    if (isCacheFresh(CACHE_KEY)) return;
     loadLayout();
   }, [loadLayout]);
 
