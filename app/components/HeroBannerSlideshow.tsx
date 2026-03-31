@@ -134,7 +134,7 @@ export default function HeroBannerSlideshow() {
           onTouchEnd={handleTouchEnd}
         >
           {/* Aspect ratio container */}
-          <div className="relative aspect-[2/1] lg:aspect-[21/9]">
+          <div className="relative aspect-[4/3] lg:aspect-[21/9]">
             {/* Slides con transición horizontal */}
             <AnimatePresence initial={false} custom={direction} mode="popLayout">
               <motion.div
