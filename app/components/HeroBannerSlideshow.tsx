@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -47,7 +47,14 @@ export default function HeroBannerSlideshow() {
   const slides = content.heroSlides;
   
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [isReady, setIsReady] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Marcar como ready después del primer render para activar parallax sin jank
+  useEffect(() => {
+    // Esperar un frame para que el browser haga composite de las capas GPU
+    requestAnimationFrame(() => setIsReady(true));
+  }, []);
 
   // Parallax effect con scroll - el contenedor se desvanece y la imagen se mueve
   const { scrollY } = useScroll();
@@ -104,7 +111,7 @@ export default function HeroBannerSlideshow() {
   return (
     <motion.section 
       ref={containerRef}
-      style={{ opacity: containerOpacity }}
+      style={{ opacity: isReady ? containerOpacity : 1, willChange: 'opacity' }}
       className="relative"
     >
       {/* Contenedor del slider con márgenes y bordes redondeados */}
@@ -130,8 +137,8 @@ export default function HeroBannerSlideshow() {
               >
                 {/* Imagen con parallax interno */}
                 <motion.div 
-                  style={{ y: imageY, scale: imageScale }}
-                  className="absolute inset-0 will-change-transform"
+                  style={{ y: isReady ? imageY : 0, scale: isReady ? imageScale : 1, willChange: 'transform' }}
+                  className="absolute inset-0"
                 >
                   <Image
                     src={slides[currentSlide].image}
@@ -152,7 +159,7 @@ export default function HeroBannerSlideshow() {
             {/* Contenido del slide */}
             <div className="absolute inset-0 flex items-center justify-center z-10">
               <motion.div
-                style={{ y: contentY }}
+                style={{ y: isReady ? contentY : 0, willChange: 'transform' }}
                 className="text-center px-6 max-w-4xl mx-auto"
               >
                 {/* Título - fade suave entre slides */}

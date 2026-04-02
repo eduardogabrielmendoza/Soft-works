@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
-import { motion } from 'framer-motion';
-import { ChevronLeft, Check, Loader2 } from 'lucide-react';
+import { useState, useEffect, use, useRef, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronLeft, Check, Loader2, ZoomIn, X } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -47,12 +47,76 @@ export default function ProductoPage({ params }: { params: Promise<{ slug: strin
   const [showSizeGuide, setShowSizeGuide] = useState(false);
   const [showAddedMessage, setShowAddedMessage] = useState(false);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+  const [showZoom, setShowZoom] = useState(false);
+  const [zoomPosition, setZoomPosition] = useState({ x: 50, y: 50 });
+  const [zoomScale, setZoomScale] = useState(2.5);
+  const zoomRef = useRef<HTMLDivElement>(null);
+  const lastTouchDist = useRef<number | null>(null);
 
   const isGuestAccepted = () => {
     try { return localStorage.getItem('softworks_guest_accepted') === 'true'; } catch { return false; }
   };
 
   const sizes = ['XS', 'S', 'M', 'L', 'XL'];
+
+  // Zoom handlers
+  const handleZoomMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!zoomRef.current) return;
+    const rect = zoomRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setZoomPosition({ x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) });
+  }, []);
+
+  const handleTouchZoomMove = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    if (!zoomRef.current) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    const rect = zoomRef.current.getBoundingClientRect();
+
+    // Pinch to zoom
+    if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (lastTouchDist.current !== null) {
+        const delta = dist - lastTouchDist.current;
+        setZoomScale(prev => Math.max(1.5, Math.min(5, prev + delta * 0.01)));
+      }
+      lastTouchDist.current = dist;
+      return;
+    }
+    lastTouchDist.current = null;
+
+    const x = ((touch.clientX - rect.left) / rect.width) * 100;
+    const y = ((touch.clientY - rect.top) / rect.height) * 100;
+    setZoomPosition({ x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) });
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    lastTouchDist.current = null;
+  }, []);
+
+  const openZoom = useCallback(() => {
+    setZoomPosition({ x: 50, y: 50 });
+    setZoomScale(2.5);
+    setShowZoom(true);
+  }, []);
+
+  // Cerrar zoom con Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowZoom(false);
+    };
+    if (showZoom) {
+      document.body.style.overflow = 'hidden';
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showZoom]);
 
   // Cargar producto desde Supabase
   useEffect(() => {
@@ -152,7 +216,10 @@ export default function ProductoPage({ params }: { params: Promise<{ slug: strin
           >
                       {hasRealImages ? (
               <>
-                <div className="aspect-[3/4] rounded-lg mb-4 relative overflow-hidden bg-gray-100">
+                <div 
+                  className="aspect-[3/4] rounded-lg mb-4 relative overflow-hidden bg-gray-100 cursor-zoom-in group"
+                  onClick={openZoom}
+                >
                   <Image
                     src={images[selectedImage].src}
                     alt={`${product.nombre} - ${images[selectedImage].etiqueta}`}
@@ -161,6 +228,10 @@ export default function ProductoPage({ params }: { params: Promise<{ slug: strin
                     className={`object-cover ${isOutOfStock ? 'grayscale' : ''}`}
                     priority
                   />
+                  {/* Zoom icon indicator */}
+                  <div className="absolute bottom-3 right-3 w-9 h-9 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                    <ZoomIn className="w-4 h-4 text-black" />
+                  </div>
                   {/* Badges */}
                   <div className="absolute top-3 left-3 flex flex-col gap-2">
                     {isOutOfStock && (
@@ -590,6 +661,55 @@ export default function ProductoPage({ params }: { params: Promise<{ slug: strin
           }
         }}
       />
+
+      {/* Zoom modal */}
+      <AnimatePresence>
+        {showZoom && hasRealImages && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+            onClick={() => setShowZoom(false)}
+          >
+            <button
+              onClick={() => setShowZoom(false)}
+              className="absolute top-4 right-4 z-50 w-10 h-10 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center transition-colors"
+              aria-label="Cerrar zoom"
+            >
+              <X className="w-5 h-5 text-white" />
+            </button>
+
+            <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/50 text-sm pointer-events-none select-none">
+              Mové el cursor para explorar · Scroll para ajustar zoom
+            </p>
+
+            <div
+              ref={zoomRef}
+              className="w-full h-full max-w-[90vw] max-h-[90vh] overflow-hidden cursor-crosshair relative"
+              onClick={(e) => e.stopPropagation()}
+              onMouseMove={handleZoomMove}
+              onTouchMove={handleTouchZoomMove}
+              onTouchEnd={handleTouchEnd}
+              onWheel={(e) => {
+                e.preventDefault();
+                setZoomScale(prev => Math.max(1.5, Math.min(5, prev + (e.deltaY > 0 ? -0.3 : 0.3))));
+              }}
+            >
+              <div
+                className="w-full h-full"
+                style={{
+                  backgroundImage: `url(${images[selectedImage].src})`,
+                  backgroundPosition: `${zoomPosition.x}% ${zoomPosition.y}%`,
+                  backgroundSize: `${zoomScale * 100}%`,
+                  backgroundRepeat: 'no-repeat',
+                }}
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
