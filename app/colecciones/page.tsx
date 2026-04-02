@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
-import { SlidersHorizontal, X, Loader2 } from 'lucide-react';
+import { SlidersHorizontal, X, Loader2, Truck } from 'lucide-react';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import { useSiteConfig } from '@/lib/hooks/useSiteConfig';
 
 interface Producto {
   id: string;
@@ -27,6 +28,24 @@ export default function ColeccionesPage() {
   const [selectedColor, setSelectedColor] = useState<string>('all');
   const [products, setProducts] = useState<Producto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { config } = useSiteConfig();
+
+  // Popup de envíos — aparece una sola vez
+  const [showShippingPopup, setShowShippingPopup] = useState(false);
+  useEffect(() => {
+    if (!config.announcement_enabled || !config.announcement_text) return;
+    try {
+      if (localStorage.getItem('softworks_shipping_popup_seen') !== 'true') {
+        const timer = setTimeout(() => setShowShippingPopup(true), 600);
+        return () => clearTimeout(timer);
+      }
+    } catch { /* localStorage not available */ }
+  }, [config.announcement_enabled, config.announcement_text]);
+
+  const dismissShippingPopup = () => {
+    setShowShippingPopup(false);
+    try { localStorage.setItem('softworks_shipping_popup_seen', 'true'); } catch {}
+  };
 
   // Cargar productos desde Supabase
   useEffect(() => {
@@ -313,6 +332,43 @@ export default function ColeccionesPage() {
           </div>
         )}
       </div>
+
+      {/* Popup de información de envíos */}
+      <AnimatePresence>
+        {showShippingPopup && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="fixed inset-0 z-50 flex items-center justify-center px-4"
+            onClick={dismissShippingPopup}
+          >
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+              className="relative bg-[#F2F0EB] rounded-2xl p-8 max-w-sm w-full shadow-2xl text-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="w-12 h-12 bg-[#E8DED3] rounded-full flex items-center justify-center mx-auto mb-4">
+                <Truck className="w-6 h-6 text-[#545454]" />
+              </div>
+              <p className="text-[#545454] font-medium text-base leading-relaxed mb-6">
+                {config.announcement_text}
+              </p>
+              <button
+                onClick={dismissShippingPopup}
+                className="px-8 py-2.5 bg-black text-white rounded-full text-sm font-medium hover:bg-black/90 transition-colors"
+              >
+                Ok
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
