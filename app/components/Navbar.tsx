@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { Menu, X, ShoppingBag, Search as SearchIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -21,6 +21,9 @@ export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showCartDrawer, setShowCartDrawer] = useState(false);
   const [showSearchDrawer, setShowSearchDrawer] = useState(false);
+  const [headerHidden, setHeaderHidden] = useState(false);
+  const lastScrollY = useRef(0);
+  const rafId = useRef(0);
   
   const pathname = usePathname();
   
@@ -36,6 +39,28 @@ export default function Navbar() {
   useEffect(() => {
     setIsMenuOpen(false);
   }, [pathname]);
+
+  // Hide header on scroll down, show near top
+  useEffect(() => {
+    const onScroll = () => {
+      cancelAnimationFrame(rafId.current);
+      rafId.current = requestAnimationFrame(() => {
+        const y = window.scrollY;
+        if (y < 100) {
+          setHeaderHidden(false);
+        } else if (y > lastScrollY.current && y > 100) {
+          setHeaderHidden(true);
+          setIsMenuOpen(false);
+        }
+        lastScrollY.current = y;
+      });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      cancelAnimationFrame(rafId.current);
+    };
+  }, []);
 
   // Determinar qué mostrar en el botón de cuenta
   const getAccountButtonConfig = () => {
@@ -63,7 +88,8 @@ export default function Navbar() {
     <>
       {/* Header */}
       <header
-        className="fixed top-0 left-0 right-0 z-50 bg-[#F2F0EB]/95 backdrop-blur-md shadow-sm"
+        className="fixed top-0 left-0 right-0 z-50 bg-[#F2F0EB]/95 backdrop-blur-md shadow-sm transition-transform duration-300 ease-in-out"
+        style={{ transform: headerHidden ? 'translateY(-100%)' : 'translateY(0)' }}
       >
         <div className="max-w-[1600px] mx-auto px-6 lg:px-12">
           <div className="flex items-center h-16 lg:h-[72px]">
