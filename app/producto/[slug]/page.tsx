@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, Check, Loader2, ZoomIn, X } from 'lucide-react';
+import { ChevronLeft, Check, Loader2, ZoomIn, X, ChevronRight as ChevRight } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -47,11 +47,16 @@ export default function ProductoPage({ params }: { params: Promise<{ slug: strin
   const [showSizeGuide, setShowSizeGuide] = useState(false);
   const [showAddedMessage, setShowAddedMessage] = useState(false);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
-  const [showZoom, setShowZoom] = useState(false);
-  const [zoomPosition, setZoomPosition] = useState({ x: 50, y: 50 });
-  const [zoomScale, setZoomScale] = useState(2.5);
-  const zoomRef = useRef<HTMLDivElement>(null);
-  const lastTouchDist = useRef<number | null>(null);
+
+  // Zoom state
+  const [showLightbox, setShowLightbox] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [isLensActive, setIsLensActive] = useState(false);
+  const [lensPos, setLensPos] = useState({ x: 50, y: 50 });
+  const mainImageRef = useRef<HTMLDivElement>(null);
+
+  const images = product?.imagenes || [];
+  const hasRealImages = images.length > 0;
 
   const isGuestAccepted = () => {
     try { return localStorage.getItem('softworks_guest_accepted') === 'true'; } catch { return false; }
@@ -59,64 +64,43 @@ export default function ProductoPage({ params }: { params: Promise<{ slug: strin
 
   const sizes = ['XS', 'S', 'M', 'L', 'XL'];
 
-  // Zoom handlers
-  const handleZoomMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!zoomRef.current) return;
-    const rect = zoomRef.current.getBoundingClientRect();
+  // Desktop lens zoom: follow mouse over main image
+  const handleLensMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!mainImageRef.current) return;
+    const rect = mainImageRef.current.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
-    setZoomPosition({ x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) });
+    setLensPos({ x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) });
   }, []);
 
-  const handleTouchZoomMove = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
-    if (!zoomRef.current) return;
-    e.preventDefault();
-    const touch = e.touches[0];
-    const rect = zoomRef.current.getBoundingClientRect();
+  // Lightbox navigation
+  const lightboxNext = useCallback(() => {
+    setLightboxIndex(prev => (prev + 1) % (images?.length || 1));
+  }, [images?.length]);
+  const lightboxPrev = useCallback(() => {
+    setLightboxIndex(prev => (prev - 1 + (images?.length || 1)) % (images?.length || 1));
+  }, [images?.length]);
 
-    // Pinch to zoom
-    if (e.touches.length === 2) {
-      const dx = e.touches[0].clientX - e.touches[1].clientX;
-      const dy = e.touches[0].clientY - e.touches[1].clientY;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (lastTouchDist.current !== null) {
-        const delta = dist - lastTouchDist.current;
-        setZoomScale(prev => Math.max(1.5, Math.min(5, prev + delta * 0.01)));
-      }
-      lastTouchDist.current = dist;
-      return;
-    }
-    lastTouchDist.current = null;
-
-    const x = ((touch.clientX - rect.left) / rect.width) * 100;
-    const y = ((touch.clientY - rect.top) / rect.height) * 100;
-    setZoomPosition({ x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) });
-  }, []);
-
-  const handleTouchEnd = useCallback(() => {
-    lastTouchDist.current = null;
-  }, []);
-
-  const openZoom = useCallback(() => {
-    setZoomPosition({ x: 50, y: 50 });
-    setZoomScale(2.5);
-    setShowZoom(true);
-  }, []);
-
-  // Cerrar zoom con Escape
+  // Lightbox keyboard + body lock
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setShowZoom(false);
+    if (!showLightbox) return;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowLightbox(false);
+      if (e.key === 'ArrowRight') lightboxNext();
+      if (e.key === 'ArrowLeft') lightboxPrev();
     };
-    if (showZoom) {
-      document.body.style.overflow = 'hidden';
-      window.addEventListener('keydown', handleKeyDown);
-    }
+    window.addEventListener('keydown', onKey);
     return () => {
       document.body.style.overflow = '';
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keydown', onKey);
     };
-  }, [showZoom]);
+  }, [showLightbox, lightboxNext, lightboxPrev]);
+
+  const openLightbox = useCallback((index: number) => {
+    setLightboxIndex(index);
+    setShowLightbox(true);
+  }, []);
 
   // Cargar producto desde Supabase
   useEffect(() => {
@@ -173,8 +157,6 @@ export default function ProductoPage({ params }: { params: Promise<{ slug: strin
     return 0;
   };
 
-  const images = product?.imagenes || [];
-  const hasRealImages = images.length > 0;
   const placeholderViews = ['Frontal', 'Lateral', 'Trasera', 'Detalle'];
 
   if (isLoading) {
@@ -217,19 +199,33 @@ export default function ProductoPage({ params }: { params: Promise<{ slug: strin
                       {hasRealImages ? (
               <>
                 <div 
+                  ref={mainImageRef}
                   className="aspect-[3/4] rounded-lg mb-4 relative overflow-hidden bg-gray-100 cursor-zoom-in group"
-                  onClick={openZoom}
+                  onClick={() => openLightbox(selectedImage)}
+                  onMouseEnter={() => setIsLensActive(true)}
+                  onMouseLeave={() => setIsLensActive(false)}
+                  onMouseMove={handleLensMove}
                 >
                   <Image
                     src={images[selectedImage].src}
                     alt={`${product.nombre} - ${images[selectedImage].etiqueta}`}
                     fill
                     quality={100}
-                    className={`object-cover ${isOutOfStock ? 'grayscale' : ''}`}
+                    className={`object-cover transition-opacity duration-300 ${isOutOfStock ? 'grayscale' : ''}`}
                     priority
                   />
+                  {/* Lens zoom overlay - desktop only */}
+                  <div
+                    className={`absolute inset-0 hidden lg:block pointer-events-none transition-opacity duration-200 ${isLensActive ? 'opacity-100' : 'opacity-0'}`}
+                    style={{
+                      backgroundImage: `url(${images[selectedImage].src})`,
+                      backgroundPosition: `${lensPos.x}% ${lensPos.y}%`,
+                      backgroundSize: '250%',
+                      backgroundRepeat: 'no-repeat',
+                    }}
+                  />
                   {/* Zoom icon indicator */}
-                  <div className="absolute bottom-3 right-3 w-9 h-9 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                  <div className={`absolute bottom-3 right-3 w-9 h-9 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center transition-opacity duration-200 pointer-events-none ${isLensActive ? 'opacity-0' : 'opacity-70 group-hover:opacity-100'}`}>
                     <ZoomIn className="w-4 h-4 text-black" />
                   </div>
                   {/* Badges */}
@@ -662,51 +658,98 @@ export default function ProductoPage({ params }: { params: Promise<{ slug: strin
         }}
       />
 
-      {/* Zoom modal */}
+      {/* Lightbox zoom modal */}
       <AnimatePresence>
-        {showZoom && hasRealImages && (
+        {showLightbox && hasRealImages && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
-            onClick={() => setShowZoom(false)}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center select-none"
+            onClick={() => setShowLightbox(false)}
           >
+            {/* Close button */}
             <button
-              onClick={() => setShowZoom(false)}
-              className="absolute top-4 right-4 z-50 w-10 h-10 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center transition-colors"
-              aria-label="Cerrar zoom"
+              onClick={() => setShowLightbox(false)}
+              className="absolute top-4 right-4 z-50 w-10 h-10 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center transition-colors duration-200"
+              aria-label="Cerrar"
             >
               <X className="w-5 h-5 text-white" />
             </button>
 
-            <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/50 text-sm pointer-events-none select-none">
-              Mové el cursor para explorar · Scroll para ajustar zoom
-            </p>
+            {/* Image counter */}
+            {images.length > 1 && (
+              <span className="absolute top-5 left-1/2 -translate-x-1/2 text-white/50 text-sm font-medium tracking-wider pointer-events-none">
+                {lightboxIndex + 1} / {images.length}
+              </span>
+            )}
 
-            <div
-              ref={zoomRef}
-              className="w-full h-full max-w-[90vw] max-h-[90vh] overflow-hidden cursor-crosshair relative"
+            {/* Navigation arrows */}
+            {images.length > 1 && (
+              <>
+                <button
+                  onClick={(e) => { e.stopPropagation(); lightboxPrev(); }}
+                  className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-50 w-10 h-10 sm:w-12 sm:h-12 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105"
+                  aria-label="Imagen anterior"
+                >
+                  <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); lightboxNext(); }}
+                  className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-50 w-10 h-10 sm:w-12 sm:h-12 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105"
+                  aria-label="Siguiente imagen"
+                >
+                  <ChevRight className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                </button>
+              </>
+            )}
+
+            {/* Main lightbox image */}
+            <motion.div
+              key={lightboxIndex}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+              className="relative w-full h-full max-w-[85vw] max-h-[85vh] flex items-center justify-center"
               onClick={(e) => e.stopPropagation()}
-              onMouseMove={handleZoomMove}
-              onTouchMove={handleTouchZoomMove}
-              onTouchEnd={handleTouchEnd}
-              onWheel={(e) => {
-                e.preventDefault();
-                setZoomScale(prev => Math.max(1.5, Math.min(5, prev + (e.deltaY > 0 ? -0.3 : 0.3))));
-              }}
             >
-              <div
-                className="w-full h-full"
-                style={{
-                  backgroundImage: `url(${images[selectedImage].src})`,
-                  backgroundPosition: `${zoomPosition.x}% ${zoomPosition.y}%`,
-                  backgroundSize: `${zoomScale * 100}%`,
-                  backgroundRepeat: 'no-repeat',
-                }}
+              <Image
+                src={images[lightboxIndex].src}
+                alt={`${product.nombre} - ${images[lightboxIndex].etiqueta}`}
+                fill
+                quality={100}
+                className="object-contain"
+                sizes="85vw"
+                priority
               />
-            </div>
+            </motion.div>
+
+            {/* Thumbnail strip */}
+            {images.length > 1 && (
+              <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 flex gap-2 sm:gap-3 z-50">
+                {images.map((img, i) => (
+                  <button
+                    key={i}
+                    onClick={(e) => { e.stopPropagation(); setLightboxIndex(i); }}
+                    className={`w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden relative transition-all duration-200 ${
+                      i === lightboxIndex
+                        ? 'ring-2 ring-white scale-105'
+                        : 'opacity-50 hover:opacity-80'
+                    }`}
+                  >
+                    <Image
+                      src={img.src}
+                      alt={img.etiqueta}
+                      fill
+                      className="object-cover"
+                      sizes="56px"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
