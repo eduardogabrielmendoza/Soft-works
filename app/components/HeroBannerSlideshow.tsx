@@ -110,8 +110,8 @@ export default function HeroBannerSlideshow() {
     else if (diff < -75) paginate(-1);
   }, [paginate]);
 
-  // Don't render until content is loaded to avoid flash of defaults
-  if (isLoading) {
+  // Show skeleton only when truly loading with no data
+  if (isLoading && (!slides.length || !slides[0].image)) {
     return (
       <div className="px-4 lg:px-8 pt-0 pb-4">
         <div className="relative overflow-hidden rounded-2xl lg:rounded-3xl bg-[#E8DED3] animate-pulse">

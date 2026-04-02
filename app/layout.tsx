@@ -61,8 +61,16 @@ export default async function RootLayout({
 }>) {
   const initialData = await getInitialData();
 
+  // Preload first hero image for instant display
+  const firstHeroImage = initialData?.index?.heroSlides?.[0]?.image;
+
   return (
     <html lang="es" className="overflow-x-hidden">
+      <head>
+        {firstHeroImage && (
+          <link rel="preload" as="image" href={firstHeroImage} fetchPriority="high" />
+        )}
+      </head>
       <body className={`${inter.className} antialiased overflow-x-hidden`}>
         <Providers initialData={initialData}>
           <Navbar />
