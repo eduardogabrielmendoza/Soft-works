@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Image from 'next/image';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useIndexContent } from '@/lib/hooks/useIndexContent';
@@ -110,30 +109,21 @@ export default function HeroBannerSlideshow() {
     else if (diff < -75) paginate(-1);
   }, [paginate]);
 
-  // If no slides have images yet, render a placeholder matching the aspect ratio
-  if (!slides.length || !slides[0].image) {
-    return (
-      <div className="px-4 lg:px-8 pt-0 pb-4">
-        <div className="relative overflow-hidden rounded-2xl lg:rounded-3xl bg-[#E8DED3]">
-          <div className="aspect-[3/4] sm:aspect-[4/3] lg:aspect-[21/9]" />
-        </div>
-      </div>
-    );
-  }
+  const hasImages = slides.length > 0 && slides[currentSlide]?.image;
 
   return (
     <section ref={containerRef} className="relative" style={{ willChange: 'opacity' }}>
       {/* Contenedor del slider con márgenes y bordes redondeados */}
       <div className="px-4 lg:px-8 pt-0 pb-4">
         <div 
-          className="relative overflow-hidden rounded-2xl lg:rounded-3xl shadow-2xl bg-[#E8DED3]"
+          className="relative overflow-hidden rounded-2xl lg:rounded-3xl shadow-2xl"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
           {/* Aspect ratio container */}
           <div className="relative aspect-[3/4] sm:aspect-[4/3] lg:aspect-[21/9]">
-            {/* Slides con transición horizontal */}
+            {hasImages ? (
             <AnimatePresence initial={false}>
               <motion.div
                 key={currentSlide}
@@ -150,14 +140,14 @@ export default function HeroBannerSlideshow() {
                   className="absolute -inset-[50px]"
                   style={{ willChange: 'transform' }}
                 >
-                  <Image
+                  {/* Native img for instant paint, no lazy loading */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
                     src={slides[currentSlide].image}
                     alt={slides[currentSlide].title}
-                    fill
-                    priority
-                    quality={100}
-                    className="object-cover"
-                    sizes="100vw"
+                    fetchPriority="high"
+                    decoding="sync"
+                    className="absolute inset-0 w-full h-full object-cover"
                   />
                 </div>
                 
@@ -165,6 +155,9 @@ export default function HeroBannerSlideshow() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/10" />
               </motion.div>
             </AnimatePresence>
+            ) : (
+              <div className="absolute inset-0 bg-[#E8DED3]" />
+            )}
 
             {/* Contenido del slide */}
             <div className="absolute inset-0 flex items-center justify-center z-10">
