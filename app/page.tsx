@@ -23,7 +23,7 @@ export default function Home() {
   const mediumCards = productCards.filter(c => c.size === 'medium' || c.id !== largeCard?.id).slice(0, 2);
 
   return (
-    <div className="pt-20 lg:pt-[76px]">
+    <div className="pt-24 lg:pt-[92px]">
       {/* Hero Principal - Banner Slideshow */}
       <HeroBannerSlideshow />
 
