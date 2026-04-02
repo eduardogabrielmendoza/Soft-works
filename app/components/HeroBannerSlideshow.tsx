@@ -126,7 +126,7 @@ export default function HeroBannerSlideshow() {
       {/* Contenedor del slider con márgenes y bordes redondeados */}
       <div className="px-4 lg:px-8 pt-0 pb-4">
         <div 
-          className="relative overflow-hidden rounded-2xl lg:rounded-3xl shadow-2xl"
+          className="relative overflow-hidden rounded-2xl lg:rounded-3xl shadow-2xl bg-neutral-900"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}

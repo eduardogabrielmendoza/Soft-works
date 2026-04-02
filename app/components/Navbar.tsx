@@ -31,7 +31,7 @@ export default function Navbar() {
   const isInAdminArea = pathname?.startsWith('/admin');
 
   const { itemCount } = useCart();
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, isLoading: authLoading } = useAuth();
   const { layout, isLoading: layoutLoading } = useLayoutContent();
   const { unreadCount: unreadNotifications } = useNotifications();
 
@@ -194,16 +194,18 @@ export default function Navbar() {
             {/* Right Navigation - Desktop (Grupo B: acciones) */}
             <div className="hidden lg:flex items-center justify-end space-x-8 flex-1">
               {/* Cuenta/Admin */}
-              <Link
-                href={accountButton.href}
-                className={`text-sm font-medium transition-colors uppercase tracking-wide ${textColorClass}`}
-              >
-                {accountButton.label}
-              </Link>
+              {!authLoading && (
+                <Link
+                  href={accountButton.href}
+                  className={`text-sm font-medium transition-colors uppercase tracking-wide ${textColorClass}`}
+                >
+                  {accountButton.label}
+                </Link>
+              )}
               
               {/* Notificaciones */}
-              {user && <NotificationBell />}
-              {user && <AdminChatIcon />}
+              {!authLoading && user && <NotificationBell />}
+              {!authLoading && user && <AdminChatIcon />}
 
               {/* Buscar */}
               <button
@@ -229,8 +231,8 @@ export default function Navbar() {
 
             {/* Mobile Right Actions */}
             <div className="lg:hidden flex items-center space-x-1 ml-auto">
-              {user && <NotificationBell />}
-              {user && <AdminChatIcon />}
+              {!authLoading && user && <NotificationBell />}
+              {!authLoading && user && <AdminChatIcon />}
               <button
                 onClick={() => setShowSearchDrawer(true)}
                 className="p-2 rounded-lg transition-colors hover:bg-gray-100 text-gray-700"
@@ -298,13 +300,15 @@ export default function Navbar() {
                   </div>
                 )}
                 <div className="pt-4 border-t border-[#E8DED3] mt-4">
-                  <Link
-                    href={accountButton.href}
-                    onClick={() => setIsMenuOpen(false)}
-                    className="block py-3 text-base font-medium text-[#545454] hover:text-black transition-colors uppercase tracking-wide"
-                  >
-                    {accountButton.label}
-                  </Link>
+                  {!authLoading && (
+                    <Link
+                      href={accountButton.href}
+                      onClick={() => setIsMenuOpen(false)}
+                      className="block py-3 text-base font-medium text-[#545454] hover:text-black transition-colors uppercase tracking-wide"
+                    >
+                      {accountButton.label}
+                    </Link>
+                  )}
                 </div>
               </nav>
             </motion.div>
