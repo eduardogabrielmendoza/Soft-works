@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { Menu, X, ShoppingBag, Search as SearchIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -30,8 +30,9 @@ export default function Navbar() {
   const [showSearchDrawer, setShowSearchDrawer] = useState(false);
   const [showAnnouncement, setShowAnnouncement] = useState(true);
   
-  // Smart sticky state
-  const [lastScrollY, setLastScrollY] = useState(0);
+  // Use refs for scroll values to avoid recreating the callback on every scroll
+  const lastScrollYRef = useRef(0);
+  const rafRef = useRef(0);
   
   const pathname = usePathname();
   
@@ -49,35 +50,41 @@ export default function Navbar() {
   const { layout, isLoading: layoutLoading } = useLayoutContent();
   const { unreadCount: unreadNotifications } = useNotifications();
 
-  // Smart sticky behavior con AnnouncementBar
+  // Smart sticky behavior con AnnouncementBar — stable callback, no rerenders on scroll
   const handleScroll = useCallback(() => {
-    const currentScrollY = window.scrollY;
-    const scrollThreshold = 100;
-    
-    // AnnouncementBar: visible solo en scrollY === 0 y fuera de admin
-    if (!isInAdminArea) {
-      setShowAnnouncement(currentScrollY < 10);
-    }
-    
-    if (currentScrollY < 10) {
-      // En el tope absoluto - transparente en home, sólido en otras páginas
-      setHeaderState(isHomePage ? 'transparent' : 'solid');
-    } else if (currentScrollY > lastScrollY && currentScrollY > scrollThreshold) {
-      // Scrolleando hacia abajo - ocultar header
-      setHeaderState('hidden');
-    } else if (currentScrollY < lastScrollY) {
-      // Scrolleando hacia arriba - mostrar header sólido
-      setHeaderState('solid');
-    }
-    
-    setLastScrollY(currentScrollY);
-  }, [lastScrollY, isHomePage, isInAdminArea]);
+    cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      const currentScrollY = window.scrollY;
+      const scrollThreshold = 100;
+      const lastY = lastScrollYRef.current;
+      
+      // AnnouncementBar: visible solo en scrollY === 0 y fuera de admin
+      if (!isInAdminArea) {
+        setShowAnnouncement(currentScrollY < 10);
+      }
+      
+      if (currentScrollY < 10) {
+        // En el tope absoluto - transparente en home, sólido en otras páginas
+        setHeaderState(isHomePage ? 'transparent' : 'solid');
+      } else if (currentScrollY > lastY && currentScrollY > scrollThreshold) {
+        // Scrolleando hacia abajo - ocultar header
+        setHeaderState('hidden');
+      } else if (currentScrollY < lastY) {
+        // Scrolleando hacia arriba - mostrar header sólido
+        setHeaderState('solid');
+      }
+      
+      lastScrollYRef.current = currentScrollY;
+    });
+  }, [isHomePage, isInAdminArea]);
 
   useEffect(() => {
-    // Inicializar el estado
     handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      cancelAnimationFrame(rafRef.current);
+    };
   }, [handleScroll]);
 
   // Cerrar menú móvil al cambiar de página

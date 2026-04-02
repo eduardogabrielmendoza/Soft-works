@@ -169,7 +169,7 @@ export default function ProductoPage({ params }: { params: Promise<{ slug: strin
               <>
                 <div 
                   ref={mainImageRef}
-                  className="aspect-[3/4] rounded-lg mb-4 relative overflow-hidden bg-gray-100 group"
+                  className="aspect-square rounded-lg mb-4 relative overflow-hidden bg-gray-100 group"
                   onMouseEnter={() => setIsLensActive(true)}
                   onMouseLeave={() => setIsLensActive(false)}
                   onMouseMove={handleLensMove}
@@ -234,7 +234,7 @@ export default function ProductoPage({ params }: { params: Promise<{ slug: strin
               </>
             ) : (
               <>
-                <div className="aspect-[3/4] bg-gray-100 rounded-lg mb-4 flex flex-col items-center justify-center relative">
+                <div className="aspect-square bg-gray-100 rounded-lg mb-4 flex flex-col items-center justify-center relative">
                   <span className="text-gray-400 text-sm">Sin imagen</span>
                 </div>
                 
