@@ -46,7 +46,6 @@ export default function HeroBannerSlideshow() {
   const slides = content.heroSlides;
   
   const [currentSlide, setCurrentSlide] = useState(0);
-  const containerRef = useRef<HTMLDivElement>(null);
   const imageLayerRef = useRef<HTMLDivElement>(null);
   const contentLayerRef = useRef<HTMLDivElement>(null);
   const parallaxRaf = useRef(0);
@@ -57,9 +56,6 @@ export default function HeroBannerSlideshow() {
       cancelAnimationFrame(parallaxRaf.current);
       parallaxRaf.current = requestAnimationFrame(() => {
         const y = window.scrollY;
-        if (containerRef.current) {
-          containerRef.current.style.opacity = String(Math.max(0.3, 1 - (y / 400) * 0.7));
-        }
         if (imageLayerRef.current) {
           const imgY = Math.min(y * 0.08, 40);
           const s = 1 + Math.min(y / 800, 1) * 0.08;
@@ -112,7 +108,7 @@ export default function HeroBannerSlideshow() {
   const hasImages = slides.length > 0 && slides[currentSlide]?.image;
 
   return (
-    <section ref={containerRef} className="relative" style={{ willChange: 'opacity' }}>
+    <section className="relative">
       {/* Contenedor del slider con márgenes y bordes redondeados */}
       <div className="px-4 lg:px-8 pt-0 pb-4">
         <div 
