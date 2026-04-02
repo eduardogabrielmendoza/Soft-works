@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { Menu, X, ShoppingBag, Search as SearchIcon } from 'lucide-react';
@@ -32,7 +31,7 @@ export default function Navbar() {
 
   const { itemCount } = useCart();
   const { user, isAdmin, isLoading: authLoading } = useAuth();
-  const { layout, isLoading: layoutLoading } = useLayoutContent();
+  const { layout } = useLayoutContent();
   const { unreadCount: unreadNotifications } = useNotifications();
 
   // Cerrar menú móvil al cambiar de página
@@ -130,7 +129,6 @@ export default function Navbar() {
             </button>
 
             {/* Center Logo */}
-            {!layoutLoading && (
               <>
                 {/* Desktop logo */}
                 <Link
@@ -148,12 +146,12 @@ export default function Navbar() {
                     }}
                   >
                     {layout.header.logoUrl ? (
-                    <Image
+                    <img
                       src={layout.header.logoUrl}
                       alt="Softworks"
-                      fill
-                      className="object-contain brightness-0"
-                      priority
+                      fetchPriority="high"
+                      decoding="sync"
+                      className="absolute inset-0 w-full h-full object-contain brightness-0"
                     />
                     ) : (
                       <span className="font-bold text-lg text-black">SOFTWORKS</span>
@@ -176,12 +174,12 @@ export default function Navbar() {
                     }}
                   >
                     {layout.header.logoUrl ? (
-                    <Image
+                    <img
                       src={layout.header.logoUrl}
                       alt="Softworks"
-                      fill
-                      className="object-contain brightness-0"
-                      priority
+                      fetchPriority="high"
+                      decoding="sync"
+                      className="absolute inset-0 w-full h-full object-contain brightness-0"
                     />
                     ) : (
                       <span className="font-bold text-lg text-black">SOFTWORKS</span>
@@ -189,7 +187,6 @@ export default function Navbar() {
                   </div>
                 </Link>
               </>
-            )}
 
             {/* Right Navigation - Desktop (Grupo B: acciones) */}
             <div className="hidden lg:flex items-center justify-end space-x-8 flex-1">

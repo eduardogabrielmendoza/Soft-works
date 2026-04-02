@@ -61,14 +61,18 @@ export default async function RootLayout({
 }>) {
   const initialData = await getInitialData();
 
-  // Preload first hero image for instant display
+  // Preload first hero image and logo for instant display
   const firstHeroImage = initialData?.index?.heroSlides?.[0]?.image;
+  const logoUrl = initialData?.layout?.header?.logoUrl;
 
   return (
     <html lang="es" className="overflow-x-hidden">
       <head>
         {firstHeroImage && (
           <link rel="preload" as="image" href={firstHeroImage} fetchPriority="high" />
+        )}
+        {logoUrl && (
+          <link rel="preload" as="image" href={logoUrl} fetchPriority="high" />
         )}
       </head>
       <body className={`${inter.className} antialiased overflow-x-hidden`}>
