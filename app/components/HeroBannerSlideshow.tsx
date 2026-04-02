@@ -110,11 +110,11 @@ export default function HeroBannerSlideshow() {
     else if (diff < -75) paginate(-1);
   }, [paginate]);
 
-  // Show skeleton only when truly loading with no data
-  if (isLoading && (!slides.length || !slides[0].image)) {
+  // If no slides have images yet, render a placeholder matching the aspect ratio
+  if (!slides.length || !slides[0].image) {
     return (
       <div className="px-4 lg:px-8 pt-0 pb-4">
-        <div className="relative overflow-hidden rounded-2xl lg:rounded-3xl bg-[#E8DED3] animate-pulse">
+        <div className="relative overflow-hidden rounded-2xl lg:rounded-3xl bg-[#E8DED3]">
           <div className="aspect-[3/4] sm:aspect-[4/3] lg:aspect-[21/9]" />
         </div>
       </div>
