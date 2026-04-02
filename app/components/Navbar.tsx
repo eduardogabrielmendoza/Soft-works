@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { Menu, X, ShoppingBag, Search as SearchIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -17,65 +17,20 @@ import NotificationBell from './NotificationBell';
 import AdminChatIcon from './AdminChatIcon';
 import { useNotifications } from '@/lib/hooks/useNotifications';
 
-// Estados del header
-type HeaderState = 'transparent' | 'hidden' | 'solid';
-
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showCartDrawer, setShowCartDrawer] = useState(false);
   const [showSearchDrawer, setShowSearchDrawer] = useState(false);
   
-  // Use refs for scroll values to avoid recreating the callback on every scroll
-  const lastScrollYRef = useRef(0);
-  const rafRef = useRef(0);
-  
   const pathname = usePathname();
   
-  // Detectar si estamos en la home para el estilo transparente inicial
   const isHomePage = pathname === '/';
   const isInAdminArea = pathname?.startsWith('/admin');
-  
-  // Estado inicial: transparente en home, sólido en otras páginas
-  // Inicializar directamente basado en la ruta para evitar flash
-  const [headerState, setHeaderState] = useState<HeaderState>(() => 
-    isHomePage ? 'transparent' : 'solid'
-  );
+
   const { itemCount } = useCart();
   const { user, isAdmin } = useAuth();
   const { layout, isLoading: layoutLoading } = useLayoutContent();
   const { unreadCount: unreadNotifications } = useNotifications();
-
-  // Smart sticky behavior — stable callback, no rerenders on scroll
-  const handleScroll = useCallback(() => {
-    cancelAnimationFrame(rafRef.current);
-    rafRef.current = requestAnimationFrame(() => {
-      const currentScrollY = window.scrollY;
-      const scrollThreshold = 100;
-      const lastY = lastScrollYRef.current;
-      
-      if (currentScrollY < 10) {
-        // En el tope absoluto - transparente en home, sólido en otras páginas
-        setHeaderState(isHomePage ? 'transparent' : 'solid');
-      } else if (currentScrollY > lastY && currentScrollY > scrollThreshold) {
-        // Scrolleando hacia abajo - ocultar header
-        setHeaderState('hidden');
-      } else if (currentScrollY < lastY) {
-        // Scrolleando hacia arriba - mostrar header sólido
-        setHeaderState('solid');
-      }
-      
-      lastScrollYRef.current = currentScrollY;
-    });
-  }, [isHomePage]);
-
-  useEffect(() => {
-    handleScroll();
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      cancelAnimationFrame(rafRef.current);
-    };
-  }, [handleScroll]);
 
   // Cerrar menú móvil al cambiar de página
   useEffect(() => {
@@ -102,32 +57,16 @@ export default function Navbar() {
   // Navigation links from layout config
   const leftLinks = layout.header.navLinks.map(l => ({ href: l.href, label: l.label, id: l.id }));
 
-  // Determinar estilos basados en el estado
-  const isTransparent = isHomePage && headerState === 'transparent';
-  const isHidden = headerState === 'hidden';
-
-  const textColorClass = isTransparent 
-    ? 'text-white/90 hover:text-white' 
-    : 'text-[#545454] hover:text-black';
-
-  const bgClass = isTransparent 
-    ? 'bg-transparent' 
-    : 'bg-[#F2F0EB]/95 backdrop-blur-md shadow-sm';
+  const textColorClass = 'text-[#545454] hover:text-black';
 
   return (
     <>
       {/* Header */}
-      <motion.header
-        initial={{ y: 0 }}
-        animate={{ 
-          y: isHidden ? '-100%' : 0,
-          top: isTransparent ? 20 : 0
-        }}
-        transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
-        className={`fixed left-0 right-0 z-50 transition-colors duration-500 ease-in-out ${bgClass}`}
+      <header
+        className="fixed top-0 left-0 right-0 z-50 bg-[#F2F0EB]/95 backdrop-blur-md shadow-sm"
       >
         <div className="max-w-[1600px] mx-auto px-6 lg:px-12">
-          <div className={`flex items-end h-16 lg:h-20 pb-2 ${!isTransparent ? 'mt-5' : ''}`}>
+          <div className="flex items-center h-16 lg:h-[72px]">
             {/* Left Navigation - Desktop */}
             <nav className="hidden lg:flex items-center space-x-8 flex-1">
               {leftLinks.map((link) => (
@@ -151,9 +90,7 @@ export default function Navbar() {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className={`lg:hidden p-2 rounded-lg transition-colors relative ${
-                isTransparent ? 'hover:bg-white/10' : 'hover:bg-gray-100'
-              } ${isTransparent ? 'text-white' : 'text-gray-700'}`}
+              className="lg:hidden p-2 rounded-lg transition-colors hover:bg-gray-100 text-gray-700"
               aria-label="Menú"
             >
               {isMenuOpen ? (
@@ -189,17 +126,11 @@ export default function Navbar() {
                       src={layout.header.logoUrl}
                       alt="Softworks"
                       fill
-                      className={`object-contain transition-all duration-300 ${
-                        layout.header.logoVariant === 'light'
-                          ? (isTransparent ? '' : 'brightness-0')
-                          : (isTransparent ? 'brightness-0 invert' : '')
-                      }`}
+                      className="object-contain brightness-0"
                       priority
                     />
                     ) : (
-                      <span className={`font-bold text-lg transition-all duration-300 ${
-                        isTransparent ? 'text-white' : 'text-black'
-                      }`}>SOFTWORKS</span>
+                      <span className="font-bold text-lg text-black">SOFTWORKS</span>
                     )}
                   </div>
                 </Link>
@@ -223,17 +154,11 @@ export default function Navbar() {
                       src={layout.header.logoUrl}
                       alt="Softworks"
                       fill
-                      className={`object-contain transition-all duration-300 ${
-                        layout.header.logoVariant === 'light'
-                          ? (isTransparent ? '' : 'brightness-0')
-                          : (isTransparent ? 'brightness-0 invert' : '')
-                      }`}
+                      className="object-contain brightness-0"
                       priority
                     />
                     ) : (
-                      <span className={`font-bold text-lg transition-all duration-300 ${
-                        isTransparent ? 'text-white' : 'text-black'
-                      }`}>SOFTWORKS</span>
+                      <span className="font-bold text-lg text-black">SOFTWORKS</span>
                     )}
                   </div>
                 </Link>
@@ -269,9 +194,7 @@ export default function Navbar() {
               >
                 Carrito
                 {itemCount > 0 && (
-                  <span className={`inline-flex items-center justify-center w-5 h-5 text-xs rounded-full font-medium ${
-                    isTransparent ? 'bg-white text-black' : 'bg-black text-white'
-                  }`}>
+                  <span className="inline-flex items-center justify-center w-5 h-5 text-xs rounded-full font-medium bg-black text-white">
                     {itemCount}
                   </span>
                 )}
@@ -284,18 +207,14 @@ export default function Navbar() {
               {user && <AdminChatIcon />}
               <button
                 onClick={() => setShowSearchDrawer(true)}
-                className={`p-2 rounded-lg transition-colors ${
-                  isTransparent ? 'hover:bg-white/10 text-white' : 'hover:bg-gray-100 text-gray-700'
-                }`}
+                className="p-2 rounded-lg transition-colors hover:bg-gray-100 text-gray-700"
                 aria-label="Buscar"
               >
                 <SearchIcon className="w-5 h-5" />
               </button>
               <button
                 onClick={() => setShowCartDrawer(true)}
-                className={`p-2 rounded-lg transition-colors relative ${
-                  isTransparent ? 'hover:bg-white/10 text-white' : 'hover:bg-gray-100 text-gray-700'
-                }`}
+                className="p-2 rounded-lg transition-colors relative hover:bg-gray-100 text-gray-700"
                 aria-label="Carrito"
               >
                 <ShoppingBag className="w-5 h-5" />
@@ -308,7 +227,7 @@ export default function Navbar() {
             </div>
           </div>
         </div>
-      </motion.header>
+      </header>
 
       {/* Mobile Menu Overlay */}
       <AnimatePresence>
@@ -331,7 +250,7 @@ export default function Navbar() {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              style={{ top: 76 }}
+              style={{ top: 64 }}
               className="absolute left-0 right-0 bg-[#F2F0EB] shadow-xl border-b border-[#E8DED3]"
             >
               <nav className="px-6 py-6 space-y-1">
@@ -377,12 +296,9 @@ export default function Navbar() {
         onClose={() => setShowCartDrawer(false)} 
       />
       
-      {/* Layout Spacer - Solo en páginas que no sean home */}
+      {/* Layout Spacer */}
       {!isHomePage && (
-        <div 
-          style={{ height: '76px' }}
-          className="lg:h-[92px]"
-        />
+        <div className="h-16 lg:h-[72px]" />
       )}
     </>
   );
