@@ -114,7 +114,7 @@ export default function HeroBannerSlideshow() {
   if (isLoading) {
     return (
       <div className="px-4 lg:px-8 pt-0 pb-4">
-        <div className="relative overflow-hidden rounded-2xl lg:rounded-3xl bg-neutral-900 animate-pulse">
+        <div className="relative overflow-hidden rounded-2xl lg:rounded-3xl bg-[#E8DED3] animate-pulse">
           <div className="aspect-[3/4] sm:aspect-[4/3] lg:aspect-[21/9]" />
         </div>
       </div>
@@ -126,7 +126,7 @@ export default function HeroBannerSlideshow() {
       {/* Contenedor del slider con márgenes y bordes redondeados */}
       <div className="px-4 lg:px-8 pt-0 pb-4">
         <div 
-          className="relative overflow-hidden rounded-2xl lg:rounded-3xl shadow-2xl bg-neutral-900"
+          className="relative overflow-hidden rounded-2xl lg:rounded-3xl shadow-2xl bg-[#E8DED3]"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
@@ -147,7 +147,7 @@ export default function HeroBannerSlideshow() {
                 {/* Imagen con parallax */}
                 <div 
                   ref={imageLayerRef}
-                  className="absolute inset-0"
+                  className="absolute -inset-x-0 -top-4 -bottom-[120px]"
                   style={{ willChange: 'transform' }}
                 >
                   <Image
