@@ -121,7 +121,7 @@ export default function Navbar() {
         initial={{ y: 0 }}
         animate={{ 
           y: isHidden ? '-100%' : 0,
-          top: 0
+          top: 12
         }}
         transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
         className={`fixed left-0 right-0 z-50 transition-colors duration-500 ease-in-out ${bgClass}`}
@@ -331,7 +331,7 @@ export default function Navbar() {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              style={{ top: 64 }}
+              style={{ top: 76 }}
               className="absolute left-0 right-0 bg-[#F2F0EB] shadow-xl border-b border-[#E8DED3]"
             >
               <nav className="px-6 py-6 space-y-1">
@@ -380,8 +380,8 @@ export default function Navbar() {
       {/* Layout Spacer - Solo en páginas que no sean home */}
       {!isHomePage && (
         <div 
-          style={{ height: '64px' }}
-          className="lg:h-20"
+          style={{ height: '76px' }}
+          className="lg:h-[92px]"
         />
       )}
     </>
