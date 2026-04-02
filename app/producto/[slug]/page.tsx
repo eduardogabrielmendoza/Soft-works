@@ -50,8 +50,9 @@ export default function ProductoPage({ params }: { params: Promise<{ slug: strin
 
   // Lens zoom state
   const [isLensActive, setIsLensActive] = useState(false);
-  const [lensPos, setLensPos] = useState({ x: 50, y: 50 });
   const mainImageRef = useRef<HTMLDivElement>(null);
+  const lensOverlayRef = useRef<HTMLDivElement>(null);
+  const lensRaf = useRef(0);
 
   const images = product?.imagenes || [];
   const hasRealImages = images.length > 0;
@@ -62,14 +63,22 @@ export default function ProductoPage({ params }: { params: Promise<{ slug: strin
 
   const sizes = ['XS', 'S', 'M', 'L', 'XL'];
 
-  // Desktop lens zoom: follow mouse over main image
+  // Desktop lens zoom: follow mouse over main image (rAF for perf)
   const handleLensMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!mainImageRef.current) return;
-    const rect = mainImageRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    setLensPos({ x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) });
+    cancelAnimationFrame(lensRaf.current);
+    lensRaf.current = requestAnimationFrame(() => {
+      if (!mainImageRef.current || !lensOverlayRef.current) return;
+      const rect = mainImageRef.current.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      const cx = Math.max(0, Math.min(100, x));
+      const cy = Math.max(0, Math.min(100, y));
+      lensOverlayRef.current.style.backgroundPosition = `${cx}% ${cy}%`;
+    });
   }, []);
+
+  // Cleanup lens rAF
+  useEffect(() => () => cancelAnimationFrame(lensRaf.current), []);
 
   // Cargar producto desde Supabase
   useEffect(() => {
@@ -178,16 +187,17 @@ export default function ProductoPage({ params }: { params: Promise<{ slug: strin
                     src={images[selectedImage].src}
                     alt={`${product.nombre} - ${images[selectedImage].etiqueta}`}
                     fill
-                    quality={100}
+                    sizes="(max-width: 1024px) 100vw, 50vw"
                     className={`object-cover transition-opacity duration-300 ${isOutOfStock ? 'grayscale' : ''}`}
                     priority
                   />
                   {/* Lens zoom overlay - desktop only */}
                   <div
+                    ref={lensOverlayRef}
                     className={`absolute inset-0 hidden lg:block pointer-events-none transition-opacity duration-200 ${isLensActive ? 'opacity-100' : 'opacity-0'}`}
                     style={{
                       backgroundImage: `url(${images[selectedImage].src})`,
-                      backgroundPosition: `${lensPos.x}% ${lensPos.y}%`,
+                      backgroundPosition: '50% 50%',
                       backgroundSize: '250%',
                       backgroundRepeat: 'no-repeat',
                     }}
@@ -225,7 +235,7 @@ export default function ProductoPage({ params }: { params: Promise<{ slug: strin
                         src={image.src}
                         alt={image.etiqueta}
                         fill
-                        quality={100}
+                        sizes="100px"
                         className="object-cover"
                       />
                     </button>

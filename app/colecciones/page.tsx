@@ -264,7 +264,7 @@ export default function ColeccionesPage() {
                   key={product.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: index * 0.05 }}
+                  transition={{ duration: 0.4, delay: Math.min(index * 0.05, 0.4) }}
                 >
                   <Link 
                     href={`/producto/${product.slug}`} 
@@ -276,7 +276,7 @@ export default function ColeccionesPage() {
                           src={getMainImage(product)}
                           alt={product.nombre}
                           fill
-                          quality={100}
+                          sizes="(max-width: 640px) 50vw, 25vw"
                           className={`object-cover group-hover:scale-105 transition-transform duration-500 ${outOfStock ? 'grayscale' : ''}`}
                         />
                       ) : (

@@ -91,26 +91,24 @@ export default function HeroBannerSlideshow() {
     setCurrentSlide(index);
   }, []);
 
-  // Swipe handlers para móvil
-  const [touchStart, setTouchStart] = useState(0);
-  const [touchEnd, setTouchEnd] = useState(0);
+  // Swipe handlers para móvil (refs to avoid re-renders)
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStart(e.targetTouches[0].clientX);
-  };
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.targetTouches[0].clientX;
+    touchEndX.current = e.targetTouches[0].clientX;
+  }, []);
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    touchEndX.current = e.targetTouches[0].clientX;
+  }, []);
 
-  const handleTouchEnd = () => {
-    if (touchStart - touchEnd > 75) {
-      paginate(1);
-    }
-    if (touchStart - touchEnd < -75) {
-      paginate(-1);
-    }
-  };
+  const handleTouchEnd = useCallback(() => {
+    const diff = touchStartX.current - touchEndX.current;
+    if (diff > 75) paginate(1);
+    else if (diff < -75) paginate(-1);
+  }, [paginate]);
 
   // Don't render until content is loaded to avoid flash of defaults
   if (isLoading) {

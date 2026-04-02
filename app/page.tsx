@@ -45,6 +45,7 @@ export default function Home() {
                     src={largeCard.image}
                     alt={largeCard.title}
                     fill
+                    sizes="(max-width: 1024px) 100vw, 50vw"
                     className="object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
@@ -82,6 +83,7 @@ export default function Home() {
                       src={card.image}
                       alt={card.title}
                       fill
+                      sizes="(max-width: 1024px) 100vw, 50vw"
                       className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
@@ -149,6 +151,7 @@ export default function Home() {
                   src={item.image}
                   alt={item.label}
                   fill
+                  sizes="(max-width: 768px) 50vw, 25vw"
                   className="object-cover group-hover:scale-105 transition-transform duration-500"
                 />
               </motion.div>
@@ -170,6 +173,7 @@ export default function Home() {
             src={content.fullWidthBanner.image}
             alt={content.fullWidthBanner.title}
             fill
+            sizes="100vw"
             className="object-cover"
           />
           <div className="absolute inset-0 bg-black/30" />
