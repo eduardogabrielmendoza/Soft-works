@@ -121,13 +121,13 @@ export default function Navbar() {
         initial={{ y: 0 }}
         animate={{ 
           y: isHidden ? '-100%' : 0,
-          top: 12
+          top: isTransparent ? 12 : 0
         }}
         transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
         className={`fixed left-0 right-0 z-50 transition-colors duration-500 ease-in-out ${bgClass}`}
       >
         <div className="max-w-[1600px] mx-auto px-6 lg:px-12">
-          <div className="flex items-end h-16 lg:h-20 pb-2">
+          <div className={`flex items-end h-16 lg:h-20 pb-2 ${!isTransparent ? 'mt-3' : ''}`}>
             {/* Left Navigation - Desktop */}
             <nav className="hidden lg:flex items-center space-x-8 flex-1">
               {leftLinks.map((link) => (
