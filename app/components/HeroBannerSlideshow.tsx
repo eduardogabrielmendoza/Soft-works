@@ -62,12 +62,12 @@ export default function HeroBannerSlideshow() {
           containerRef.current.style.opacity = String(Math.max(0.3, 1 - (y / 400) * 0.7));
         }
         if (imageLayerRef.current) {
-          const imgY = Math.min(y * 0.2, 100);
-          const s = 1 + Math.min(y / 500, 1) * 0.15;
+          const imgY = Math.min(y * 0.08, 40);
+          const s = 1 + Math.min(y / 800, 1) * 0.08;
           imageLayerRef.current.style.transform = `translate3d(0,${imgY}px,0) scale(${s})`;
         }
         if (contentLayerRef.current) {
-          contentLayerRef.current.style.transform = `translate3d(0,${Math.min(y * 0.125, 50)}px,0)`;
+          contentLayerRef.current.style.transform = `translate3d(0,${Math.min(y * 0.06, 25)}px,0)`;
         }
       });
     };
@@ -147,7 +147,7 @@ export default function HeroBannerSlideshow() {
                 {/* Imagen con parallax */}
                 <div 
                   ref={imageLayerRef}
-                  className="absolute -inset-x-0 -top-4 -bottom-[120px]"
+                  className="absolute -inset-[50px]"
                   style={{ willChange: 'transform' }}
                 >
                   <Image
