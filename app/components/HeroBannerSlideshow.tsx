@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -47,44 +47,6 @@ export default function HeroBannerSlideshow() {
   const slides = content.heroSlides;
   
   const [currentSlide, setCurrentSlide] = useState(0);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const imageLayerRef = useRef<HTMLDivElement>(null);
-  const contentLayerRef = useRef<HTMLDivElement>(null);
-  const rafRef = useRef<number>(0);
-
-  // Parallax con CSS transforms via rAF - sin framer-motion para evitar stutter
-  useEffect(() => {
-    const onScroll = () => {
-      rafRef.current = requestAnimationFrame(() => {
-        const y = window.scrollY;
-        const container = containerRef.current;
-        const imageLayer = imageLayerRef.current;
-        const contentLayer = contentLayerRef.current;
-        if (!container) return;
-
-        // Opacity: 1 -> 0.3 over 400px
-        const opacity = Math.max(0.3, 1 - (y / 400) * 0.7);
-        container.style.opacity = String(opacity);
-
-        if (imageLayer) {
-          // Image: translateY 0->100px, scale 1->1.15 over 500px
-          const imgY = Math.min(y * 0.2, 100);
-          const imgScale = 1 + Math.min(y / 500, 1) * 0.15;
-          imageLayer.style.transform = `translate3d(0, ${imgY}px, 0) scale(${imgScale})`;
-        }
-        if (contentLayer) {
-          // Content: translateY 0->50px over 400px
-          const cY = Math.min(y * 0.125, 50);
-          contentLayer.style.transform = `translate3d(0, ${cY}px, 0)`;
-        }
-      });
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      cancelAnimationFrame(rafRef.current);
-    };
-  }, []);
 
   const paginate = useCallback((newDirection: number) => {
     setCurrentSlide((prev) => {
@@ -132,11 +94,7 @@ export default function HeroBannerSlideshow() {
   }
 
   return (
-    <section 
-      ref={containerRef}
-      className="relative"
-      style={{ willChange: 'opacity' }}
-    >
+    <section className="relative">
       {/* Contenedor del slider con márgenes y bordes redondeados */}
       <div className="px-4 lg:px-8 pt-0 pb-4">
         <div 
@@ -158,12 +116,8 @@ export default function HeroBannerSlideshow() {
                 transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
                 className="absolute inset-0"
               >
-                {/* Imagen con parallax interno */}
-                <div 
-                  ref={imageLayerRef}
-                  className="absolute inset-0"
-                  style={{ willChange: 'transform' }}
-                >
+                {/* Imagen */}
+                <div className="absolute inset-0">
                   <Image
                     src={slides[currentSlide].image}
                     alt={slides[currentSlide].title}
@@ -182,11 +136,7 @@ export default function HeroBannerSlideshow() {
 
             {/* Contenido del slide */}
             <div className="absolute inset-0 flex items-center justify-center z-10">
-              <div
-                ref={contentLayerRef}
-                className="text-center px-6 max-w-4xl mx-auto"
-                style={{ willChange: 'transform' }}
-              >
+              <div className="text-center px-6 max-w-4xl mx-auto">
                 {/* Título - fade suave entre slides */}
                 <AnimatePresence mode="wait">
                   <motion.h1

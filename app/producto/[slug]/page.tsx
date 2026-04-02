@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, use, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, Check, Loader2, ZoomIn, X, ChevronRight as ChevRight } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ChevronLeft, Check, Loader2, ZoomIn } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -48,9 +48,7 @@ export default function ProductoPage({ params }: { params: Promise<{ slug: strin
   const [showAddedMessage, setShowAddedMessage] = useState(false);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
 
-  // Zoom state
-  const [showLightbox, setShowLightbox] = useState(false);
-  const [lightboxIndex, setLightboxIndex] = useState(0);
+  // Lens zoom state
   const [isLensActive, setIsLensActive] = useState(false);
   const [lensPos, setLensPos] = useState({ x: 50, y: 50 });
   const mainImageRef = useRef<HTMLDivElement>(null);
@@ -71,35 +69,6 @@ export default function ProductoPage({ params }: { params: Promise<{ slug: strin
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
     setLensPos({ x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) });
-  }, []);
-
-  // Lightbox navigation
-  const lightboxNext = useCallback(() => {
-    setLightboxIndex(prev => (prev + 1) % (images?.length || 1));
-  }, [images?.length]);
-  const lightboxPrev = useCallback(() => {
-    setLightboxIndex(prev => (prev - 1 + (images?.length || 1)) % (images?.length || 1));
-  }, [images?.length]);
-
-  // Lightbox keyboard + body lock
-  useEffect(() => {
-    if (!showLightbox) return;
-    document.body.style.overflow = 'hidden';
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setShowLightbox(false);
-      if (e.key === 'ArrowRight') lightboxNext();
-      if (e.key === 'ArrowLeft') lightboxPrev();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => {
-      document.body.style.overflow = '';
-      window.removeEventListener('keydown', onKey);
-    };
-  }, [showLightbox, lightboxNext, lightboxPrev]);
-
-  const openLightbox = useCallback((index: number) => {
-    setLightboxIndex(index);
-    setShowLightbox(true);
   }, []);
 
   // Cargar producto desde Supabase
@@ -200,8 +169,7 @@ export default function ProductoPage({ params }: { params: Promise<{ slug: strin
               <>
                 <div 
                   ref={mainImageRef}
-                  className="aspect-[3/4] rounded-lg mb-4 relative overflow-hidden bg-gray-100 cursor-zoom-in group"
-                  onClick={() => openLightbox(selectedImage)}
+                  className="aspect-[3/4] rounded-lg mb-4 relative overflow-hidden bg-gray-100 group"
                   onMouseEnter={() => setIsLensActive(true)}
                   onMouseLeave={() => setIsLensActive(false)}
                   onMouseMove={handleLensMove}
@@ -657,102 +625,6 @@ export default function ProductoPage({ params }: { params: Promise<{ slug: strin
           }
         }}
       />
-
-      {/* Lightbox zoom modal */}
-      <AnimatePresence>
-        {showLightbox && hasRealImages && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.25, ease: 'easeOut' }}
-            className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center select-none"
-            onClick={() => setShowLightbox(false)}
-          >
-            {/* Close button */}
-            <button
-              onClick={() => setShowLightbox(false)}
-              className="absolute top-4 right-4 z-50 w-10 h-10 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center transition-colors duration-200"
-              aria-label="Cerrar"
-            >
-              <X className="w-5 h-5 text-white" />
-            </button>
-
-            {/* Image counter */}
-            {images.length > 1 && (
-              <span className="absolute top-5 left-1/2 -translate-x-1/2 text-white/50 text-sm font-medium tracking-wider pointer-events-none">
-                {lightboxIndex + 1} / {images.length}
-              </span>
-            )}
-
-            {/* Navigation arrows */}
-            {images.length > 1 && (
-              <>
-                <button
-                  onClick={(e) => { e.stopPropagation(); lightboxPrev(); }}
-                  className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-50 w-10 h-10 sm:w-12 sm:h-12 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105"
-                  aria-label="Imagen anterior"
-                >
-                  <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); lightboxNext(); }}
-                  className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-50 w-10 h-10 sm:w-12 sm:h-12 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105"
-                  aria-label="Siguiente imagen"
-                >
-                  <ChevRight className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                </button>
-              </>
-            )}
-
-            {/* Main lightbox image */}
-            <motion.div
-              key={lightboxIndex}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
-              className="relative w-full h-full max-w-[85vw] max-h-[85vh] flex items-center justify-center"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Image
-                src={images[lightboxIndex].src}
-                alt={`${product.nombre} - ${images[lightboxIndex].etiqueta}`}
-                fill
-                quality={100}
-                className="object-contain"
-                sizes="85vw"
-                priority
-              />
-            </motion.div>
-
-            {/* Thumbnail strip */}
-            {images.length > 1 && (
-              <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 flex gap-2 sm:gap-3 z-50">
-                {images.map((img, i) => (
-                  <button
-                    key={i}
-                    onClick={(e) => { e.stopPropagation(); setLightboxIndex(i); }}
-                    className={`w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden relative transition-all duration-200 ${
-                      i === lightboxIndex
-                        ? 'ring-2 ring-white scale-105'
-                        : 'opacity-50 hover:opacity-80'
-                    }`}
-                  >
-                    <Image
-                      src={img.src}
-                      alt={img.etiqueta}
-                      fill
-                      className="object-cover"
-                      sizes="56px"
-                    />
-                  </button>
-                ))}
-              </div>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
