@@ -79,10 +79,10 @@ export default function Home() {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
-              className="group cursor-pointer"
+              className="group cursor-pointer lg:flex lg:flex-col"
             >
-              <Link href={largeCard.link}>
-                <div className="aspect-[3/4] rounded-lg mb-4 relative overflow-hidden">
+              <Link href={largeCard.link} className="lg:flex-1 lg:flex lg:flex-col">
+                <div className="aspect-[3/4] lg:aspect-auto lg:flex-1 rounded-lg mb-4 relative overflow-hidden">
                   <RotatingCardImage
                     image={largeCard.image}
                     image2={largeCard.image2}
