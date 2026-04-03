@@ -3,10 +3,52 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
 import HeroBannerSlideshow from '@/app/components/HeroBannerSlideshow';
 import CustomSectionsRenderer, { SectionButton } from '@/app/components/CustomSections';
 import { useIndexContent } from '@/lib/hooks/useIndexContent';
 import { textStyleCSS, BTN_ALIGN_CLASS } from '@/lib/types/sections';
+
+function RotatingCardImage({ image, image2, alt, sizes }: { image: string; image2?: string; alt: string; sizes: string }) {
+  const [showSecond, setShowSecond] = useState(false);
+
+  useEffect(() => {
+    if (!image2) return;
+    const interval = setInterval(() => setShowSecond(prev => !prev), 3000);
+    return () => clearInterval(interval);
+  }, [image2]);
+
+  if (!image2) {
+    return (
+      <Image
+        src={image}
+        alt={alt}
+        fill
+        sizes={sizes}
+        className="object-cover group-hover:scale-105 transition-transform duration-500"
+      />
+    );
+  }
+
+  return (
+    <>
+      <Image
+        src={image}
+        alt={alt}
+        fill
+        sizes={sizes}
+        className={`object-cover group-hover:scale-105 transition-all duration-1000 ${showSecond ? 'opacity-0' : 'opacity-100'}`}
+      />
+      <Image
+        src={image2}
+        alt={`${alt} - 2`}
+        fill
+        sizes={sizes}
+        className={`object-cover group-hover:scale-105 transition-all duration-1000 ${showSecond ? 'opacity-100' : 'opacity-0'}`}
+      />
+    </>
+  );
+}
 
 export default function Home() {
   const { content } = useIndexContent();
@@ -41,12 +83,11 @@ export default function Home() {
             >
               <Link href={largeCard.link}>
                 <div className="aspect-[3/4] rounded-lg mb-4 relative overflow-hidden">
-                  <Image
-                    src={largeCard.image}
+                  <RotatingCardImage
+                    image={largeCard.image}
+                    image2={largeCard.image2}
                     alt={largeCard.title}
-                    fill
                     sizes="(max-width: 1024px) 100vw, 50vw"
-                    className="object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                   <div className="absolute bottom-6 left-6 z-10">
@@ -79,12 +120,11 @@ export default function Home() {
               >
                 <Link href={card.link}>
                   <div className="aspect-[4/3] lg:aspect-[16/9] rounded-lg mb-3 relative overflow-hidden">
-                    <Image
-                      src={card.image}
+                    <RotatingCardImage
+                      image={card.image}
+                      image2={card.image2}
                       alt={card.title}
-                      fill
                       sizes="(max-width: 1024px) 100vw, 50vw"
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                     <div className="absolute bottom-4 left-4 z-10">

@@ -25,6 +25,7 @@ export interface ProductCard {
   subtitle: string;
   description: string;
   image: string;
+  image2?: string;
   link: string;
   size: 'large' | 'medium' | 'small';
   buttons?: CustomButton[];

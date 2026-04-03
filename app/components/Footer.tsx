@@ -25,7 +25,9 @@ export default function Footer() {
   const filteredColumns = layout.footer.linkColumns.map(col => ({
     ...col,
     links: col.links.filter(link => 
-      !link.href.includes('/eventos') && !link.href.includes('/ubicaciones')
+      !link.href.includes('/eventos') && !link.href.includes('/ubicaciones') &&
+      !link.label.toLowerCase().includes('toda la ropa') &&
+      !link.label.toLowerCase().includes('nuestra producción')
     ),
   })).filter(col => col.links.length > 0);
 

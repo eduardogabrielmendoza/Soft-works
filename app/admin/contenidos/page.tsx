@@ -670,6 +670,9 @@ function IndexEditor({ content, onChange }: { content: IndexContent; onChange: (
             <div key={card.id} className="p-4 bg-gray-50 rounded-lg space-y-3">
               <span className="text-xs font-semibold text-foreground/70">{card.size === 'large' ? '📐 Card Grande' : '📏 Card Mediana'} — {card.title}</span>
               <ImageInput value={card.image} onChange={v => updateCard(idx, { image: v })} />
+              <Field label="Imagen 2 (rotación automática)">
+                <ImageInput value={card.image2 || ''} onChange={v => updateCard(idx, { image2: v })} />
+              </Field>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Título" {...ts(`card-${card.id}-title`)}><TextInput value={card.title} onChange={v => updateCard(idx, { title: v })} /></Field>
                 <Field label="Subtítulo" {...ts(`card-${card.id}-subtitle`)}><TextInput value={card.subtitle} onChange={v => updateCard(idx, { subtitle: v })} /></Field>
