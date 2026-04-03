@@ -2,12 +2,12 @@ import LegalPageLayout from '../components/LegalPageLayout';
 
 export default function PoliticaPrivacidadPage() {
   return (
-    <LegalPageLayout title="Política de Privacidad" lastUpdated="Enero 2026">
+    <LegalPageLayout title="Política de Privacidad" lastUpdated="Abril 2026">
       <section>
         <h2 className="text-xl font-medium text-[#545454] mb-4">1. Información que Recopilamos</h2>
         <p className="text-[#545454]/70 leading-relaxed">
-          Recopilamos información que nos proporcionas directamente cuando creas una cuenta, 
-          realizas una compra, te suscribes a nuestro newsletter o te comunicas con nosotros.
+          Recopilamos información que nos proporcionás directamente cuando creás una cuenta, 
+          realizás una compra o te comunicás con nosotros.
         </p>
       </section>
 
@@ -15,7 +15,7 @@ export default function PoliticaPrivacidadPage() {
         <h2 className="text-xl font-medium text-[#545454] mb-4">2. Cómo Usamos tu Información</h2>
         <p className="text-[#545454]/70 leading-relaxed">
           Utilizamos la información que recopilamos para procesar tus pedidos, 
-          comunicarnos contigo, mejorar nuestros servicios y personalizar tu experiencia.
+          comunicarnos con vos, mejorar nuestros servicios y personalizar tu experiencia.
         </p>
       </section>
 
@@ -39,15 +39,16 @@ export default function PoliticaPrivacidadPage() {
       <section>
         <h2 className="text-xl font-medium text-[#545454] mb-4">5. Tus Derechos</h2>
         <p className="text-[#545454]/70 leading-relaxed">
-          Tienes derecho a acceder, corregir o eliminar tu información personal. 
-          También puedes oponerte al procesamiento de tus datos o solicitar su portabilidad.
+          Tenés derecho a acceder, corregir o eliminar tu información personal. 
+          También podés oponerte al procesamiento de tus datos o solicitar su portabilidad, 
+          de conformidad con la Ley N.° 25.326 de Protección de Datos Personales de la República Argentina.
         </p>
       </section>
 
       <section>
         <h2 className="text-xl font-medium text-[#545454] mb-4">6. Contacto</h2>
         <p className="text-[#545454]/70 leading-relaxed">
-          Si tienes preguntas sobre esta Política de Privacidad, contáctanos en 
+          Si tenés preguntas sobre esta Política de Privacidad, contactanos en 
           <a href="mailto:softworksargentina@gmail.com" className="text-[#545454] underline hover:no-underline ml-1">
             softworksargentina@gmail.com
           </a>

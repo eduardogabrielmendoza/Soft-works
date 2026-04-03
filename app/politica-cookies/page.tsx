@@ -2,13 +2,13 @@ import LegalPageLayout from '../components/LegalPageLayout';
 
 export default function PoliticaCookiesPage() {
   return (
-    <LegalPageLayout title="Política de Cookies" lastUpdated="Enero 2026">
+    <LegalPageLayout title="Política de Cookies" lastUpdated="Abril 2026">
       <section>
         <h2 className="text-xl font-medium text-[#545454] mb-4">¿Qué son las Cookies?</h2>
         <p className="text-[#545454]/70 leading-relaxed">
           Las cookies son pequeños archivos de texto que se almacenan en tu dispositivo 
-          cuando visitas nuestro sitio web. Nos ayudan a mejorar tu experiencia de navegación 
-          y a entender cómo interactúas con nuestro sitio.
+          cuando visitás nuestro sitio web. Nos ayudan a mejorar tu experiencia de navegación 
+          y a entender cómo interactuás con nuestro sitio.
         </p>
       </section>
 
@@ -53,9 +53,9 @@ export default function PoliticaCookiesPage() {
       <section>
         <h2 className="text-xl font-medium text-[#545454] mb-4">Gestión de Cookies</h2>
         <p className="text-[#545454]/70 leading-relaxed">
-          Puedes configurar tu navegador para rechazar cookies o para que te avise 
+          Podés configurar tu navegador para rechazar cookies o para que te avise 
           cuando se envíen cookies. Sin embargo, algunas funcionalidades del sitio 
-          podrían no funcionar correctamente si deshabilitas las cookies.
+          podrían no funcionar correctamente si deshabilitás las cookies.
         </p>
       </section>
 
@@ -63,7 +63,7 @@ export default function PoliticaCookiesPage() {
         <h2 className="text-xl font-medium text-[#545454] mb-4">Más Información</h2>
         <p className="text-[#545454]/70 leading-relaxed">
           Para más detalles sobre cómo manejamos tus datos personales, 
-          consulta nuestra Política de Privacidad.
+          consultá nuestra Política de Privacidad.
         </p>
       </section>
     </LegalPageLayout>

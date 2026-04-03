@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { Instagram, Youtube, Twitter, Facebook, Mail } from 'lucide-react';
-import { useState } from 'react';
 import { useSiteConfig } from '@/lib/hooks/useSiteConfig';
 import { useLayoutContent } from '@/lib/hooks/useLayoutContent';
 import { textStyleCSS, BTN_ALIGN_CLASS } from '@/lib/types/sections';
@@ -18,63 +17,24 @@ const TikTokIcon = () => (
 export default function Footer() {
   const { config } = useSiteConfig();
   const { layout } = useLayoutContent();
-  const [email, setEmail] = useState('');
-  const [subscribeMessage, setSubscribeMessage] = useState('');
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubscribeMessage('¡Gracias por suscribirte!');
-    setEmail('');
-    setTimeout(() => setSubscribeMessage(''), 3000);
-  };
 
   // Verificar si hay redes sociales configuradas
   const hasSocialLinks = config.social_instagram || config.social_youtube || config.social_tiktok || config.social_twitter || config.social_facebook;
 
+  // Filtrar links de eventos y ubicaciones
+  const filteredColumns = layout.footer.linkColumns.map(col => ({
+    ...col,
+    links: col.links.filter(link => 
+      !link.href.includes('/eventos') && !link.href.includes('/ubicaciones')
+    ),
+  })).filter(col => col.links.length > 0);
+
   return (
     <footer className="bg-white border-t border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
-        {/* Newsletter Section */}
-        <div className="mb-12 lg:mb-16 max-w-2xl">
-          <h3 className="text-2xl lg:text-3xl font-medium mb-4" style={textStyleCSS(layout.textStyles, 'footer-newsletter-title')}>
-            {layout.footer.newsletterTitle.replace('{site_name}', config.site_name)}
-          </h3>
-          <p className="text-sm text-foreground/70 mb-6" style={textStyleCSS(layout.textStyles, 'footer-newsletter-desc')}>
-            {layout.footer.newsletterDescription}
-          </p>
-          {subscribeMessage && (
-            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md text-green-800 text-sm">
-              {subscribeMessage}
-            </div>
-          )}
-          <form onSubmit={handleSubmit} className="flex gap-3">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Tu correo electrónico"
-              required
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-foreground/20 text-sm"
-            />
-            <button
-              type="submit"
-              className="px-6 py-3 bg-foreground text-white rounded-md hover:bg-foreground/90 transition-colors text-sm font-medium whitespace-nowrap"
-            >
-              Suscribirse
-            </button>
-          </form>
-          <p className="text-xs text-foreground/50 mt-3">
-            Al suscribirte, aceptas nuestra{' '}
-            <Link href="/politica-privacidad" className="underline hover:text-foreground">
-              Política de Privacidad
-            </Link>
-            .
-          </p>
-        </div>
-
         {/* Links Grid - Dynamic from layout config */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
-          {layout.footer.linkColumns.map(col => (
+          {filteredColumns.map(col => (
             <div key={col.id}>
               <h4 className="font-medium mb-4 text-sm" style={textStyleCSS(layout.textStyles, `footer-col-${col.id}-title`)}>{col.title}</h4>
               <ul className="space-y-3 text-sm text-foreground/70">

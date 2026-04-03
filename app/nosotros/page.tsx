@@ -142,34 +142,6 @@ export default function NosotrosPage() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="bg-gray-50 py-16 lg:py-24">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="max-w-3xl mx-auto text-center px-4"
-        >
-          <h2 className="text-3xl lg:text-4xl font-medium mb-6" style={textStyleCSS(content.textStyles, 'cta-title')}>{content.cta.title}</h2>
-          <p className="text-foreground/70 mb-8" style={textStyleCSS(content.textStyles, 'cta-desc')}>
-            {content.cta.description}
-          </p>
-          <Link
-            href={content.cta.buttonLink}
-            className="inline-block px-8 py-3 border-2 border-foreground rounded-full hover:bg-foreground hover:text-white transition-all font-medium"
-            style={textStyleCSS(content.textStyles, 'cta-btntext')}
-          >
-            {content.cta.buttonText}
-          </Link>
-          {content.cta.buttons && content.cta.buttons.length > 0 && (
-            <div className={`flex flex-wrap gap-4 mt-4 ${BTN_ALIGN_CLASS[content.cta.buttonAlignment || 'center']}`}>
-              {content.cta.buttons.map(btn => <SectionButton key={btn.id} btn={btn} />)}
-            </div>
-          )}
-        </motion.div>
-      </section>
-
       <CustomSectionsRenderer sections={content.customSections} />
     </div>
   );
