@@ -593,11 +593,11 @@ export default function ProductoPage({ params }: { params: Promise<{ slug: strin
             <div className="border-t border-gray-200 pt-6 space-y-4 text-sm">
               <details className="group">
                 <summary className="cursor-pointer font-medium flex items-center justify-between">
-                  Envío y Devoluciones
+                  Envíos
                   <span className="group-open:rotate-180 transition-transform">▼</span>
                 </summary>
                 <p className="mt-3 text-foreground/70">
-                  Envío gratuito en pedidos superiores a $100. Devoluciones gratuitas dentro de 30 días.
+                  Envío gratuito en pedidos superiores a $100.000 ARS. No se aceptan devoluciones.
                 </p>
               </details>
               
@@ -606,9 +606,13 @@ export default function ProductoPage({ params }: { params: Promise<{ slug: strin
                   Cuidados
                   <span className="group-open:rotate-180 transition-transform">▼</span>
                 </summary>
-                <p className="mt-3 text-foreground/70">
-                  Lavado a máquina en agua fría. No usar lavandina. Secar al aire.
-                </p>
+                <ul className="mt-3 text-foreground/70 space-y-1.5 list-none">
+                  <li>• Lavado a máquina en agua fría</li>
+                  <li>• Lavar a seco</li>
+                  <li>• Plancha tibia</li>
+                  <li>• Evitar planchado sobre la estampa</li>
+                  <li>• No usar lavandina</li>
+                </ul>
               </details>
             </div>
           </motion.div>

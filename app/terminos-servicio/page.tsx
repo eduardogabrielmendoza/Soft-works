@@ -32,7 +32,8 @@ export default function TerminosServicioPage() {
         <h2 className="text-xl font-medium text-[#545454] mb-4">4. Pedidos y Pagos</h2>
         <p className="text-[#545454]/70 leading-relaxed">
           Nos reservamos el derecho de rechazar o cancelar cualquier pedido. 
-          En caso de cancelación, se emitirá un reembolso completo.
+          En caso de cancelación antes de la producción, se emitirá un reembolso completo. 
+          No se aceptan devoluciones ya que Softworks trabaja con un sistema de preventa.
         </p>
       </section>
 

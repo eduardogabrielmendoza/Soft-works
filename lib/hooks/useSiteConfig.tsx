@@ -120,13 +120,38 @@ export function SiteConfigProvider({ children, initialData }: { children: ReactN
     loadConfig();
   }, [loadConfig]);
 
-  // Actualizar el título del documento cuando cambie el nombre del sitio o la ruta
+  // Actualizar el título del documento dinámicamente según la ruta
   useEffect(() => {
-    if (typeof document !== 'undefined' && config.site_name) {
-      // Mantener el título actualizado en cada navegación
-      document.title = `${config.site_name} - ${config.site_description}`;
-    }
-  }, [config.site_name, config.site_description, pathname]);
+    if (typeof document === 'undefined') return;
+    const pageTitles: Record<string, string> = {
+      '/': 'Tienda Online',
+      '/colecciones': 'Colecciones',
+      '/contacto': 'Contacto',
+      '/nosotros': 'Nosotros',
+      '/preguntas-frecuentes': 'Preguntas Frecuentes',
+      '/cuenta': 'Mi Cuenta',
+      '/cuenta/perfil': 'Mi Perfil',
+      '/cuenta/pedidos': 'Mis Pedidos',
+      '/cuenta/direcciones': 'Mis Direcciones',
+      '/cuenta/registro': 'Registro',
+      '/cuenta/reset-password': 'Recuperar Contraseña',
+      '/checkout': 'Checkout',
+      '/checkout/confirmacion': 'Confirmación de Pedido',
+      '/politica-privacidad': 'Política de Privacidad',
+      '/politica-cookies': 'Política de Cookies',
+      '/terminos-servicio': 'Términos de Servicio',
+      '/no-vender-informacion': 'Privacidad de Datos',
+      '/accesibilidad': 'Accesibilidad',
+      '/impacto': 'Impacto',
+      '/eventos': 'Eventos',
+      '/ubicaciones': 'Ubicaciones',
+      '/vlog': 'Vlog',
+      '/futuros-softworks': 'Futuros Softworks',
+      '/admin': 'Panel Admin',
+    };
+    const pageLabel = pageTitles[pathname] || (pathname.startsWith('/producto/') ? 'Producto' : pathname.startsWith('/admin/') ? 'Panel Admin' : null);
+    document.title = pageLabel ? `Softworks - ${pageLabel}` : 'Softworks - Tienda Online';
+  }, [pathname]);
 
   return (
     <SiteConfigContext.Provider value={{ config, isLoading, refreshConfig }}>

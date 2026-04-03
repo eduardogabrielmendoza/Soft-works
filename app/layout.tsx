@@ -16,7 +16,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Softworks - Ropa Minimalista Premium",
+  title: "Softworks - Tienda Online",
   description: "Marca de ropa minimalista con diseño atemporal y calidad excepcional",
   icons: {
     icon: [

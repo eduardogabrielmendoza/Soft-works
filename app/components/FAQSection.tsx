@@ -16,11 +16,11 @@ const faqs: FAQItem[] = [
   },
   {
     question: '¿Cuál es la política de devoluciones?',
-    answer: 'Aceptamos devoluciones dentro de los 30 días posteriores a la recepción del pedido. Los productos deben estar sin usar, con las etiquetas originales y en su empaque original. El proceso de reembolso toma entre 5 a 10 días hábiles una vez recibido el producto.',
+    answer: 'No se aceptan devoluciones. Softworks trabaja con un sistema de preventa, por lo que cada prenda se produce específicamente para cada pedido. Te recomendamos revisar cuidadosamente la guía de talles antes de realizar tu compra.',
   },
   {
     question: '¿Cuáles son los tiempos de envío?',
-    answer: 'Los envíos dentro de Buenos Aires demoran entre 2-4 días hábiles. Para el interior del país, el tiempo de envío es de 5-8 días hábiles. Una vez confirmado tu pago, procesaremos el pedido en 24-48 horas.',
+    answer: 'Los envíos para Buenos Aires y el interior del país demoran de 1 a 2 semanas una vez iniciada la compra. Una vez confirmado el pago, procesaremos tu envío en 24 a 48 horas.',
   },
   {
     question: '¿Cómo elijo mi talla correcta?',
