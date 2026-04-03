@@ -119,7 +119,7 @@ export default function Home() {
                 className="group cursor-pointer"
               >
                 <Link href={card.link}>
-                  <div className="aspect-[4/3] lg:aspect-[16/9] rounded-lg mb-3 relative overflow-hidden">
+                  <div className="aspect-[4/3] lg:aspect-[4/3] rounded-lg mb-3 relative overflow-hidden">
                     <RotatingCardImage
                       image={card.image}
                       image2={card.image2}
