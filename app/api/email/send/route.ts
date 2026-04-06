@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendOrderConfirmationEmail, sendOrderShippedEmail } from '@/lib/email';
+import { sendOrderConfirmationEmail, sendOrderShippedEmail, sendPaymentApprovedEmail } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,6 +39,19 @@ export async function POST(request: NextRequest) {
           trackingNumber: data.trackingNumber,
           trackingUrl: data.trackingUrl,
           carrier: data.carrier,
+          items: data.items || [],
+        });
+        break;
+
+      case 'payment_approved':
+        result = await sendPaymentApprovedEmail({
+          to: data.email,
+          customerName: data.customerName,
+          orderNumber: data.orderNumber,
+          orderId: data.orderId,
+          total: data.total,
+          subtotal: data.subtotal,
+          shippingCost: data.shippingCost,
           items: data.items || [],
         });
         break;

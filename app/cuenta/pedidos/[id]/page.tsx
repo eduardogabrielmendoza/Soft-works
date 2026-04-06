@@ -9,7 +9,7 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import { getOrderById, submitPaymentVerification } from '@/lib/api/orders';
 import { getActiveBankAccounts } from '@/lib/api/settings';
 import { uploadReceipt } from '@/lib/api/storage';
-import { formatPrice, formatDate, formatDateTime, getOrderStatusLabel, getOrderStatusColor, copyToClipboard } from '@/lib/utils/helpers';
+import { formatPrice, formatDate, formatDateTime, getOrderStatusLabel, getOrderStatusColor, getCarrierDisplayName, copyToClipboard } from '@/lib/utils/helpers';
 import type { OrderWithItems, BankAccount } from '@/lib/types/database.types';
 
 export default function PedidoDetallePage({ params }: { params: Promise<{ id: string }> }) {
@@ -454,7 +454,7 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
                 <div className="space-y-2 mt-4 pt-4 border-t border-gray-200">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-400">Transportista:</span>
-                    <span className="text-gray-500">{order.envio.nombre_transportista || order.envio.transportista}</span>
+                    <span className="text-gray-500">{order.envio.nombre_transportista || getCarrierDisplayName(order.envio.transportista)}</span>
                   </div>
                   {order.envio.numero_seguimiento && (
                     <div className="flex justify-between text-sm">
@@ -472,7 +472,7 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
                     <div>
                       <p className="text-sm text-gray-600 mb-1">Transportista</p>
                       <p className="font-medium text-gray-900">
-                        {order.envio.nombre_transportista || order.envio.transportista}
+                        {order.envio.nombre_transportista || getCarrierDisplayName(order.envio.transportista)}
                       </p>
                     </div>
                     
@@ -497,7 +497,7 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
 
                 {order.envio.url_seguimiento && order.envio.numero_seguimiento && (
                   <a
-                    href={order.envio.url_seguimiento}
+                    href={order.envio.url_seguimiento.startsWith('http') ? order.envio.url_seguimiento : `https://${order.envio.url_seguimiento}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full py-3 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors flex items-center justify-center gap-2 font-medium"

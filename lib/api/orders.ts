@@ -590,6 +590,10 @@ export async function addShippingInfo(
   if (!finalUrl && shippingData.numero_seguimiento && shippingData.transportista) {
     finalUrl = generateTrackingUrl(shippingData.transportista, shippingData.numero_seguimiento);
   }
+  // Ensure URL has protocol prefix
+  if (finalUrl && !finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
+    finalUrl = `https://${finalUrl}`;
+  }
   
   const dataToSave = {
     numero_seguimiento: shippingData.numero_seguimiento || null,

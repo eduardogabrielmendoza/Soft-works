@@ -89,7 +89,30 @@ export default function AdminPedidoDetailPage({ params }: { params: Promise<{ id
     try {
       await approvePayment(order.verificacion.id);
       
-      setSuccess('Pago aprobado correctamente.');
+      // Enviar email de pago aprobado
+      try {
+        await fetch('/api/email/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'payment_approved',
+            data: {
+              email: order.cliente_email,
+              customerName: order.cliente_nombre,
+              orderNumber: order.numero_pedido,
+              orderId: order.id,
+              total: order.total,
+              subtotal: order.subtotal,
+              shippingCost: order.costo_envio || 0,
+              items: order.items || [],
+            },
+          }),
+        });
+      } catch (emailErr) {
+        console.error('Error sending payment approved email:', emailErr);
+      }
+      
+      setSuccess('Pago aprobado correctamente. Se envió email al cliente.');
       await loadOrder();
     } catch (err: any) {
       console.error('Error approving payment:', err);
@@ -129,8 +152,10 @@ export default function AdminPedidoDetailPage({ params }: { params: Promise<{ id
     setError(null);
 
     try {
+      const carrierLabel = CARRIERS.find(c => c.value === shippingData.transportista)?.label || shippingData.transportista;
       const shippingResult = await addShippingInfo(order!.id, {
         transportista: shippingData.transportista as any,
+        nombre_transportista: carrierLabel,
         numero_seguimiento: shippingData.tracking_number,
         url_seguimiento: shippingData.tracking_url || undefined,
         entrega_estimada_min: shippingData.estimated_days_min 
@@ -222,21 +247,7 @@ export default function AdminPedidoDetailPage({ params }: { params: Promise<{ id
     }
   };
 
-  const handleMarkAsDelivered = async () => {
-    setIsUpdating(true);
-    setError(null);
 
-    try {
-      await updateOrderStatus(order!.id, 'entregado');
-      
-      setSuccess('Pedido marcado como entregado.');
-      await loadOrder();
-    } catch (err) {
-      setError('Error al actualizar estado');
-    } finally {
-      setIsUpdating(false);
-    }
-  };
 
   const getStatusIcon = (status: string) => {
     const icons: Record<string, any> = {
@@ -591,38 +602,8 @@ export default function AdminPedidoDetailPage({ params }: { params: Promise<{ id
                 </div>
               )}
 
-              {/* Mark as Delivered */}
-              {order.estado === 'enviado' && !!order.usuario_id && (
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-6">
-                  <h2 className="text-lg font-medium text-purple-800 mb-4 flex items-center gap-2">
-                    <Truck className="w-5 h-5" />
-                    Pedido en Tránsito
-                  </h2>
-                  {order.envio && (
-                    <div className="text-sm text-purple-700 mb-4">
-                      <p>Transportista: {order.envio.nombre_transportista || order.envio.transportista}</p>
-                      <p>Seguimiento: {order.envio.numero_seguimiento}</p>
-                    </div>
-                  )}
-                  <button
-                    onClick={handleMarkAsDelivered}
-                    disabled={isUpdating}
-                    className="py-3 px-6 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center gap-2"
-                  >
-                    {isUpdating ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <>
-                        <CheckCircle className="w-5 h-5" />
-                        Marcar como Entregado
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
-
-              {/* Mark as Finalizado — available for entregado or pago_aprobado (guest) */}
-              {(order.estado === 'entregado' || (order.estado === 'pago_aprobado' && !order.usuario_id)) && (
+              {/* Mark as Finalizado — available for enviado/entregado (registered) or pago_aprobado (guest) */}
+              {(order.estado === 'enviado' || order.estado === 'entregado' || (order.estado === 'pago_aprobado' && !order.usuario_id)) && (
                 <div className="bg-green-50 border-2 border-green-300 rounded-lg p-6">
                   <h2 className="text-lg font-medium text-green-900 mb-4 flex items-center gap-2">
                     <CheckCircle className="w-5 h-5" />
