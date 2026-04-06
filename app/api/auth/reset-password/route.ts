@@ -3,9 +3,9 @@ import { createClient } from '@supabase/supabase-js'
 
 export async function POST(request: NextRequest) {
   try {
-    const { token, uid, password } = await request.json()
+    const { email, code, password } = await request.json()
 
-    if (!token || !uid || !password) {
+    if (!email || !code || !password) {
       return NextResponse.json({ error: 'Faltan datos requeridos' }, { status: 400 })
     }
 
@@ -18,31 +18,49 @@ export async function POST(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
-    // Get user and verify token
-    const { data: { user }, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(uid)
+    // Find user by email via perfiles table
+    const { data: profile } = await supabaseAdmin
+      .from('perfiles')
+      .select('id')
+      .ilike('email', email.trim())
+      .single()
 
+    if (!profile) {
+      return NextResponse.json({ error: 'Código inválido o expirado' }, { status: 400 })
+    }
+
+    const { data: { user }, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(profile.id)
     if (getUserError || !user) {
-      return NextResponse.json({ error: 'Enlace inválido o expirado' }, { status: 400 })
+      return NextResponse.json({ error: 'Código inválido o expirado' }, { status: 400 })
     }
 
-    const storedToken = user.user_metadata?.reset_token
-    const tokenExpires = user.user_metadata?.reset_token_expires
+    const storedCode = user.user_metadata?.reset_code
+    const codeExpires = user.user_metadata?.reset_code_expires
+    const codeEmail = user.user_metadata?.reset_code_email
 
-    if (!storedToken || storedToken !== token) {
-      return NextResponse.json({ error: 'Enlace inválido o expirado' }, { status: 400 })
+    // Verify code matches
+    if (!storedCode || storedCode !== code.trim()) {
+      return NextResponse.json({ error: 'Código incorrecto' }, { status: 400 })
     }
 
-    if (!tokenExpires || Date.now() > tokenExpires) {
-      return NextResponse.json({ error: 'El enlace expiró. Solicitá uno nuevo.' }, { status: 400 })
+    // Verify email matches
+    if (!codeEmail || codeEmail !== email.trim().toLowerCase()) {
+      return NextResponse.json({ error: 'Código inválido o expirado' }, { status: 400 })
     }
 
-    // Update password and clear the reset token
-    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(uid, {
+    // Verify not expired
+    if (!codeExpires || Date.now() > codeExpires) {
+      return NextResponse.json({ error: 'El código expiró. Solicitá uno nuevo.' }, { status: 400 })
+    }
+
+    // Update password and clear the reset code
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(profile.id, {
       password,
       user_metadata: {
         ...user.user_metadata,
-        reset_token: null,
-        reset_token_expires: null,
+        reset_code: null,
+        reset_code_expires: null,
+        reset_code_email: null,
       },
     })
 

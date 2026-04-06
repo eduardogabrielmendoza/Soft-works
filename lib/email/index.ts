@@ -377,9 +377,9 @@ export async function sendOrderShippedEmail(params: {
 export async function sendPasswordResetEmail(params: {
   to: string;
   customerName?: string;
-  confirmationUrl: string;
+  code: string;
 }) {
-  const { to, customerName, confirmationUrl } = params;
+  const { to, customerName, code } = params;
 
   const greeting = customerName ? `Hola <strong>${customerName}</strong>,` : 'Hola,';
 
@@ -387,23 +387,29 @@ export async function sendPasswordResetEmail(params: {
     <div style="padding:36px 28px 24px;">
       <div style="text-align:center;margin:0 0 24px;">
         <div style="font-size:40px;margin-bottom:8px;">🔒</div>
-        <h2 style="color:#111827;font-size:22px;font-weight:700;margin:0;">Restablecé tu contraseña</h2>
+        <h2 style="color:#111827;font-size:22px;font-weight:700;margin:0;">Código de verificación</h2>
       </div>
       <p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 8px;">${greeting}</p>
       <p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 24px;">
-        Recibimos una solicitud para restablecer la contraseña de tu cuenta en Softworks. 
-        Hacé clic en el botón de abajo para elegir una nueva contraseña.
+        Recibimos una solicitud para restablecer la contraseña de tu cuenta en Softworks.
+        Usá el siguiente código para continuar:
       </p>
-      ${buildButton('Restablecer Contraseña', confirmationUrl)}
-      <div style="background-color:#fef9c3;border:1px solid #fde68a;border-radius:8px;padding:16px;margin:24px 0;">
+      <div style="text-align:center;margin:0 0 24px;">
+        <div style="display:inline-block;background-color:#f3f4f6;border:2px solid #d1d5db;border-radius:12px;padding:20px 40px;">
+          <span style="font-family:'Courier New',Courier,monospace;font-size:36px;font-weight:700;letter-spacing:8px;color:#111827;">
+            ${code}
+          </span>
+        </div>
+      </div>
+      <div style="background-color:#fef9c3;border:1px solid #fde68a;border-radius:8px;padding:16px;margin:0 0 24px;">
         <p style="color:#92400e;font-size:13px;margin:0;line-height:1.6;">
-          ⏰ Este enlace expira en <strong>24 horas</strong>. Si no solicitaste este cambio, ignorá este email.
+          ⏰ Este código expira en <strong>15 minutos</strong>. Si no solicitaste este cambio, ignorá este email.
         </p>
       </div>
-      <p style="color:#6b7280;font-size:13px;line-height:1.6;margin:16px 0 0;text-align:center;">
+      <p style="color:#6b7280;font-size:13px;line-height:1.6;margin:0;text-align:center;">
         ¿No solicitaste este cambio? Tu contraseña seguirá siendo la misma.
       </p>
     </div>`;
 
-  return sendEmail({ to, subject: 'Restablecé tu contraseña | Softworks', html: emailLayout(content) });
+  return sendEmail({ to, subject: 'Tu código de verificación | Softworks', html: emailLayout(content) });
 }

@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Loader2, Eye, EyeOff, Mail } from 'lucide-react';
+import { X, Loader2, Eye, EyeOff, Mail, Check, ShieldCheck, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/lib/hooks/useAuth';
 
 function CuentaContent() {
@@ -25,8 +25,13 @@ function CuentaContent() {
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
-  const [resetSent, setResetSent] = useState(false);
+  const [resetStep, setResetStep] = useState<'email' | 'code' | 'password' | 'success'>('email');
   const [resetError, setResetError] = useState('');
+  const [resetCode, setResetCode] = useState(['', '', '', '', '', '']);
+  const [resetPassword, setResetPassword] = useState('');
+  const [resetConfirmPassword, setResetConfirmPassword] = useState('');
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const codeInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,7 +77,7 @@ function CuentaContent() {
         return;
       }
 
-      setResetSent(true);
+      setResetStep('code');
     } catch {
       setResetError('Ocurrió un error. Intentá de nuevo.');
     } finally {
@@ -80,10 +85,110 @@ function CuentaContent() {
     }
   };
 
+  const handleCodeChange = (index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return;
+    const newCode = [...resetCode];
+    newCode[index] = value.slice(-1);
+    setResetCode(newCode);
+    setResetError('');
+    if (value && index < 5) {
+      codeInputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleCodeKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !resetCode[index] && index > 0) {
+      codeInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleCodePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (pasted.length === 6) {
+      setResetCode(pasted.split(''));
+      codeInputRefs.current[5]?.focus();
+    }
+  };
+
+  const handleVerifyCode = () => {
+    if (resetCode.join('').length !== 6) {
+      setResetError('Ingresá el código completo de 6 dígitos');
+      return;
+    }
+    setResetError('');
+    setResetStep('password');
+  };
+
+  const handleResendCode = async () => {
+    setResetLoading(true);
+    setResetError('');
+    setResetCode(['', '', '', '', '', '']);
+    try {
+      await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: resetEmail }),
+      });
+    } catch {
+      // silent
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const handleResetPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetLoading(true);
+    setResetError('');
+
+    try {
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: resetEmail,
+          code: resetCode.join(''),
+          password: resetPassword,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        if (data.error?.includes('incorrecto')) {
+          setResetStep('code');
+          setResetError(data.error);
+          setResetCode(['', '', '', '', '', '']);
+        } else {
+          setResetError(data.error || 'Error al actualizar la contraseña');
+        }
+      } else {
+        setResetStep('success');
+      }
+    } catch {
+      setResetError('Error inesperado');
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const resetPasswordChecks = {
+    length: resetPassword.length >= 8,
+    uppercase: /[A-Z]/.test(resetPassword),
+    lowercase: /[a-z]/.test(resetPassword),
+    number: /[0-9]/.test(resetPassword),
+  };
+  const isResetPasswordValid = Object.values(resetPasswordChecks).every(Boolean);
+  const resetPasswordsMatch = resetPassword === resetConfirmPassword && resetConfirmPassword.length > 0;
+
   const closeResetModal = () => {
     setShowResetModal(false);
-    setResetSent(false);
+    setResetStep('email');
     setResetError('');
+    setResetCode(['', '', '', '', '', '']);
+    setResetPassword('');
+    setResetConfirmPassword('');
   };
 
   if (authLoading) {
@@ -183,8 +288,11 @@ function CuentaContent() {
                   onClick={() => {
                     setShowResetModal(true);
                     setResetEmail(email);
-                    setResetSent(false);
+                    setResetStep('email');
                     setResetError('');
+                    setResetCode(['', '', '', '', '', '']);
+                    setResetPassword('');
+                    setResetConfirmPassword('');
                   }}
                   className="text-sm text-gray-600 hover:text-black transition-colors underline"
                 >
@@ -244,28 +352,142 @@ function CuentaContent() {
                 <X className="w-5 h-5" />
               </button>
 
-              {resetSent ? (
+              {resetStep === 'success' ? (
                 <div className="text-center">
-                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <Mail className="w-8 h-8 text-blue-600" />
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <CheckCircle className="w-8 h-8 text-green-600" />
                   </div>
-                  <h3 className="text-2xl font-medium mb-4">¡Revisá tu email!</h3>
-                  <p className="text-gray-700 leading-relaxed mb-6">
-                    Te enviamos un link a <strong>{resetEmail}</strong> para restablecer tu contraseña.
-                  </p>
-                  <p className="text-sm text-gray-500 mb-6">Si no lo ves, revisá la carpeta de spam.</p>
+                  <h3 className="text-2xl font-medium mb-4">¡Contraseña Actualizada!</h3>
+                  <p className="text-gray-600 mb-6">Tu contraseña fue cambiada exitosamente.</p>
                   <button
                     onClick={closeResetModal}
                     className="px-6 py-3 bg-foreground text-white rounded-md hover:bg-foreground/90 transition-colors font-medium"
                   >
-                    Entendido
+                    Iniciar Sesión
                   </button>
                 </div>
+              ) : resetStep === 'password' ? (
+                <>
+                  <div className="text-center mb-6">
+                    <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <ShieldCheck className="w-7 h-7 text-green-600" />
+                    </div>
+                    <h3 className="text-2xl font-medium mb-2">Nueva Contraseña</h3>
+                    <p className="text-gray-600 text-sm">Elegí una nueva contraseña para tu cuenta.</p>
+                  </div>
+                  {resetError && (
+                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">{resetError}</div>
+                  )}
+                  <form onSubmit={handleResetPasswordSubmit} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Nueva Contraseña</label>
+                      <div className="relative">
+                        <input
+                          type={showResetPassword ? 'text' : 'password'}
+                          value={resetPassword}
+                          onChange={(e) => setResetPassword(e.target.value)}
+                          required
+                          disabled={resetLoading}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white disabled:opacity-50 pr-12"
+                          placeholder="••••••••"
+                        />
+                        <button type="button" onClick={() => setShowResetPassword(!showResetPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700">
+                          {showResetPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        </button>
+                      </div>
+                      {resetPassword.length > 0 && (
+                        <div className="mt-2 space-y-1">
+                          {[
+                            { ok: resetPasswordChecks.length, text: 'Mínimo 8 caracteres' },
+                            { ok: resetPasswordChecks.uppercase, text: 'Una mayúscula' },
+                            { ok: resetPasswordChecks.lowercase, text: 'Una minúscula' },
+                            { ok: resetPasswordChecks.number, text: 'Un número' },
+                          ].map((c) => (
+                            <div key={c.text} className={`flex items-center gap-2 text-xs ${c.ok ? 'text-green-600' : 'text-gray-500'}`}>
+                              <div className={`w-4 h-4 rounded-full flex items-center justify-center ${c.ok ? 'bg-green-100' : 'bg-gray-100'}`}>
+                                {c.ok && <Check className="w-3 h-3" />}
+                              </div>
+                              {c.text}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Confirmar Contraseña</label>
+                      <input
+                        type={showResetPassword ? 'text' : 'password'}
+                        value={resetConfirmPassword}
+                        onChange={(e) => setResetConfirmPassword(e.target.value)}
+                        required
+                        disabled={resetLoading}
+                        className={`w-full px-4 py-3 border rounded-md focus:outline-none focus:ring-2 bg-white disabled:opacity-50 ${
+                          resetConfirmPassword.length > 0 ? (resetPasswordsMatch ? 'border-green-300 focus:ring-green-400' : 'border-red-300 focus:ring-red-400') : 'border-gray-300 focus:ring-gray-400'
+                        }`}
+                        placeholder="••••••••"
+                      />
+                      {resetConfirmPassword.length > 0 && !resetPasswordsMatch && (
+                        <p className="mt-1 text-xs text-red-600">Las contraseñas no coinciden</p>
+                      )}
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={resetLoading || !isResetPasswordValid || !resetPasswordsMatch}
+                      className="w-full px-6 py-3 bg-foreground text-white rounded-md hover:bg-foreground/90 transition-colors font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {resetLoading ? (<><Loader2 className="w-5 h-5 animate-spin" />Actualizando...</>) : 'Cambiar Contraseña'}
+                    </button>
+                  </form>
+                </>
+              ) : resetStep === 'code' ? (
+                <>
+                  <div className="text-center mb-6">
+                    <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Mail className="w-7 h-7 text-blue-600" />
+                    </div>
+                    <h3 className="text-2xl font-medium mb-2">Ingresá el código</h3>
+                    <p className="text-gray-600 text-sm">Enviamos un código de 6 dígitos a</p>
+                    <p className="font-medium text-foreground">{resetEmail}</p>
+                  </div>
+                  {resetError && (
+                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm text-center">{resetError}</div>
+                  )}
+                  <div className="flex justify-center gap-2 mb-6" onPaste={handleCodePaste}>
+                    {resetCode.map((digit, i) => (
+                      <input
+                        key={i}
+                        ref={(el) => { codeInputRefs.current[i] = el; }}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={digit}
+                        onChange={(e) => handleCodeChange(i, e.target.value)}
+                        onKeyDown={(e) => handleCodeKeyDown(i, e)}
+                        className={`w-11 h-13 text-center text-xl font-bold border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 transition-colors ${
+                          digit ? 'border-gray-800 bg-gray-50' : resetError ? 'border-red-300' : 'border-gray-300'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <button
+                    onClick={handleVerifyCode}
+                    disabled={resetCode.join('').length !== 6}
+                    className="w-full px-6 py-3 bg-foreground text-white rounded-md hover:bg-foreground/90 transition-colors font-medium disabled:opacity-50 flex items-center justify-center gap-2 mb-4"
+                  >
+                    Verificar Código
+                  </button>
+                  <div className="text-center space-y-1">
+                    <button onClick={handleResendCode} disabled={resetLoading} className="text-sm text-gray-600 hover:text-black transition-colors underline disabled:opacity-50">
+                      {resetLoading ? 'Reenviando...' : 'Reenviar código'}
+                    </button>
+                    <p className="text-xs text-gray-400">El código expira en 15 minutos</p>
+                  </div>
+                </>
               ) : (
                 <>
                   <h3 className="text-2xl font-medium mb-4">Recuperar Contraseña</h3>
                   <p className="text-gray-700 mb-6">
-                    Ingresá tu email y te enviaremos un link para restablecer tu contraseña.
+                    Ingresá tu email y te enviaremos un código de verificación.
                   </p>
                   {resetError && (
                     <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
@@ -290,14 +512,7 @@ function CuentaContent() {
                       disabled={resetLoading}
                       className="w-full px-6 py-3 bg-foreground text-white rounded-md hover:bg-foreground/90 transition-colors font-medium disabled:opacity-50 flex items-center justify-center gap-2"
                     >
-                      {resetLoading ? (
-                        <>
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                          Enviando...
-                        </>
-                      ) : (
-                        'Enviar Link'
-                      )}
+                      {resetLoading ? (<><Loader2 className="w-5 h-5 animate-spin" />Enviando...</>) : 'Enviar Código'}
                     </button>
                   </form>
                 </>
