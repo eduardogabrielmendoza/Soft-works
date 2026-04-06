@@ -222,7 +222,31 @@ export default function AdminPedidoDetailPage({ params }: { params: Promise<{ id
 
       if (updateError) throw updateError;
 
-      setSuccess('Pago marcado como recibido. El pedido ahora está aprobado.');
+      // Enviar email de pago aprobado
+      try {
+        await fetch('/api/email/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'payment_approved',
+            data: {
+              email: order!.cliente_email,
+              customerName: order!.cliente_nombre,
+              orderNumber: order!.numero_pedido,
+              orderId: order!.id,
+              total: order!.total,
+              subtotal: order!.subtotal,
+              shippingCost: order!.costo_envio || 0,
+              paymentMethod: order!.metodo_pago || 'transferencia',
+              items: order!.items || [],
+            },
+          }),
+        });
+      } catch (emailErr) {
+        console.error('Error sending payment approved email:', emailErr);
+      }
+
+      setSuccess('Pago marcado como recibido. Se envió email al cliente.');
       await loadOrder();
     } catch (err: any) {
       console.error('Error approving guest payment:', err);
@@ -452,7 +476,7 @@ export default function AdminPedidoDetailPage({ params }: { params: Promise<{ id
               )}
 
               {/* Mark as Shipped Section */}
-              {order.estado === 'pago_aprobado' && !!order.usuario_id && (
+              {order.estado === 'pago_aprobado' && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-6">
                   <h2 className="text-lg font-medium text-green-800 mb-4 flex items-center gap-2">
                     <Truck className="w-5 h-5" />
@@ -590,21 +614,18 @@ export default function AdminPedidoDetailPage({ params }: { params: Promise<{ id
                 </div>
               )}
 
-              {/* Guest order notice - no shipping/delivery actions */}
-              {!order.usuario_id && (order.estado === 'pago_aprobado' || order.estado === 'enviado' || order.estado === 'entregado') && (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
-                  <h2 className="text-lg font-medium text-amber-800 mb-2 flex items-center gap-2">
-                    <AlertCircle className="w-5 h-5" />
-                    Pedido sin cuenta registrada
-                  </h2>
-                  <p className="text-sm text-amber-700">
-                    Este pedido fue realizado sin una cuenta registrada. Las actualizaciones se enviarán por email a {order.cliente_email}.
+              {/* Guest order notice */}
+              {!order.usuario_id && (order.estado === 'enviado' || order.estado === 'entregado') && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <p className="text-sm text-amber-700 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    Pedido sin cuenta registrada. Las actualizaciones se envían por email a {order.cliente_email}.
                   </p>
                 </div>
               )}
 
-              {/* Mark as Finalizado — available for enviado/entregado (registered) or pago_aprobado (guest) */}
-              {(order.estado === 'enviado' || order.estado === 'entregado' || (order.estado === 'pago_aprobado' && !order.usuario_id)) && (
+              {/* Mark as Finalizado — available for enviado/entregado or pago_aprobado (guest without shipping) */}
+              {(order.estado === 'enviado' || order.estado === 'entregado') && (
                 <div className="bg-green-50 border-2 border-green-300 rounded-lg p-6">
                   <h2 className="text-lg font-medium text-green-900 mb-4 flex items-center gap-2">
                     <CheckCircle className="w-5 h-5" />
