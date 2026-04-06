@@ -185,7 +185,7 @@ function ConfirmacionContent() {
               </div>
               <p className="text-green-700">
                 Tu pago con tarjeta fue aprobado correctamente. Vamos a preparar tu pedido para enviarlo lo antes posible.
-                Recibirás una notificación en tu cuenta de Softworks cuando tu pedido sea despachado.
+                Recibirás un email cuando tu pedido sea despachado.
               </p>
             </div>
           )}
@@ -235,7 +235,7 @@ function ConfirmacionContent() {
               </div>
               <p className="text-yellow-700">
                 Tu pago está siendo procesado por MercadoPago. Este proceso puede demorar unos minutos.
-                Recibirás una notificación en tu cuenta de Softworks cuando se confirme el pago.
+                Recibirás un email cuando se confirme el pago.
               </p>
             </div>
           )}
@@ -381,7 +381,7 @@ function ConfirmacionContent() {
                   <div>
                     <p className="font-medium">Esperá la verificación</p>
                     <p className="text-sm text-gray-600">
-                      Verificaremos tu pago en un plazo de 24-48 horas hábiles y recibirás una notificación en tu cuenta de Softworks.
+                      Verificaremos tu pago en un plazo de 24-48 horas hábiles y recibirás un email con la confirmación.
                     </p>
                   </div>
                 </div>
@@ -453,7 +453,7 @@ function ConfirmacionContent() {
                   <div>
                     <p className="font-medium">Envío</p>
                     <p className="text-sm text-gray-600">
-                      Recibirás una notificación en tu cuenta de Softworks cuando tu pedido sea despachado con el código de seguimiento.
+                      Recibirás un email cuando tu pedido sea despachado con el código de seguimiento.
                     </p>
                   </div>
                 </div>
@@ -587,7 +587,7 @@ function ConfirmacionContent() {
             </p>
           ) : (
             <p className="text-center text-sm text-gray-500 mt-6">
-              Recibirás notificaciones sobre tu pedido en tu cuenta de Softworks.
+              Recibirás emails con las actualizaciones de tu pedido.
             </p>
           )}
         </motion.div>

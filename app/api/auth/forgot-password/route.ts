@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { randomUUID } from 'crypto'
 import { sendPasswordResetEmail } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
@@ -15,37 +16,47 @@ export async function POST(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
-    // Generate recovery link using Supabase Admin API (no SMTP needed)
-    const { data, error } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'recovery',
-      email,
-      options: {
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://softworks.com.ar'}/auth/callback?next=${encodeURIComponent('/cuenta/reset-password')}`,
-      },
-    })
-
-    if (error) {
-      // Don't reveal if user exists or not
-      console.error('[ForgotPassword] Error:', error.message)
+    // Find user by email
+    const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers()
+    if (listError) {
+      console.error('[ForgotPassword] Error listing users:', listError.message)
       return NextResponse.json({ success: true })
     }
+
+    const user = users.find(u => u.email?.toLowerCase() === email.toLowerCase())
+    if (!user) {
+      // Don't reveal if user exists or not
+      return NextResponse.json({ success: true })
+    }
+
+    // Generate secure reset token and store in user metadata
+    const resetToken = randomUUID()
+    const resetExpires = Date.now() + 24 * 60 * 60 * 1000 // 24 hours
+
+    await supabaseAdmin.auth.admin.updateUserById(user.id, {
+      user_metadata: {
+        ...user.user_metadata,
+        reset_token: resetToken,
+        reset_token_expires: resetExpires,
+      },
+    })
 
     // Get user name for personalized email
     const { data: profile } = await supabaseAdmin
       .from('perfiles')
       .select('nombre')
-      .eq('id', data.user.id)
+      .eq('id', user.id)
       .single()
 
-    // Send the reset email via Mailjet
-    const actionLink = data.properties?.action_link
-    if (actionLink) {
-      await sendPasswordResetEmail({
-        to: email,
-        customerName: profile?.nombre || undefined,
-        confirmationUrl: actionLink,
-      })
-    }
+    // Build reset URL pointing directly to our reset page
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://softworks.com.ar'
+    const resetUrl = `${siteUrl}/cuenta/reset-password?token=${resetToken}&uid=${user.id}`
+
+    await sendPasswordResetEmail({
+      to: email,
+      customerName: profile?.nombre || undefined,
+      confirmationUrl: resetUrl,
+    })
 
     // Always return success (don't reveal if email exists)
     return NextResponse.json({ success: true })

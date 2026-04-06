@@ -712,7 +712,7 @@ export default function CheckoutPage() {
               <UserPlus className="w-12 h-12 mx-auto mb-4 text-foreground" />
               <h2 className="text-xl font-medium mb-2">¿Querés registrarte?</h2>
               <p className="text-gray-600 mb-6 text-sm leading-relaxed">
-                Si creás una cuenta, vas a poder hacer seguimiento de tus pedidos, ver tu historial de compras y recibir notificaciones sobre el estado de tu envío.
+                Si creás una cuenta, vas a poder hacer seguimiento de tus pedidos y ver tu historial de compras. Recibirás emails con las actualizaciones de tus envíos.
               </p>
               <div className="space-y-3">
                 <Link
@@ -759,12 +759,12 @@ export default function CheckoutPage() {
               </div>
               <h2 className="text-xl font-medium mb-2">Antes de continuar</h2>
               <p className="text-gray-600 mb-4 text-sm leading-relaxed">
-                Al comprar sin cuenta, <strong>no vas a poder ver el estado de tu envío</strong> ni recibir notificaciones sobre tu pedido.
+                Al comprar sin cuenta, <strong>no vas a poder visualizar ni hacer seguimiento de tus pedidos</strong> desde la web. Igualmente recibirás emails con las actualizaciones de tu pedido.
               </p>
               <p className="text-gray-600 mb-6 text-sm leading-relaxed">
                 Si tenés alguna duda sobre tu compra, podés contactarnos a:{' '}
-                <a href="mailto:softworksargentina@gmail.com" className="text-foreground font-medium underline">
-                  softworksargentina@gmail.com
+                <a href="mailto:administracion@softworks.com.ar" className="text-foreground font-medium underline">
+                  administracion@softworks.com.ar
                 </a>
               </p>
               <div className="space-y-3">

@@ -1,18 +1,18 @@
 ﻿'use client';
 
-import { useState, useEffect, Suspense } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Loader2, Eye, EyeOff, CheckCircle, ArrowLeft, Check, Mail } from 'lucide-react';
-import { useAuth } from '@/lib/hooks/useAuth';
-import { getSupabaseClient } from '@/lib/supabase/client';
 
 function ResetPasswordContent() {
   const router = useRouter();
-  const { user, isLoading: authLoading } = useAuth();
+  const searchParams = useSearchParams();
+  const token = searchParams.get('token');
+  const uid = searchParams.get('uid');
+  const hasToken = Boolean(token && uid);
 
-  const [isRecovery, setIsRecovery] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -34,24 +34,6 @@ function ResetPasswordContent() {
   const isPasswordValid = Object.values(passwordChecks).every(Boolean);
   const passwordsMatch = password === confirmPassword && confirmPassword.length > 0;
 
-  // Listen for PASSWORD_RECOVERY event (fires when user arrives from recovery email)
-  useEffect(() => {
-    const supabase = getSupabaseClient();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setIsRecovery(true);
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, []);
-
-  // Also detect if user arrived with session (from callback redirect)
-  useEffect(() => {
-    if (!authLoading && user) {
-      setIsRecovery(true);
-    }
-  }, [authLoading, user]);
-
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isPasswordValid || !passwordsMatch) return;
@@ -59,11 +41,16 @@ function ResetPasswordContent() {
     setIsLoading(true);
 
     try {
-      const supabase = getSupabaseClient();
-      const { error } = await supabase.auth.updateUser({ password });
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, uid, password }),
+      });
 
-      if (error) {
-        setError(error.message);
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Error al actualizar la contraseña');
       } else {
         setSuccess(true);
         setTimeout(() => router.push('/cuenta'), 3000);
@@ -99,14 +86,6 @@ function ResetPasswordContent() {
       setEmailLoading(false);
     }
   };
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-[#F5F5F0] pt-20 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-foreground" />
-      </div>
-    );
-  }
 
   // Success screen
   if (success) {
@@ -148,8 +127,8 @@ function ResetPasswordContent() {
     );
   }
 
-  // User has recovery session — show new password form
-  if (isRecovery) {
+  // User has token from email link — show new password form
+  if (hasToken) {
     return (
       <div className="min-h-screen bg-[#F5F5F0] pt-20">
         <div className="max-w-md mx-auto px-4 py-12 lg:py-20">

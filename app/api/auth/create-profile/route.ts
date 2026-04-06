@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { sendWelcomeEmail } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,6 +53,12 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
+
+    // Enviar email de bienvenida (fire & forget)
+    sendWelcomeEmail({
+      to: email,
+      customerName: firstName || undefined,
+    }).catch(err => console.error('[Welcome Email] Error:', err))
 
     return NextResponse.json({ data })
   } catch (error: any) {
