@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle, XCircle, Clock, Copy, Check, Loader2, ArrowRight, CreditCard, AlertTriangle, Mail } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Copy, Check, Loader2, ArrowRight, CreditCard, AlertTriangle, Mail, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/useAuth';
@@ -22,6 +22,19 @@ function ConfirmacionContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [isGuest, setIsGuest] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  // Guest upload state
+  const [showGuestUpload, setShowGuestUpload] = useState(false);
+  const [guestFile, setGuestFile] = useState<File | null>(null);
+  const [guestUploadData, setGuestUploadData] = useState({
+    transfer_reference: '',
+    transfer_date: '',
+    transfer_amount: '',
+    customer_notes: '',
+  });
+  const [isGuestUploading, setIsGuestUploading] = useState(false);
+  const [guestUploadError, setGuestUploadError] = useState<string | null>(null);
+  const [guestUploadSuccess, setGuestUploadSuccess] = useState(false);
 
   const isMercadoPago = !!mpStatus || order?.metodo_pago === 'mercadopago';
   const isApproved = mpStatus === 'approved';
@@ -75,6 +88,57 @@ function ConfirmacionContent() {
     if (success) {
       setCopiedField(field);
       setTimeout(() => setCopiedField(null), 2000);
+    }
+  };
+
+  const handleGuestFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
+        setGuestUploadError('Solo se permiten imágenes o PDFs');
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setGuestUploadError('El archivo no puede superar 5MB');
+        return;
+      }
+      setGuestFile(file);
+      setGuestUploadError(null);
+    }
+  };
+
+  const handleGuestUploadSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!guestFile || !order) return;
+
+    setIsGuestUploading(true);
+    setGuestUploadError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', guestFile);
+      formData.append('orderId', order.id);
+      if (guestUploadData.transfer_reference) formData.append('transfer_reference', guestUploadData.transfer_reference);
+      if (guestUploadData.transfer_date) formData.append('transfer_date', guestUploadData.transfer_date);
+      if (guestUploadData.transfer_amount) formData.append('transfer_amount', guestUploadData.transfer_amount);
+      if (guestUploadData.customer_notes) formData.append('customer_notes', guestUploadData.customer_notes);
+
+      const res = await fetch('/api/checkout/guest-upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Error al subir el comprobante');
+      }
+
+      setGuestUploadSuccess(true);
+      setShowGuestUpload(false);
+    } catch (error: any) {
+      setGuestUploadError(error.message || 'Error al subir el comprobante');
+    } finally {
+      setIsGuestUploading(false);
     }
   };
 
@@ -332,11 +396,10 @@ function ConfirmacionContent() {
             <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-6 mb-6">
               <div className="flex items-center gap-2 mb-3">
                 <AlertTriangle className="w-5 h-5 text-orange-600" />
-                <h2 className="text-lg font-medium text-orange-800">¡Importante! No cierres esta ventana</h2>
+                <h2 className="text-lg font-medium text-orange-800">¡Importante! Guardá esta página</h2>
               </div>
               <p className="text-orange-700 mb-3">
-                Como no tenés una cuenta en Softworks, esta es la única vez que verás los datos bancarios para realizar la transferencia.
-                <strong> Guardá esta información o hacé una captura de pantalla antes de cerrar la página.</strong>
+                Como no tenés una cuenta en Softworks, <strong>guardá el link de esta página o hacé una captura de pantalla</strong> con los datos bancarios para realizar la transferencia y subir tu comprobante.
               </p>
               <div className="flex items-center gap-2 text-orange-700">
                 <Mail className="w-4 h-4 flex-shrink-0" />
@@ -421,9 +484,20 @@ function ConfirmacionContent() {
                     3
                   </div>
                   <div>
-                    <p className="font-medium">Esperá el correo de confirmación</p>
+                    <p className="font-medium">Subí el comprobante</p>
                     <p className="text-sm text-gray-600">
-                      Verificaremos tu pago en un plazo de 24-48 horas hábiles y recibirás un correo electrónico a <strong>{guestEmail}</strong> con los datos de seguimiento.
+                      Una vez realizada la transferencia, subí una foto o captura del comprobante usando el botón de abajo.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 bg-foreground text-white rounded-full flex items-center justify-center flex-shrink-0 text-sm font-medium">
+                    4
+                  </div>
+                  <div>
+                    <p className="font-medium">Esperá la verificación</p>
+                    <p className="text-sm text-gray-600">
+                      Verificaremos tu pago en un plazo de 24-48 horas hábiles y recibirás un correo electrónico a <strong>{guestEmail}</strong> con la confirmación.
                     </p>
                   </div>
                 </div>
@@ -554,6 +628,132 @@ function ConfirmacionContent() {
             </div>
           </div>
 
+          {/* Guest Upload Success */}
+          {guestUploadSuccess && isGuest && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
+              <div className="flex items-center gap-2 mb-2">
+                <CheckCircle className="w-5 h-5 text-green-700" />
+                <h2 className="text-lg font-medium text-green-800">Comprobante enviado</h2>
+              </div>
+              <p className="text-green-700">
+                Tu comprobante fue subido correctamente. Verificaremos tu pago en un plazo de 24-48 horas hábiles y recibirás un email a <strong>{guestEmail}</strong> con la confirmación.
+              </p>
+            </div>
+          )}
+
+          {/* Guest Upload Form Modal */}
+          {showGuestUpload && (
+            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="bg-white rounded-lg max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto"
+              >
+                <h3 className="text-xl font-medium mb-4">Subir Comprobante de Pago</h3>
+                
+                {guestUploadError && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+                    {guestUploadError}
+                  </div>
+                )}
+
+                <form onSubmit={handleGuestUploadSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Comprobante (imagen o PDF) *
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={handleGuestFileSelect}
+                      required
+                      className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                    />
+                    {guestFile && (
+                      <p className="text-sm text-green-600 mt-1">✓ {guestFile.name}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Número de operación/referencia
+                    </label>
+                    <input
+                      type="text"
+                      value={guestUploadData.transfer_reference}
+                      onChange={(e) => setGuestUploadData({ ...guestUploadData, transfer_reference: e.target.value })}
+                      placeholder="Ej: 12345678"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Fecha de transferencia
+                      </label>
+                      <input
+                        type="date"
+                        value={guestUploadData.transfer_date}
+                        onChange={(e) => setGuestUploadData({ ...guestUploadData, transfer_date: e.target.value })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Monto transferido
+                      </label>
+                      <input
+                        type="number"
+                        value={guestUploadData.transfer_amount}
+                        onChange={(e) => setGuestUploadData({ ...guestUploadData, transfer_amount: e.target.value })}
+                        placeholder="0.00"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Notas adicionales
+                    </label>
+                    <textarea
+                      value={guestUploadData.customer_notes}
+                      onChange={(e) => setGuestUploadData({ ...guestUploadData, customer_notes: e.target.value })}
+                      placeholder="Información adicional sobre la transferencia..."
+                      rows={3}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 resize-none"
+                    />
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowGuestUpload(false)}
+                      className="flex-1 py-3 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={!guestFile || isGuestUploading}
+                      className="flex-1 py-3 bg-foreground text-white rounded-md hover:bg-foreground/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {isGuestUploading ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4" />
+                          Enviar Comprobante
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          )}
+
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-4">
             {!isMercadoPago && !isGuest && (
@@ -564,6 +764,15 @@ function ConfirmacionContent() {
                 Subir Comprobante
                 <ArrowRight className="w-4 h-4" />
               </Link>
+            )}
+            {!isMercadoPago && isGuest && !guestUploadSuccess && (
+              <button
+                onClick={() => setShowGuestUpload(true)}
+                className="flex-1 py-3 bg-foreground text-white rounded-md hover:bg-foreground/90 transition-colors flex items-center justify-center gap-2"
+              >
+                <Upload className="w-4 h-4" />
+                Subir Comprobante
+              </button>
             )}
             {!isGuest && (
               <Link
