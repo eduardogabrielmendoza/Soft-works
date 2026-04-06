@@ -34,12 +34,12 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 
 interface Diagnostics {
-  sendgrid: {
+  email: {
+    provider: string;
     apiKeyConfigured: boolean;
-    apiKeyPreview: string;
+    secretKeyConfigured: boolean;
     fromEmail: string;
     fromName: string;
-    replyTo: string;
   };
   mercadopago: {
     mode: string;
@@ -64,12 +64,9 @@ interface Diagnostics {
 }
 
 const EMAIL_TYPES = [
-  { value: 'raw_test', label: 'Test básico (sin template)', description: 'Email simple para verificar que SendGrid funciona' },
-  { value: 'payment_approved', label: 'Pago Aprobado', description: 'Template de confirmación de pago' },
+  { value: 'raw_test', label: 'Test básico (sin template)', description: 'Email simple para verificar que Mailjet funciona' },
+  { value: 'order_confirmation', label: 'Confirmación de Compra', description: 'Template de confirmación de pedido' },
   { value: 'order_shipped', label: 'Pedido Enviado', description: 'Template de pedido en camino' },
-  { value: 'order_delivered', label: 'Pedido Entregado', description: 'Template de pedido entregado' },
-  { value: 'payment_rejected', label: 'Pago Rechazado', description: 'Template de pago rechazado' },
-  { value: 'welcome', label: 'Bienvenida', description: 'Template de registro exitoso' },
 ];
 
 interface TestResult {
@@ -351,32 +348,32 @@ export default function AdminDebugPage() {
             </div>
           ) : diagnostics ? (
             <div className="space-y-6">
-              {/* === SENDGRID === */}
+              {/* === MAILJET === */}
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                 <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Mail className="w-5 h-5 text-blue-600" />
-                    <h2 className="text-lg font-medium">SendGrid (Email)</h2>
+                    <h2 className="text-lg font-medium">Mailjet (Email)</h2>
                   </div>
-                  <StatusBadge ok={diagnostics.sendgrid.apiKeyConfigured} label={diagnostics.sendgrid.apiKeyConfigured ? 'Configurado' : 'Sin configurar'} />
+                  <StatusBadge ok={diagnostics.email.apiKeyConfigured && diagnostics.email.secretKeyConfigured} label={diagnostics.email.apiKeyConfigured && diagnostics.email.secretKeyConfigured ? 'Configurado' : 'Sin configurar'} />
                 </div>
                 <div className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">API Key</p>
-                      <p className="font-mono text-sm">{diagnostics.sendgrid.apiKeyPreview}</p>
+                      <p className="font-mono text-sm">{diagnostics.email.apiKeyConfigured ? 'Configurada' : 'NO CONFIGURADA'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Secret Key</p>
+                      <p className="font-mono text-sm">{diagnostics.email.secretKeyConfigured ? 'Configurada' : 'NO CONFIGURADA'}</p>
                     </div>
                     <div>
                       <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">From Email</p>
-                      <p className="text-sm font-medium">{diagnostics.sendgrid.fromEmail}</p>
+                      <p className="text-sm font-medium">{diagnostics.email.fromEmail}</p>
                     </div>
                     <div>
                       <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">From Name</p>
-                      <p className="text-sm">{diagnostics.sendgrid.fromName}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Reply To</p>
-                      <p className="text-sm">{diagnostics.sendgrid.replyTo}</p>
+                      <p className="text-sm">{diagnostics.email.fromName}</p>
                     </div>
                   </div>
                 </div>
@@ -560,7 +557,7 @@ export default function AdminDebugPage() {
                     <Send className="w-5 h-5 text-orange-600" />
                     <h2 className="text-lg font-medium">Enviar Email de Prueba</h2>
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">Enviá un email de prueba para verificar que SendGrid funciona correctamente</p>
+                  <p className="text-sm text-gray-500 mt-1">Enviá un email de prueba para verificar que Mailjet funciona correctamente</p>
                 </div>
                 <div className="p-6 space-y-4">
                   <div>
@@ -791,10 +788,9 @@ export default function AdminDebugPage() {
                     <h3 className="font-medium text-amber-800 mb-2">Consejos para emails</h3>
                     <ul className="text-sm text-amber-700 space-y-1">
                       <li>• Si los emails no llegan, revisá la carpeta de spam</li>
-                      <li>• El remitente debe coincidir con el dominio autenticado en SendGrid</li>
-                      <li>• Verificá que el Sender Identity esté verificado en SendGrid</li>
-                      <li>• Los registros DNS (SPF/DKIM) deben estar configurados en Cloudflare</li>
-                      <li>• Si usás Email Routing de Cloudflare, verificá que esté activo</li>
+                      <li>• El remitente debe estar verificado en Mailjet (Sender Addresses)</li>
+                      <li>• En la cuenta gratuita de Mailjet tenés hasta 6.000 emails/mes (200/día)</li>
+                      <li>• Las credenciales deben estar configuradas como MAILJET_API_KEY y MAILJET_SECRET_KEY en Railway</li>
                     </ul>
                   </div>
                 </div>

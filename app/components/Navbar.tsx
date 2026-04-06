@@ -12,9 +12,7 @@ import { textStyleCSS, BTN_ALIGN_CLASS } from '@/lib/types/sections';
 import { SectionButton } from './CustomSections';
 import SearchDrawer from './SearchDrawer';
 import CartDrawer from './CartDrawer';
-import NotificationBell from './NotificationBell';
 import AdminChatIcon from './AdminChatIcon';
-import { useNotifications } from '@/lib/hooks/useNotifications';
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -32,7 +30,7 @@ export default function Navbar() {
   const { itemCount } = useCart();
   const { user, isAdmin, isLoading: authLoading } = useAuth();
   const { layout } = useLayoutContent();
-  const { unreadCount: unreadNotifications } = useNotifications();
+
 
   // Cerrar menú móvil al cambiar de página
   useEffect(() => {
@@ -123,9 +121,6 @@ export default function Navbar() {
               ) : (
                 <Menu className="w-6 h-6" />
               )}
-              {!isMenuOpen && user && unreadNotifications > 0 && (
-                <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full" />
-              )}
             </button>
 
             {/* Center Logo */}
@@ -200,8 +195,6 @@ export default function Navbar() {
                 </Link>
               )}
               
-              {/* Notificaciones */}
-              {!authLoading && user && <NotificationBell />}
               {!authLoading && user && <AdminChatIcon />}
 
               {/* Buscar */}
@@ -228,7 +221,6 @@ export default function Navbar() {
 
             {/* Mobile Right Actions */}
             <div className="lg:hidden flex items-center space-x-1 ml-auto">
-              {!authLoading && user && <NotificationBell />}
               {!authLoading && user && <AdminChatIcon />}
               <button
                 onClick={() => setShowSearchDrawer(true)}

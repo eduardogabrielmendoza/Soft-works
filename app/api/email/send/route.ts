@@ -1,10 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { 
-  sendPaymentApprovedEmail, 
-  sendPaymentRejectedEmail, 
-  sendOrderShippedEmail, 
-  sendOrderDeliveredEmail 
-} from '@/lib/email';
+import { sendOrderConfirmationEmail, sendOrderShippedEmail } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,24 +16,16 @@ export async function POST(request: NextRequest) {
     let result;
 
     switch (type) {
-      case 'payment_approved':
-        result = await sendPaymentApprovedEmail({
+      case 'order_confirmation':
+        result = await sendOrderConfirmationEmail({
           to: data.email,
           customerName: data.customerName,
           orderNumber: data.orderNumber,
           orderId: data.orderId,
           total: data.total,
-          items: data.items || [],
-        });
-        break;
-
-      case 'payment_rejected':
-        result = await sendPaymentRejectedEmail({
-          to: data.email,
-          customerName: data.customerName,
-          orderNumber: data.orderNumber,
-          orderId: data.orderId,
-          reason: data.reason,
+          subtotal: data.subtotal,
+          shippingCost: data.shippingCost,
+          paymentMethod: data.paymentMethod,
           items: data.items || [],
         });
         break;
@@ -52,16 +39,6 @@ export async function POST(request: NextRequest) {
           trackingNumber: data.trackingNumber,
           trackingUrl: data.trackingUrl,
           carrier: data.carrier,
-          items: data.items || [],
-        });
-        break;
-
-      case 'order_delivered':
-        result = await sendOrderDeliveredEmail({
-          to: data.email,
-          customerName: data.customerName,
-          orderNumber: data.orderNumber,
-          orderId: data.orderId,
           items: data.items || [],
         });
         break;

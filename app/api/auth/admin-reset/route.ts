@@ -46,17 +46,6 @@ export async function POST(request: NextRequest) {
         })
         .eq('id', solicitudId)
 
-      // Notificar al usuario
-      await supabaseAdmin
-        .from('notificaciones')
-        .insert({
-          usuario_id: solicitud.usuario_id,
-          tipo: 'sistema',
-          titulo: 'Solicitud de recuperación aprobada',
-          mensaje: 'Tu solicitud fue aprobada. Podés ingresar a la página de recuperación para crear una nueva contraseña.',
-          metadata: {},
-        })
-
       return NextResponse.json({ success: true, message: 'Solicitud aprobada' })
     } else {
       // Rechazar
@@ -68,18 +57,6 @@ export async function POST(request: NextRequest) {
           fecha_resolucion: new Date().toISOString(),
         })
         .eq('id', solicitudId)
-
-      // Notificar al usuario
-      await supabaseAdmin
-        .from('notificaciones')
-        .insert({
-          usuario_id: solicitud.usuario_id,
-          tipo: 'sistema',
-          titulo: 'Solicitud de recuperación rechazada',
-          mensaje: adminNota 
-            ? `Tu solicitud fue rechazada. Motivo: ${adminNota}` 
-            : 'Tu solicitud de recuperación fue rechazada. Si creés que es un error, intentá nuevamente o contactanos.',
-        })
 
       return NextResponse.json({ success: true, message: 'Solicitud rechazada' })
     }

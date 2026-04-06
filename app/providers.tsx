@@ -6,7 +6,6 @@ import { SiteConfigProvider } from '@/lib/hooks/useSiteConfig'
 import { IndexContentProvider } from '@/lib/hooks/useIndexContent'
 import { PagesContentProvider } from '@/lib/hooks/usePagesContent'
 import { LayoutContentProvider } from '@/lib/hooks/useLayoutContent'
-import { NotificationsProvider } from '@/lib/hooks/useNotifications'
 import SmoothScroll from '@/app/components/SmoothScroll'
 
 interface ProvidersProps {
@@ -17,7 +16,6 @@ interface ProvidersProps {
 export function Providers({ children, initialData }: ProvidersProps) {
   return (
     <AuthProvider>
-      <NotificationsProvider>
         <SmoothScroll />
         <SiteConfigProvider initialData={initialData?.siteConfig}>
           <LayoutContentProvider initialData={initialData?.layout}>
@@ -30,7 +28,6 @@ export function Providers({ children, initialData }: ProvidersProps) {
             </IndexContentProvider>
           </LayoutContentProvider>
         </SiteConfigProvider>
-      </NotificationsProvider>
     </AuthProvider>
   )
 }

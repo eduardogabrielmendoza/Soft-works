@@ -3,11 +3,8 @@ import { createClient } from '@/lib/supabase/server';
 import { getMercadoPagoConfig } from '@/lib/api/mercadopago-config';
 import {
   sendEmail,
-  sendPaymentApprovedEmail,
+  sendOrderConfirmationEmail,
   sendOrderShippedEmail,
-  sendOrderDeliveredEmail,
-  sendPaymentRejectedEmail,
-  sendWelcomeEmail,
 } from '@/lib/email';
 
 // Verificar que el usuario es admin
@@ -40,13 +37,13 @@ export async function GET() {
 
   const diagnostics: Record<string, any> = {};
 
-  // 1. SendGrid config
-  diagnostics.sendgrid = {
-    apiKeyConfigured: !!process.env.SENDGRID_API_KEY,
-    apiKeyPreview: maskToken(process.env.SENDGRID_API_KEY),
-    fromEmail: process.env.EMAIL_FROM || 'administracion@softworks.com.ar',
+  // 1. Mailjet config
+  diagnostics.email = {
+    provider: 'Mailjet',
+    apiKeyConfigured: !!process.env.MAILJET_API_KEY,
+    secretKeyConfigured: !!process.env.MAILJET_SECRET_KEY,
+    fromEmail: process.env.EMAIL_FROM || 'softworksargentina@gmail.com',
     fromName: process.env.EMAIL_FROM_NAME || 'Softworks',
-    replyTo: process.env.EMAIL_REPLY_TO || 'softworksargentina@gmail.com',
   };
 
   // 2. MercadoPago config (from DB + env fallback)
@@ -168,13 +165,16 @@ export async function POST(request: NextRequest) {
       let result;
 
       switch (emailType) {
-        case 'payment_approved':
-          result = await sendPaymentApprovedEmail({
+        case 'order_confirmation':
+          result = await sendOrderConfirmationEmail({
             to: emailTo,
             customerName: 'Cliente de Prueba',
             orderNumber: testOrderNumber,
             orderId: '00000000-0000-0000-0000-000000000000',
             total: 15000,
+            subtotal: 14000,
+            shippingCost: 1000,
+            paymentMethod: 'transferencia',
             items: testItems,
           });
           break;
@@ -192,47 +192,18 @@ export async function POST(request: NextRequest) {
           });
           break;
 
-        case 'order_delivered':
-          result = await sendOrderDeliveredEmail({
-            to: emailTo,
-            customerName: 'Cliente de Prueba',
-            orderNumber: testOrderNumber,
-            orderId: '00000000-0000-0000-0000-000000000000',
-            items: testItems,
-          });
-          break;
-
-        case 'payment_rejected':
-          result = await sendPaymentRejectedEmail({
-            to: emailTo,
-            customerName: 'Cliente de Prueba',
-            orderNumber: testOrderNumber,
-            orderId: '00000000-0000-0000-0000-000000000000',
-            reason: 'Este es un email de prueba - motivo de ejemplo',
-            items: testItems,
-          });
-          break;
-
-        case 'welcome':
-          result = await sendWelcomeEmail({
-            to: emailTo,
-            customerName: 'Cliente de Prueba',
-          });
-          break;
-
         case 'raw_test':
-          // Test básico sin template - para verificar que SendGrid funciona
           result = await sendEmail({
             to: emailTo,
             subject: 'Test de conexión - Softworks',
             html: `
               <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
                 <h2 style="color: #000;">Test de Email - Softworks</h2>
-                <p>Si estás viendo este email, la configuración de SendGrid está funcionando correctamente.</p>
+                <p>Si estás viendo este email, la configuración de Mailjet está funcionando correctamente.</p>
                 <p><strong>Detalles:</strong></p>
                 <ul>
                   <li>Fecha: ${new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })}</li>
-                  <li>Enviado desde: ${process.env.EMAIL_FROM || 'administracion@softworks.com.ar'}</li>
+                  <li>Enviado desde: ${process.env.EMAIL_FROM || 'softworksargentina@gmail.com'}</li>
                   <li>Destinatario: ${emailTo}</li>
                 </ul>
                 <p style="color: #666; font-size: 12px;">Este es un email de prueba enviado desde el panel de debug de Softworks.</p>

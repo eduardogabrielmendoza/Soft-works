@@ -59,21 +59,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Crear notificación de bienvenida
-    try {
-      const customerName = firstName ? `${firstName}${lastName ? ' ' + lastName : ''}` : 'Cliente';
-      await supabaseAdmin
-        .from('notificaciones')
-        .insert({
-          usuario_id: userId,
-          tipo: 'bienvenida',
-          titulo: '¡Bienvenido/a a Softworks!',
-          mensaje: `Hola ${customerName}, tu cuenta fue creada exitosamente. Explorá nuestros productos y colecciones.`,
-        });
-    } catch (notifError) {
-      console.error('Error creating welcome notification:', notifError);
-    }
-
     return NextResponse.json({ data })
   } catch (error: any) {
     console.error('Error in create-profile:', error)

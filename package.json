@@ -19,7 +19,6 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@sendgrid/mail": "^8.1.6",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.91.0",
     "framer-motion": "^12.26.1",
@@ -27,11 +26,11 @@
     "lucide-react": "^0.562.0",
     "mercadopago": "^2.12.0",
     "next": "16.1.1",
+    "node-mailjet": "^6.0.11",
     "react": "19.2.3",
     "react-colorful": "^5.6.1",
     "react-dom": "19.2.3",
-    "recharts": "^3.7.0",
-    "resend": "^6.8.0"
+    "recharts": "^3.7.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

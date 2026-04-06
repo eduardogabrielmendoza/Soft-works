@@ -1,5 +1,13 @@
 import type { EstadoPedido } from '@/lib/types/database.types'
 
+// Helper para obtener nombre del transportista
+export function getCarrierDisplayName(carrier: string): string {
+  const carriers: Record<string, string> = {
+    'correo_argentino': 'Correo Argentino',
+  };
+  return carriers[carrier] || carrier;
+}
+
 // Formatear precio en pesos argentinos
 export function formatPrice(price: number): string {
   return new Intl.NumberFormat('es-AR', {

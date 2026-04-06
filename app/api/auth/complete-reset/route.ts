@@ -51,16 +51,6 @@ export async function POST(request: NextRequest) {
       .update({ estado: 'completada' as any, token_temporal: null })
       .eq('id', solicitud.id)
 
-    // Notificar al usuario
-    await supabaseAdmin
-      .from('notificaciones')
-      .insert({
-        usuario_id: solicitud.usuario_id,
-        tipo: 'sistema',
-        titulo: 'Contraseña actualizada',
-        mensaje: 'Tu contraseña fue actualizada exitosamente. Ya podés iniciar sesión con tu nueva contraseña.',
-      })
-
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error in complete-reset:', error)

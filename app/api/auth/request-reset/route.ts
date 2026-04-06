@@ -101,17 +101,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Error al crear solicitud' }, { status: 500 })
     }
 
-    // Notificar al usuario
-    await supabaseAdmin
-      .from('notificaciones')
-      .insert({
-        usuario_id: profile.id,
-        tipo: 'sistema',
-        titulo: 'Solicitud de recuperación recibida',
-        mensaje: 'Tu solicitud de recuperación de contraseña fue recibida. Un administrador la revisará pronto.',
-      })
-
-    // Notificar a todos los admins
+    // Notificar a todos los admins (mantener in-app para el panel admin)
     const { data: admins } = await supabaseAdmin
       .from('perfiles')
       .select('id')

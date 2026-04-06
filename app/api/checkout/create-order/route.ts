@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { sendOrderConfirmationEmail } from '@/lib/email';
 
 function getSupabaseAdmin() {
   return createClient(
@@ -140,6 +141,25 @@ export async function POST(req: NextRequest) {
       await supabase.from('pedidos').delete().eq('id', order.id);
       return NextResponse.json({ error: 'Error al crear items del pedido' }, { status: 500 });
     }
+
+    // Send order confirmation email (fire & forget)
+    sendOrderConfirmationEmail({
+      to: cliente_email,
+      customerName: cliente_nombre,
+      orderNumber: numero_pedido,
+      orderId: order.id,
+      total,
+      subtotal,
+      shippingCost: costo_envio || 0,
+      paymentMethod: metodo_pago || 'transferencia',
+      items: items.map((item: any) => ({
+        producto_nombre: item.producto_nombre,
+        producto_imagen: item.producto_imagen,
+        talle: item.talle,
+        cantidad: item.cantidad,
+        producto_precio: item.producto_precio,
+      })),
+    }).catch(err => console.error('[Email] Error enviando confirmación:', err));
 
     return NextResponse.json({ order });
   } catch (error) {
