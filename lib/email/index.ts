@@ -211,47 +211,6 @@ export async function sendOrderShippedEmail(params: {
 }
 
 // ============================================================
-// TEMPLATE: CONFIRMACIÓN DE CUENTA
-// ============================================================
-export async function sendConfirmationEmail(params: {
-  to: string;
-  customerName?: string;
-  confirmationUrl: string;
-}) {
-  const { to, customerName, confirmationUrl } = params;
-
-  const greeting = customerName ? `Hola <strong>${customerName}</strong>,` : 'Hola,';
-
-  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
-<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background-color:#f4f4f4;">
-<div style="max-width:600px;margin:0 auto;background:#fff;">
-  <div style="background:#000;padding:28px;text-align:center;">
-    <h1 style="color:#fff;margin:0;font-size:24px;font-weight:600;letter-spacing:2px;">SOFTWORKS</h1>
-  </div>
-  <div style="padding:36px 28px;">
-    <h2 style="color:#000;font-size:21px;margin:0 0 18px;text-align:center;">Confirmá tu cuenta</h2>
-    <p style="color:#333;font-size:15px;line-height:1.6;margin:0 0 16px;">
-      ${greeting}
-    </p>
-    <p style="color:#333;font-size:15px;line-height:1.6;margin:0 0 16px;">
-      ¡Gracias por registrarte en Softworks! Hacé clic en el botón de abajo para confirmar tu email y activar tu cuenta.
-    </p>
-    <div style="text-align:center;margin:28px 0;">
-      <a href="${confirmationUrl}" style="display:inline-block;background:#000;color:#fff;padding:14px 32px;text-decoration:none;border-radius:6px;font-weight:600;font-size:15px;">Confirmar Email</a>
-    </div>
-    <p style="color:#666;font-size:13px;line-height:1.5;margin:16px 0 0;">
-      Si no creaste una cuenta en Softworks, podés ignorar este mensaje.
-    </p>
-  </div>
-  <div style="background:#f8f9fa;padding:24px;text-align:center;border-top:1px solid #eee;">
-    <p style="color:#999;font-size:12px;margin:0;">© ${new Date().getFullYear()} Softworks. Todos los derechos reservados.</p>
-  </div>
-</div></body></html>`;
-
-  return sendEmail({ to, subject: 'Confirmá tu cuenta en Softworks', html });
-}
-
-// ============================================================
 // TEMPLATE: RECUPERACIÓN DE CONTRASEÑA
 // ============================================================
 export async function sendPasswordResetEmail(params: {
@@ -293,47 +252,4 @@ export async function sendPasswordResetEmail(params: {
 </div></body></html>`;
 
   return sendEmail({ to, subject: 'Restablecé tu contraseña - Softworks', html });
-}
-
-// ============================================================
-// TEMPLATE: BIENVENIDA (REGISTRO EXITOSO)
-// ============================================================
-export async function sendWelcomeEmail(params: {
-  to: string;
-  customerName?: string;
-}) {
-  const { to, customerName } = params;
-
-  const greeting = customerName ? `Hola <strong>${customerName}</strong>,` : 'Hola,';
-
-  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
-<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background-color:#f4f4f4;">
-<div style="max-width:600px;margin:0 auto;background:#fff;">
-  <div style="background:#000;padding:28px;text-align:center;">
-    <h1 style="color:#fff;margin:0;font-size:24px;font-weight:600;letter-spacing:2px;">SOFTWORKS</h1>
-  </div>
-  <div style="padding:36px 28px;">
-    <h2 style="color:#000;font-size:21px;margin:0 0 18px;text-align:center;">¡Bienvenido a Softworks!</h2>
-    <p style="color:#333;font-size:15px;line-height:1.6;margin:0 0 16px;">
-      ${greeting}
-    </p>
-    <p style="color:#333;font-size:15px;line-height:1.6;margin:0 0 16px;">
-      ¡Gracias por crear tu cuenta! Ya podés explorar nuestras colecciones, guardar tus direcciones de envío y hacer seguimiento de tus pedidos.
-    </p>
-    <p style="color:#333;font-size:15px;line-height:1.6;margin:0 0 16px;">
-      Te enviaremos un email cada vez que haya una actualización importante sobre tus pedidos.
-    </p>
-    <div style="text-align:center;margin:28px 0;">
-      <a href="${SITE_URL}/colecciones" style="display:inline-block;background:#000;color:#fff;padding:14px 32px;text-decoration:none;border-radius:6px;font-weight:600;font-size:15px;">Ver Colecciones</a>
-    </div>
-    <p style="color:#666;font-size:13px;line-height:1.5;margin:16px 0 0;">
-      Si tenés alguna consulta, escribinos a <a href="mailto:administracion@softworks.com.ar" style="color:#000;text-decoration:underline;">administracion@softworks.com.ar</a>
-    </p>
-  </div>
-  <div style="background:#f8f9fa;padding:24px;text-align:center;border-top:1px solid #eee;">
-    <p style="color:#999;font-size:12px;margin:0;">© ${new Date().getFullYear()} Softworks. Todos los derechos reservados.</p>
-  </div>
-</div></body></html>`;
-
-  return sendEmail({ to, subject: '¡Bienvenido a Softworks!', html });
 }

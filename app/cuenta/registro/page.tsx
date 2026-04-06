@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { Loader2, Eye, EyeOff, Check, CheckCircle, Mail } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Loader2, Eye, EyeOff, Check, X, ShoppingBag, User, Truck } from 'lucide-react';
 import { useAuth } from '@/lib/hooks/useAuth';
 
 export default function RegistroPage() {
@@ -19,7 +19,7 @@ export default function RegistroPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
 
   const passwordChecks = {
     length: password.length >= 8,
@@ -65,9 +65,10 @@ export default function RegistroPage() {
       }
 
       if (needsConfirmation) {
-        setSuccess(true);
+        // Email confirmation disabled — this shouldn't happen, but handle it
+        setShowWelcome(true);
       } else {
-        router.push('/cuenta/perfil');
+        setShowWelcome(true);
       }
     } catch {
       setError('Ocurrió un error inesperado');
@@ -84,31 +85,86 @@ export default function RegistroPage() {
     );
   }
 
-  if (success) {
-    return (
-      <div className="min-h-screen bg-[#F5F5F0] pt-20">
-        <div className="max-w-md mx-auto px-4 py-20">
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white rounded-lg p-8 text-center shadow-sm">
-            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Mail className="w-8 h-8 text-blue-600" />
-            </div>
-            <h1 className="text-2xl font-medium mb-4">¡Revisá tu email!</h1>
-            <p className="text-gray-600 mb-2">Te enviamos un link de confirmación a</p>
-            <p className="font-medium text-foreground mb-6">{email}</p>
-            <p className="text-sm text-gray-500">Hacé clic en el link del email para activar tu cuenta.</p>
-            <div className="mt-8">
-              <Link href="/cuenta" className="text-sm text-gray-600 hover:text-black transition-colors underline">
-                Volver al login
-              </Link>
-            </div>
-          </motion.div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-[#F5F5F0] pt-20 overflow-x-hidden">
+    <>
+      {/* Welcome Modal */}
+      <AnimatePresence>
+        {showWelcome && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-[70] flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-lg max-w-md w-full p-8 relative"
+            >
+              <button
+                onClick={() => { setShowWelcome(false); router.push('/cuenta/perfil'); }}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Check className="w-8 h-8 text-green-600" />
+                </div>
+                <h2 className="text-2xl font-medium mb-2">¡Bienvenido{firstName ? `, ${firstName}` : ''}!</h2>
+                <p className="text-gray-600 text-sm">Tu cuenta fue creada exitosamente. Esto es lo que podés hacer:</p>
+              </div>
+
+              <div className="space-y-4 mb-8">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-[#F2F0EB] rounded-full flex items-center justify-center flex-shrink-0">
+                    <ShoppingBag className="w-4 h-4 text-foreground" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">Comprá tus productos</p>
+                    <p className="text-xs text-gray-500">Explorá nuestras colecciones, elegí tu talle y agregá al carrito.</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-[#F2F0EB] rounded-full flex items-center justify-center flex-shrink-0">
+                    <User className="w-4 h-4 text-foreground" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">Gestioná tu cuenta</p>
+                    <p className="text-xs text-gray-500">Guardá tus direcciones de envío y consultá tu historial de pedidos.</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-[#F2F0EB] rounded-full flex items-center justify-center flex-shrink-0">
+                    <Truck className="w-4 h-4 text-foreground" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">Seguí tus pedidos</p>
+                    <p className="text-xs text-gray-500">Recibí emails con cada actualización y hacé seguimiento desde tu cuenta.</p>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => { setShowWelcome(false); router.push('/cuenta/perfil'); }}
+                className="w-full py-3 bg-foreground text-white rounded-md hover:bg-foreground/90 transition-colors font-medium"
+              >
+                Ir a Mi Cuenta
+              </button>
+              <button
+                onClick={() => { setShowWelcome(false); router.push('/colecciones'); }}
+                className="w-full py-3 mt-2 text-gray-600 hover:text-foreground transition-colors text-sm"
+              >
+                Explorar Colecciones
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="min-h-screen bg-[#F5F5F0] pt-20 overflow-x-hidden">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 py-12 lg:py-20">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           {/* Left Image */}
@@ -200,6 +256,7 @@ export default function RegistroPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 

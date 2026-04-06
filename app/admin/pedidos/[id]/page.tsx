@@ -586,7 +586,7 @@ export default function AdminPedidoDetailPage({ params }: { params: Promise<{ id
                     Pedido sin cuenta registrada
                   </h2>
                   <p className="text-sm text-amber-700">
-                    Este pedido fue realizado sin una cuenta registrada. Las notificaciones se enviarán por correo electrónico a {order.cliente_email}.
+                    Este pedido fue realizado sin una cuenta registrada. Las actualizaciones se enviarán por email a {order.cliente_email}.
                   </p>
                 </div>
               )}
