@@ -16,16 +16,23 @@ export async function POST(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
-    // Find user by email
-    const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers()
-    if (listError) {
-      console.error('[ForgotPassword] Error listing users:', listError.message)
+    // Find user via perfiles table (reliable, no pagination issues)
+    const { data: profile } = await supabaseAdmin
+      .from('perfiles')
+      .select('id, nombre')
+      .ilike('email', email.trim())
+      .single()
+
+    if (!profile) {
+      console.log('[ForgotPassword] No profile found for:', email)
+      // Don't reveal if user exists or not
       return NextResponse.json({ success: true })
     }
 
-    const user = users.find(u => u.email?.toLowerCase() === email.toLowerCase())
-    if (!user) {
-      // Don't reveal if user exists or not
+    // Get the auth user
+    const { data: { user }, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(profile.id)
+    if (getUserError || !user) {
+      console.error('[ForgotPassword] User not found in auth:', profile.id, getUserError?.message)
       return NextResponse.json({ success: true })
     }
 
@@ -33,7 +40,7 @@ export async function POST(request: NextRequest) {
     const resetToken = randomUUID()
     const resetExpires = Date.now() + 24 * 60 * 60 * 1000 // 24 hours
 
-    await supabaseAdmin.auth.admin.updateUserById(user.id, {
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
       user_metadata: {
         ...user.user_metadata,
         reset_token: resetToken,
@@ -41,20 +48,20 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Get user name for personalized email
-    const { data: profile } = await supabaseAdmin
-      .from('perfiles')
-      .select('nombre')
-      .eq('id', user.id)
-      .single()
+    if (updateError) {
+      console.error('[ForgotPassword] Error updating user metadata:', updateError.message)
+      return NextResponse.json({ success: true })
+    }
 
     // Build reset URL pointing directly to our reset page
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://softworks.com.ar'
     const resetUrl = `${siteUrl}/cuenta/reset-password?token=${resetToken}&uid=${user.id}`
 
+    console.log('[ForgotPassword] Sending reset email to:', email, 'URL:', resetUrl)
+
     await sendPasswordResetEmail({
       to: email,
-      customerName: profile?.nombre || undefined,
+      customerName: profile.nombre || undefined,
       confirmationUrl: resetUrl,
     })
 
