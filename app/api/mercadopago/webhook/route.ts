@@ -108,6 +108,7 @@ export async function POST(req: NextRequest) {
                 subtotal: orderData.subtotal,
                 shippingCost: orderData.costo_envio || 0,
                 paymentMethod: 'mercadopago',
+                isGuest: !orderData.usuario_id,
                 items: orderItems.map((item: any) => ({
                   producto_nombre: item.producto_nombre,
                   producto_imagen: item.producto_imagen,

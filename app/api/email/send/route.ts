@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
           trackingNumber: data.trackingNumber,
           trackingUrl: data.trackingUrl,
           carrier: data.carrier,
+          isGuest: data.isGuest,
           items: data.items || [],
         });
         break;
@@ -39,6 +40,7 @@ export async function POST(request: NextRequest) {
           subtotal: data.subtotal,
           shippingCost: data.shippingCost,
           paymentMethod: data.paymentMethod,
+          isGuest: data.isGuest,
           items: data.items || [],
         });
         break;

@@ -11,10 +11,14 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useCart } from '@/lib/hooks/useCart';
 import { getUserAddresses, createAddress, ARGENTINA_PROVINCES } from '@/lib/api/addresses';
-import { getActiveShippingZones } from '@/lib/api/settings';
 import { formatPrice } from '@/lib/utils/helpers';
 import { lookupPostalCode, isValidPostalFormat } from '@/lib/utils/postalCodes';
-import type { Direccion, ZonaEnvio, MetodoPago } from '@/lib/types/database.types';
+import type { Direccion, MetodoPago } from '@/lib/types/database.types';
+
+// Fixed shipping config
+const SHIPPING_COST = 9000;
+const SHIPPING_LABEL = 'Correo Argentino Regular';
+const SHIPPING_DAYS = 6;
 
 // =============================================
 // TYPES
@@ -175,8 +179,6 @@ export default function CheckoutPage() {
   const [postalError, setPostalError] = useState('');
   const [postalValidated, setPostalValidated] = useState(false);
   const [showProvinciaSelector, setShowProvinciaSelector] = useState(false);
-  const [shippingZones, setShippingZones] = useState<ZonaEnvio[]>([]);
-  const [matchedZone, setMatchedZone] = useState<ZonaEnvio | null>(null);
   const [direccion, setDireccion] = useState<DireccionEnvio>({
     calle: '',
     numero: '',
@@ -202,10 +204,7 @@ export default function CheckoutPage() {
   // COMPUTED VALUES
   // =============================================
 
-  const shippingCost = matchedZone?.precio || 0;
-  const freeShippingThreshold = matchedZone?.envio_gratis_minimo;
-  const isFreeShipping = freeShippingThreshold ? subtotal >= freeShippingThreshold : false;
-  const finalShippingCost = isFreeShipping ? 0 : shippingCost;
+  const finalShippingCost = SHIPPING_COST;
   const total = subtotal + finalShippingCost;
   const canFinalize = step1Done && step2Done && step3Done && acceptedTerms && !isCreatingOrder;
 
@@ -217,9 +216,6 @@ export default function CheckoutPage() {
     const loadData = async () => {
       setIsLoading(true);
       try {
-        const zones = await getActiveShippingZones();
-        setShippingZones(zones);
-
         if (user) {
           const addrs = await getUserAddresses(user.id);
           setSavedAddresses(addrs);
@@ -266,7 +262,6 @@ export default function CheckoutPage() {
         destinatario: defaultAddr.nombre_destinatario,
       });
 
-      // Trigger postal lookup for saved address
       const result = lookupPostalCode(defaultAddr.codigo_postal);
       if (result) {
         setProvinciaDetectada(result.provincia);
@@ -277,16 +272,6 @@ export default function CheckoutPage() {
       }
     }
   }, [savedAddresses]);
-
-  // Match shipping zone when province changes
-  useEffect(() => {
-    if (provinciaDetectada && shippingZones.length > 0) {
-      const match = shippingZones.find((z) =>
-        z.provincias.some((p) => p.toLowerCase() === provinciaDetectada.toLowerCase())
-      );
-      setMatchedZone(match || shippingZones[0] || null);
-    }
-  }, [provinciaDetectada, shippingZones]);
 
   // Auto-fill destinatario from step 1
   useEffect(() => {
@@ -424,7 +409,7 @@ export default function CheckoutPage() {
         subtotal,
         costo_envio: finalShippingCost,
         total,
-        shipping_zone_id: matchedZone?.id,
+
         metodo_pago: paymentMethod,
         ...(isGuest && {
           guest_nombre: `${ident.nombre} ${ident.apellido}`.trim(),
@@ -681,11 +666,9 @@ export default function CheckoutPage() {
 
               {step2Done && currentStep !== 2 ? (
                 <div className="px-6 py-4">
-                  {matchedZone && (
-                    <p className="text-sm text-gray-600 mb-1">
-                      En hasta {matchedZone.dias_estimados_max} días hábiles
-                    </p>
-                  )}
+                  <p className="text-sm text-gray-600 mb-1">
+                    {SHIPPING_LABEL} — En hasta {SHIPPING_DAYS} días hábiles
+                  </p>
                   <p className="text-sm text-gray-800">
                     {direccion.calle} {direccion.numero}
                     {direccion.piso_depto && `, ${direccion.piso_depto}`}
@@ -695,11 +678,9 @@ export default function CheckoutPage() {
                     <p className="text-sm text-gray-600">
                       {direccion.localidad}, {provinciaDetectada}
                     </p>
-                    {matchedZone && (
-                      <span className="text-sm font-medium">
-                        {isFreeShipping ? 'Envío Gratis' : formatPrice(matchedZone.precio)}
-                      </span>
-                    )}
+                    <span className="text-sm font-medium">
+                      {formatPrice(SHIPPING_COST)}
+                    </span>
                   </div>
                 </div>
               ) : currentStep === 2 ? (
@@ -717,7 +698,6 @@ export default function CheckoutPage() {
                           if (val.length < 4) {
                             setPostalValidated(false);
                             setProvinciaDetectada('');
-                            setMatchedZone(null);
                           }
                         }}
                         className={`w-full px-4 py-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 text-sm ${
@@ -750,7 +730,7 @@ export default function CheckoutPage() {
                   </div>
 
                   {/* Shipping method */}
-                  {postalValidated && provinciaDetectada && matchedZone && (
+                  {postalValidated && provinciaDetectada && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
@@ -761,35 +741,17 @@ export default function CheckoutPage() {
                         <div className="flex items-center gap-3">
                           <div className="w-4 h-4 rounded-full border-4 border-foreground" />
                           <div>
-                            <p className="font-medium text-sm">{matchedZone.nombre}</p>
+                            <p className="font-medium text-sm">{SHIPPING_LABEL}</p>
                             <p className="text-xs text-gray-500">
-                              En hasta {matchedZone.dias_estimados_max} días hábiles
+                              En hasta {SHIPPING_DAYS} días hábiles
                             </p>
                           </div>
                         </div>
                         <span className="font-medium text-sm">
-                          {isFreeShipping ? (
-                            <span className="text-green-600">Gratis</span>
-                          ) : (
-                            formatPrice(matchedZone.precio)
-                          )}
+                          {formatPrice(SHIPPING_COST)}
                         </span>
                       </label>
-                      {freeShippingThreshold && !isFreeShipping && (
-                        <p className="text-xs text-green-600 mt-1">
-                          Envío gratis en compras mayores a {formatPrice(freeShippingThreshold)}
-                        </p>
-                      )}
                     </motion.div>
-                  )}
-
-                  {/* No shipping zone found */}
-                  {postalValidated && provinciaDetectada && !matchedZone && (
-                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                      <p className="text-sm text-amber-800">
-                        No hay envíos disponibles para {provinciaDetectada} en este momento.
-                      </p>
-                    </div>
                   )}
 
                   {/* Address fields */}
@@ -893,7 +855,7 @@ export default function CheckoutPage() {
 
                       <button
                         onClick={handleStep2Submit}
-                        disabled={!matchedZone}
+                        disabled={!postalValidated}
                         className="px-6 py-2.5 bg-gray-700 text-white text-sm rounded-md hover:bg-gray-800 transition-colors disabled:opacity-50"
                       >
                         Continuar al pago
@@ -1051,11 +1013,7 @@ export default function CheckoutPage() {
                 {step2Done && (
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">Gastos del envío</span>
-                    {isFreeShipping ? (
-                      <span className="text-green-600">Gratis</span>
-                    ) : (
-                      <span>{formatPrice(finalShippingCost)}</span>
-                    )}
+                    <span>{formatPrice(finalShippingCost)}</span>
                   </div>
                 )}
                 <div className="flex justify-between font-medium pt-2 border-t border-gray-100">
