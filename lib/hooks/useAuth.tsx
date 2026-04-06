@@ -155,6 +155,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
     })
 
+    if (error) {
+      console.error('[SignUp] Error:', error, 'message:', error.message, 'status:', (error as any).status)
+    }
+
     // Si el registro fue exitoso, crear el perfil usando la API
     if (!error && data.user) {
       try {

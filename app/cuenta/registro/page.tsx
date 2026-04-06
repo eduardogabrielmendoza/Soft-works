@@ -53,10 +53,13 @@ export default function RegistroPage() {
       });
 
       if (signUpError) {
-        if (signUpError.message.includes('already registered')) {
+        const msg = typeof signUpError.message === 'string' ? signUpError.message : String(signUpError);
+        if (msg.includes('already registered')) {
           setError('Este email ya está registrado');
+        } else if (msg && msg !== '{}' && msg !== '[object Object]') {
+          setError(msg);
         } else {
-          setError(signUpError.message);
+          setError('Error al crear la cuenta. Intentá de nuevo.');
         }
         return;
       }
