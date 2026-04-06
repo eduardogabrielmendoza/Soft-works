@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, email, firstName, lastName, avatarUrl, securityQuestion, securityAnswer } = await request.json()
+    const { userId, email, firstName, lastName, avatarUrl } = await request.json()
 
     if (!userId || !email) {
       return NextResponse.json(
@@ -35,12 +35,6 @@ export async function POST(request: NextRequest) {
     }
     if (avatarUrl) {
       profileData.avatar_url = avatarUrl
-    }
-    if (securityQuestion) {
-      profileData.pregunta_seguridad = securityQuestion
-    }
-    if (securityAnswer) {
-      profileData.respuesta_seguridad = securityAnswer
     }
 
     const { data, error } = await supabaseAdmin

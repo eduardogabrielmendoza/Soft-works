@@ -12,7 +12,7 @@ interface AuthContextType {
   isLoading: boolean
   isAdmin: boolean
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>
-  signUp: (email: string, password: string, metadata?: { first_name?: string; last_name?: string; security_question?: string; security_answer?: string }) => Promise<{ error: Error | null }>
+  signUp: (email: string, password: string, metadata?: { first_name?: string; last_name?: string }) => Promise<{ error: Error | null; needsConfirmation: boolean }>
   signOut: () => Promise<void>
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>
   refreshProfile: () => Promise<void>
@@ -143,7 +143,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = useCallback(async (
     email: string,
     password: string,
-    metadata?: { first_name?: string; last_name?: string; security_question?: string; security_answer?: string }
+    metadata?: { first_name?: string; last_name?: string }
   ) => {
     const supabase = getSupabaseClient()
     const { data, error } = await supabase.auth.signUp({
@@ -151,6 +151,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       password,
       options: {
         data: metadata,
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=/cuenta/perfil`,
       },
     })
 
@@ -167,8 +168,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             email: data.user.email,
             firstName: metadata?.first_name || '',
             lastName: metadata?.last_name || '',
-            securityQuestion: metadata?.security_question || '',
-            securityAnswer: metadata?.security_answer || '',
           }),
         })
 
@@ -180,7 +179,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    return { error: error as Error | null }
+    return { error: error as Error | null, needsConfirmation: !error && !data.session }
   }, [])
 
   const signOut = useCallback(async () => {

@@ -4,8 +4,9 @@ import { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Loader2, Eye, EyeOff, CheckCircle, Clock } from 'lucide-react';
+import { X, Loader2, Eye, EyeOff, Mail } from 'lucide-react';
 import { useAuth } from '@/lib/hooks/useAuth';
+import { getSupabaseClient } from '@/lib/supabase/client';
 
 function CuentaContent() {
   const router = useRouter();
@@ -24,15 +25,9 @@ function CuentaContent() {
   // Reset modal state
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
-  const [resetName, setResetName] = useState('');
-  const [resetSent, setResetSent] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
-  const [resetMessage, setResetMessage] = useState('');
+  const [resetSent, setResetSent] = useState(false);
   const [resetError, setResetError] = useState('');
-  const [pendingRequest, setPendingRequest] = useState<{ estado: string; fecha: string } | null>(null);
-  const [resetStep, setResetStep] = useState<'credentials' | 'security' | 'done'>('credentials');
-  const [securityQuestion, setSecurityQuestion] = useState('');
-  const [securityAnswer, setSecurityAnswer] = useState('');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,7 +41,7 @@ function CuentaContent() {
         if (error.message.includes('Invalid login credentials')) {
           setError('Email o contraseña incorrectos');
         } else if (error.message.includes('Email not confirmed')) {
-          setError('Por favor confirma tu email antes de iniciar sesión');
+          setError('Por favor confirmá tu email antes de iniciar sesión');
         } else {
           setError(error.message);
         }
@@ -61,41 +56,23 @@ function CuentaContent() {
     }
   };
 
-  // Step 1: Validate email + name
-  const handleValidateCredentials = async (e: React.FormEvent) => {
+  const handleResetRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     setResetLoading(true);
     setResetError('');
 
     try {
-      const res = await fetch('/api/auth/request-reset', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: resetEmail,
-          nombreIngresado: resetName,
-          step: 'validate',
-        }),
+      const supabase = getSupabaseClient();
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent('/cuenta/reset-password')}`,
       });
-      const data = await res.json();
 
-      if (!res.ok) {
-        setResetError(data.error || 'Datos incorrectos.');
+      if (error) {
+        setResetError(error.message);
         return;
       }
 
-      if (data.pending) {
-        setPendingRequest({ estado: 'pendiente', fecha: data.fecha || '' });
-        return;
-      }
-
-      if (data.securityQuestion) {
-        setSecurityQuestion(data.securityQuestion);
-        setResetStep('security');
-      } else {
-        // No security question, submit directly
-        await submitResetRequest('');
-      }
+      setResetSent(true);
     } catch {
       setResetError('Ocurrió un error. Intentá de nuevo.');
     } finally {
@@ -103,45 +80,9 @@ function CuentaContent() {
     }
   };
 
-  // Step 2: Submit with security answer
-  const handleSubmitWithSecurity = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setResetLoading(true);
-    setResetError('');
-    await submitResetRequest(securityAnswer);
-    setResetLoading(false);
-  };
-
-  const submitResetRequest = async (answer: string) => {
-    try {
-      const res = await fetch('/api/auth/request-reset', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: resetEmail,
-          nombreIngresado: resetName,
-          securityAnswer: answer,
-        }),
-      });
-      const data = await res.json();
-      if (data.message?.includes('solicitud pendiente')) {
-        setPendingRequest({ estado: 'pendiente', fecha: '' });
-        return;
-      }
-      setResetMessage(data.message || 'Tu solicitud fue registrada.');
-      setResetSent(true);
-    } catch {
-      setResetError('Ocurrió un error. Intentá de nuevo.');
-    }
-  };
-
   const closeResetModal = () => {
     setShowResetModal(false);
     setResetSent(false);
-    setPendingRequest(null);
-    setResetStep('credentials');
-    setSecurityQuestion('');
-    setSecurityAnswer('');
     setResetError('');
   };
 
@@ -242,11 +183,7 @@ function CuentaContent() {
                   onClick={() => {
                     setShowResetModal(true);
                     setResetEmail(email);
-                    setPendingRequest(null);
                     setResetSent(false);
-                    setResetStep('credentials');
-                    setSecurityQuestion('');
-                    setSecurityAnswer('');
                     setResetError('');
                   }}
                   className="text-sm text-gray-600 hover:text-black transition-colors underline"
@@ -310,16 +247,13 @@ function CuentaContent() {
               {resetSent ? (
                 <div className="text-center">
                   <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <CheckCircle className="w-8 h-8 text-blue-600" />
+                    <Mail className="w-8 h-8 text-blue-600" />
                   </div>
-                  <h3 className="text-2xl font-medium mb-4">Solicitud Enviada</h3>
-                  <p className="text-gray-700 leading-relaxed mb-6">{resetMessage}</p>
-                  <p className="text-sm text-gray-600 mb-6">
-                    Cuando sea aprobada, podrás crear una nueva contraseña desde{' '}
-                    <Link href="/cuenta/reset-password" className="text-foreground font-medium hover:underline">
-                      esta página
-                    </Link>.
+                  <h3 className="text-2xl font-medium mb-4">¡Revisá tu email!</h3>
+                  <p className="text-gray-700 leading-relaxed mb-6">
+                    Te enviamos un link a <strong>{resetEmail}</strong> para restablecer tu contraseña.
                   </p>
+                  <p className="text-sm text-gray-500 mb-6">Si no lo ves, revisá la carpeta de spam.</p>
                   <button
                     onClick={closeResetModal}
                     className="px-6 py-3 bg-foreground text-white rounded-md hover:bg-foreground/90 transition-colors font-medium"
@@ -327,51 +261,28 @@ function CuentaContent() {
                     Entendido
                   </button>
                 </div>
-              ) : pendingRequest ? (
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <Clock className="w-8 h-8 text-yellow-600" />
-                  </div>
-                  <h3 className="text-2xl font-medium mb-4">Solicitud Pendiente</h3>
-                  <p className="text-gray-700 leading-relaxed mb-4">
-                    Ya tenés una solicitud de recuperación pendiente. Un administrador la revisará pronto.
-                  </p>
-                  {pendingRequest.fecha && (
-                    <p className="text-xs text-gray-500 mb-6">
-                      Enviada el {new Date(pendingRequest.fecha).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}
-                    </p>
-                  )}
-                  <Link
-                    href="/cuenta/reset-password"
-                    onClick={closeResetModal}
-                    className="inline-block px-6 py-3 bg-foreground text-white rounded-md hover:bg-foreground/90 transition-colors font-medium"
-                  >
-                    Ver estado de solicitud
-                  </Link>
-                </div>
-              ) : resetStep === 'security' ? (
+              ) : (
                 <>
-                  <h3 className="text-2xl font-medium mb-4">Pregunta de Seguridad</h3>
+                  <h3 className="text-2xl font-medium mb-4">Recuperar Contraseña</h3>
                   <p className="text-gray-700 mb-6">
-                    Respondé la siguiente pregunta para verificar tu identidad.
+                    Ingresá tu email y te enviaremos un link para restablecer tu contraseña.
                   </p>
                   {resetError && (
                     <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
                       {resetError}
                     </div>
                   )}
-                  <form onSubmit={handleSubmitWithSecurity} className="space-y-4">
+                  <form onSubmit={handleResetRequest} className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">{securityQuestion}</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Email de la cuenta</label>
                       <input
-                        type="text"
-                        value={securityAnswer}
-                        onChange={(e) => setSecurityAnswer(e.target.value)}
+                        type="email"
+                        value={resetEmail}
+                        onChange={(e) => setResetEmail(e.target.value)}
                         required
                         disabled={resetLoading}
                         className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white disabled:opacity-50"
-                        placeholder="Tu respuesta..."
-                        autoFocus
+                        placeholder="tu@email.com"
                       />
                     </div>
                     <button
@@ -385,77 +296,9 @@ function CuentaContent() {
                           Enviando...
                         </>
                       ) : (
-                        'Enviar Solicitud'
+                        'Enviar Link'
                       )}
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => { setResetStep('credentials'); setResetError(''); }}
-                      className="w-full text-sm text-gray-500 hover:text-black transition-colors"
-                    >
-                      ← Volver
-                    </button>
-                  </form>
-                </>
-              ) : (
-                <>
-                  <h3 className="text-2xl font-medium mb-4">Recuperar Contraseña</h3>
-                  <p className="text-gray-700 mb-6">
-                    Ingresá tus datos para verificar tu identidad.
-                  </p>
-                  {resetError && (
-                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
-                      {resetError}
-                    </div>
-                  )}
-                  <form onSubmit={handleValidateCredentials} className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Email de la cuenta</label>
-                      <input
-                        type="email"
-                        value={resetEmail}
-                        onChange={(e) => setResetEmail(e.target.value)}
-                        required
-                        disabled={resetLoading}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white disabled:opacity-50"
-                        placeholder="tu@email.com"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Tu nombre completo</label>
-                      <input
-                        type="text"
-                        value={resetName}
-                        onChange={(e) => setResetName(e.target.value)}
-                        required
-                        disabled={resetLoading}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white disabled:opacity-50"
-                        placeholder="Juan Pérez"
-                      />
-                    </div>
-                    <button
-                      type="submit"
-                      disabled={resetLoading}
-                      className="w-full px-6 py-3 bg-foreground text-white rounded-md hover:bg-foreground/90 transition-colors font-medium disabled:opacity-50 flex items-center justify-center gap-2"
-                    >
-                      {resetLoading ? (
-                        <>
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                          Verificando...
-                        </>
-                      ) : (
-                        'Continuar'
-                      )}
-                    </button>
-                    <div className="text-center mt-3">
-                      <Link
-                        href="/cuenta/reset-password"
-                        onClick={closeResetModal}
-                        className="text-sm text-gray-600 underline hover:text-black transition-colors"
-                      >
-                        Consultar estado de solicitud
-                      </Link>
-                    </div>
                   </form>
                 </>
               )}
