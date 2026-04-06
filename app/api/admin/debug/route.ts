@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getMercadoPagoConfig } from '@/lib/api/mercadopago-config';
 import {
   sendEmail,
-  sendOrderConfirmationEmail,
+  sendPaymentApprovedEmail,
   sendOrderShippedEmail,
 } from '@/lib/email';
 
@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
 
       switch (emailType) {
         case 'order_confirmation':
-          result = await sendOrderConfirmationEmail({
+          result = await sendPaymentApprovedEmail({
             to: emailTo,
             customerName: 'Cliente de Prueba',
             orderNumber: testOrderNumber,
@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
             total: 15000,
             subtotal: 14000,
             shippingCost: 1000,
-            paymentMethod: 'transferencia',
+            paymentMethod: 'mercadopago',
             items: testItems,
           });
           break;

@@ -65,7 +65,7 @@ interface Diagnostics {
 
 const EMAIL_TYPES = [
   { value: 'raw_test', label: 'Test básico (sin template)', description: 'Email simple para verificar que Mailjet funciona' },
-  { value: 'order_confirmation', label: 'Confirmación de Compra', description: 'Template de confirmación de pedido' },
+  { value: 'order_confirmation', label: 'Pago Exitoso / Aprobado', description: 'Template de pago exitoso (tarjeta) o aprobado (transferencia)' },
   { value: 'order_shipped', label: 'Pedido Enviado', description: 'Template de pedido en camino' },
 ];
 

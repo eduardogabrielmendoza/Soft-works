@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendOrderConfirmationEmail, sendOrderShippedEmail, sendPaymentApprovedEmail } from '@/lib/email';
+import { sendOrderShippedEmail, sendPaymentApprovedEmail } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,20 +16,6 @@ export async function POST(request: NextRequest) {
     let result;
 
     switch (type) {
-      case 'order_confirmation':
-        result = await sendOrderConfirmationEmail({
-          to: data.email,
-          customerName: data.customerName,
-          orderNumber: data.orderNumber,
-          orderId: data.orderId,
-          total: data.total,
-          subtotal: data.subtotal,
-          shippingCost: data.shippingCost,
-          paymentMethod: data.paymentMethod,
-          items: data.items || [],
-        });
-        break;
-
       case 'order_shipped':
         result = await sendOrderShippedEmail({
           to: data.email,
@@ -52,6 +38,7 @@ export async function POST(request: NextRequest) {
           total: data.total,
           subtotal: data.subtotal,
           shippingCost: data.shippingCost,
+          paymentMethod: data.paymentMethod,
           items: data.items || [],
         });
         break;

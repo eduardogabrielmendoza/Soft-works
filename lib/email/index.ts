@@ -52,9 +52,11 @@ export async function sendEmail(data: EmailData) {
 }
 
 // ============================================================
-// TEMPLATE: CONFIRMACIÓN DE COMPRA
+// TEMPLATE: PAGO EXITOSO / PAGO APROBADO
+// Para tarjeta/MercadoPago: "¡Pago exitoso!"
+// Para transferencia: "¡Tu pago fue aprobado!"
 // ============================================================
-export async function sendOrderConfirmationEmail(params: {
+export async function sendPaymentApprovedEmail(params: {
   to: string;
   customerName: string;
   orderNumber: string;
@@ -62,7 +64,7 @@ export async function sendOrderConfirmationEmail(params: {
   total: number;
   subtotal: number;
   shippingCost: number;
-  paymentMethod: string;
+  paymentMethod?: string;
   items: Array<{
     producto_nombre: string;
     producto_imagen: string | null;
@@ -72,6 +74,15 @@ export async function sendOrderConfirmationEmail(params: {
   }>;
 }) {
   const { to, customerName, orderNumber, orderId, total, subtotal, shippingCost, paymentMethod, items } = params;
+
+  const isCard = paymentMethod === 'mercadopago';
+  const title = isCard ? '¡Pago exitoso!' : '¡Tu pago fue aprobado!';
+  const message = isCard
+    ? `Tu pago para el pedido <strong>#${orderNumber}</strong> fue procesado exitosamente.`
+    : `Tu pago para el pedido <strong>#${orderNumber}</strong> fue verificado y aprobado exitosamente.`;
+  const subject = isCard
+    ? `Pago exitoso — Pedido #${orderNumber} - Softworks`
+    : `Pago aprobado — Pedido #${orderNumber} - Softworks`;
 
   const itemsHtml = items.map(item => `
     <tr>
@@ -90,8 +101,6 @@ export async function sendOrderConfirmationEmail(params: {
     </tr>
   `).join('');
 
-  const metodoPagoLabel = paymentMethod === 'mercadopago' ? 'MercadoPago' : 'Transferencia bancaria';
-
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
 <body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background-color:#f4f4f4;">
 <div style="max-width:600px;margin:0 auto;background:#fff;">
@@ -99,10 +108,10 @@ export async function sendOrderConfirmationEmail(params: {
     <h1 style="color:#fff;margin:0;font-size:24px;font-weight:600;letter-spacing:2px;">SOFTWORKS</h1>
   </div>
   <div style="padding:36px 28px;">
-    <h2 style="color:#000;font-size:21px;margin:0 0 18px;text-align:center;">¡Recibimos tu pedido!</h2>
+    <h2 style="color:#000;font-size:21px;margin:0 0 18px;text-align:center;">${title}</h2>
     <p style="color:#333;font-size:15px;line-height:1.6;margin:0 0 16px;">Hola <strong>${customerName}</strong>,</p>
     <p style="color:#333;font-size:15px;line-height:1.6;margin:0 0 16px;">
-      Gracias por tu compra. Tu pedido <strong>#${orderNumber}</strong> fue registrado exitosamente.
+      ${message} Recibirás información del despacho a la brevedad.
     </p>
     <div style="margin:24px 0;">
       <h3 style="color:#000;font-size:15px;margin:0 0 12px;">Productos:</h3>
@@ -113,7 +122,6 @@ export async function sendOrderConfirmationEmail(params: {
       <p style="color:#666;font-size:14px;margin:4px 0;"><strong>Subtotal:</strong> $${subtotal.toLocaleString('es-AR')}</p>
       <p style="color:#666;font-size:14px;margin:4px 0;"><strong>Envío:</strong> ${shippingCost === 0 ? 'Gratis' : '$' + shippingCost.toLocaleString('es-AR')}</p>
       <p style="color:#000;font-size:15px;margin:8px 0 4px;font-weight:600;"><strong>Total:</strong> $${total.toLocaleString('es-AR')}</p>
-      <p style="color:#666;font-size:14px;margin:4px 0;"><strong>Método de pago:</strong> ${metodoPagoLabel}</p>
     </div>
     <p style="color:#333;font-size:15px;line-height:1.6;margin:0 0 16px;">
       Por cualquier consulta, escribinos a <a href="mailto:administracion@softworks.com.ar" style="color:#000;text-decoration:underline;">administracion@softworks.com.ar</a>
@@ -127,82 +135,7 @@ export async function sendOrderConfirmationEmail(params: {
   </div>
 </div></body></html>`;
 
-  return sendEmail({ to, subject: `Confirmación de pedido #${orderNumber} - Softworks`, html });
-}
-
-// ============================================================
-// TEMPLATE: PAGO APROBADO (TRANSFERENCIA VERIFICADA)
-// ============================================================
-export async function sendPaymentApprovedEmail(params: {
-  to: string;
-  customerName: string;
-  orderNumber: string;
-  orderId: string;
-  total: number;
-  subtotal: number;
-  shippingCost: number;
-  items: Array<{
-    producto_nombre: string;
-    producto_imagen: string | null;
-    talle: string;
-    cantidad: number;
-    producto_precio: number;
-  }>;
-}) {
-  const { to, customerName, orderNumber, orderId, total, subtotal, shippingCost, items } = params;
-
-  const itemsHtml = items.map(item => `
-    <tr>
-      <td style="padding: 12px; border-bottom: 1px solid #eee;">
-        <table cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
-          <td width="65" style="vertical-align: top;">
-            <img src="${getAbsoluteImageUrl(item.producto_imagen)}" alt="${item.producto_nombre}" width="55" height="55" style="display:block;width:55px;height:55px;object-fit:cover;border-radius:4px;" />
-          </td>
-          <td style="vertical-align: top; padding-left: 12px;">
-            <div style="color:#000;font-weight:600;font-size:14px;margin-bottom:3px;">${item.producto_nombre}</div>
-            <div style="color:#666;font-size:13px;">Talle: ${item.talle} · Cantidad: ${item.cantidad}</div>
-            <div style="color:#000;font-size:13px;margin-top:3px;">$${item.producto_precio.toLocaleString('es-AR')}</div>
-          </td>
-        </tr></table>
-      </td>
-    </tr>
-  `).join('');
-
-  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
-<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background-color:#f4f4f4;">
-<div style="max-width:600px;margin:0 auto;background:#fff;">
-  <div style="background:#000;padding:28px;text-align:center;">
-    <h1 style="color:#fff;margin:0;font-size:24px;font-weight:600;letter-spacing:2px;">SOFTWORKS</h1>
-  </div>
-  <div style="padding:36px 28px;">
-    <h2 style="color:#000;font-size:21px;margin:0 0 18px;text-align:center;">¡Tu pago fue aprobado!</h2>
-    <p style="color:#333;font-size:15px;line-height:1.6;margin:0 0 16px;">Hola <strong>${customerName}</strong>,</p>
-    <p style="color:#333;font-size:15px;line-height:1.6;margin:0 0 16px;">
-      Tu pago para el pedido <strong>#${orderNumber}</strong> fue verificado y aprobado exitosamente. Estamos preparando tu pedido para el envío.
-    </p>
-    <div style="margin:24px 0;">
-      <h3 style="color:#000;font-size:15px;margin:0 0 12px;">Productos:</h3>
-      <table style="width:100%;border-collapse:collapse;border:1px solid #eee;border-radius:8px;">${itemsHtml}</table>
-    </div>
-    <div style="background:#f8f9fa;border-radius:8px;padding:18px;margin:24px 0;">
-      <p style="color:#666;font-size:14px;margin:4px 0;"><strong>Pedido:</strong> #${orderNumber}</p>
-      <p style="color:#666;font-size:14px;margin:4px 0;"><strong>Subtotal:</strong> $${subtotal.toLocaleString('es-AR')}</p>
-      <p style="color:#666;font-size:14px;margin:4px 0;"><strong>Envío:</strong> ${shippingCost === 0 ? 'Gratis' : '$' + shippingCost.toLocaleString('es-AR')}</p>
-      <p style="color:#000;font-size:15px;margin:8px 0 4px;font-weight:600;"><strong>Total:</strong> $${total.toLocaleString('es-AR')}</p>
-    </div>
-    <p style="color:#333;font-size:15px;line-height:1.6;margin:0 0 16px;">
-      Te enviaremos otro email cuando tu pedido sea despachado con los datos de seguimiento.
-    </p>
-    <div style="text-align:center;margin:28px 0;">
-      <a href="${SITE_URL}/cuenta/pedidos/${orderId}" style="display:inline-block;background:#000;color:#fff;padding:13px 28px;text-decoration:none;border-radius:6px;font-weight:600;font-size:14px;">Ver Mi Pedido</a>
-    </div>
-  </div>
-  <div style="background:#f8f9fa;padding:24px;text-align:center;border-top:1px solid #eee;">
-    <p style="color:#999;font-size:12px;margin:0;">© ${new Date().getFullYear()} Softworks. Todos los derechos reservados.</p>
-  </div>
-</div></body></html>`;
-
-  return sendEmail({ to, subject: `Pago aprobado — Pedido #${orderNumber} - Softworks`, html });
+  return sendEmail({ to, subject, html });
 }
 
 // ============================================================

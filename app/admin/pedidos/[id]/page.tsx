@@ -104,6 +104,7 @@ export default function AdminPedidoDetailPage({ params }: { params: Promise<{ id
               total: order.total,
               subtotal: order.subtotal,
               shippingCost: order.costo_envio || 0,
+              paymentMethod: order.metodo_pago || 'transferencia',
               items: order.items || [],
             },
           }),

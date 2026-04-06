@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Payment } from 'mercadopago';
 import { createClient } from '@supabase/supabase-js';
 import { getMercadoPagoMode, createMPClient } from '@/lib/api/mercadopago-config';
+import { sendPaymentApprovedEmail } from '@/lib/email';
 
 // Use service role to update orders (bypass RLS)
 function getSupabaseAdmin() {
@@ -81,6 +82,46 @@ export async function POST(req: NextRequest) {
         console.error('Error updating order from webhook:', error);
       } else {
         console.log(`Order ${orderId} updated to ${newEstado} via webhook (payment ${paymentId})`);
+
+        // Send payment success email for approved payments
+        if (newEstado === 'pago_aprobado') {
+          try {
+            // Fetch order details + items for the email
+            const { data: orderData } = await supabase
+              .from('pedidos')
+              .select('*')
+              .eq('id', orderId)
+              .single();
+
+            const { data: orderItems } = await supabase
+              .from('items_pedido')
+              .select('*')
+              .eq('pedido_id', orderId);
+
+            if (orderData && orderItems) {
+              await sendPaymentApprovedEmail({
+                to: orderData.cliente_email,
+                customerName: orderData.cliente_nombre,
+                orderNumber: orderData.numero_pedido,
+                orderId: orderData.id,
+                total: orderData.total,
+                subtotal: orderData.subtotal,
+                shippingCost: orderData.costo_envio || 0,
+                paymentMethod: 'mercadopago',
+                items: orderItems.map((item: any) => ({
+                  producto_nombre: item.producto_nombre,
+                  producto_imagen: item.producto_imagen,
+                  talle: item.talle,
+                  cantidad: item.cantidad,
+                  producto_precio: item.producto_precio,
+                })),
+              });
+              console.log(`Payment success email sent for order ${orderId}`);
+            }
+          } catch (emailErr) {
+            console.error('Error sending payment success email:', emailErr);
+          }
+        }
       }
     }
 
