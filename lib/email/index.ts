@@ -8,7 +8,7 @@ const mailjet = process.env.MAILJET_API_KEY && process.env.MAILJET_SECRET_KEY
   ? Mailjet.apiConnect(process.env.MAILJET_API_KEY, process.env.MAILJET_SECRET_KEY)
   : null;
 
-const FROM_EMAIL = process.env.EMAIL_FROM || 'softworksargentina@gmail.com';
+const FROM_EMAIL = process.env.EMAIL_FROM || 'administracion@softworks.com.ar';
 const FROM_NAME = process.env.EMAIL_FROM_NAME || 'Softworks';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://softworks.com.ar';
 
@@ -117,7 +117,7 @@ export async function sendOrderConfirmationEmail(params: {
       <p style="color:#666;font-size:14px;margin:4px 0;"><strong>Método de pago:</strong> ${metodoPagoLabel}</p>
     </div>
     <p style="color:#333;font-size:15px;line-height:1.6;margin:0 0 16px;">
-      Por cualquier consulta, escribinos a <a href="mailto:softworksargentina@gmail.com" style="color:#000;text-decoration:underline;">softworksargentina@gmail.com</a>
+      Por cualquier consulta, escribinos a <a href="mailto:administracion@softworks.com.ar" style="color:#000;text-decoration:underline;">administracion@softworks.com.ar</a>
     </p>
     <div style="text-align:center;margin:28px 0;">
       <a href="${SITE_URL}/cuenta/pedidos/${orderId}" style="display:inline-block;background:#000;color:#fff;padding:13px 28px;text-decoration:none;border-radius:6px;font-weight:600;font-size:14px;">Ver Mi Pedido</a>
@@ -196,7 +196,7 @@ export async function sendOrderShippedEmail(params: {
       <table style="width:100%;border-collapse:collapse;border:1px solid #eee;border-radius:8px;">${itemsHtml}</table>
     </div>
     <p style="color:#333;font-size:15px;line-height:1.6;margin:0 0 16px;">
-      Por cualquier consulta sobre tu envío, escribinos a <a href="mailto:softworksargentina@gmail.com" style="color:#000;text-decoration:underline;">softworksargentina@gmail.com</a>
+      Por cualquier consulta sobre tu envío, escribinos a <a href="mailto:administracion@softworks.com.ar" style="color:#000;text-decoration:underline;">administracion@softworks.com.ar</a>
     </p>
     <div style="text-align:center;margin:28px 0;">
       <a href="${SITE_URL}/cuenta/pedidos/${orderId}" style="display:inline-block;background:#000;color:#fff;padding:13px 28px;text-decoration:none;border-radius:6px;font-weight:600;font-size:14px;">Ver Detalles del Pedido</a>
