@@ -510,7 +510,7 @@ export default function CheckoutPage() {
               </div>
 
               {/* Shipping Method */}
-              {shippingZones.length > 0 && selectedAddress && (
+              {shippingZones.length > 0 && (selectedAddress || isGuest) && (
                 <div className="bg-white rounded-lg border border-gray-200 p-6">
                   <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
                     <Truck className="w-5 h-5" />
