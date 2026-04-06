@@ -110,8 +110,8 @@ export default function AuthPromptModal({ isOpen, onClose, onGuestContinue }: Au
                 </p>
                 <p className="text-gray-600 mb-6 text-sm leading-relaxed">
                   Si tenés alguna duda sobre tu compra, podés contactarnos a:{' '}
-                  <a href="mailto:softworksargentina@gmail.com" className="text-foreground font-medium underline">
-                    softworksargentina@gmail.com
+                  <a href="mailto:administracion@softworks.com.ar" className="text-foreground font-medium underline">
+                    administracion@softworks.com.ar
                   </a>
                 </p>
                 <div className="space-y-3">
