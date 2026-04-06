@@ -1,52 +1,151 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, Loader2, Minus, Plus, Trash2, MapPin, Truck, CreditCard, ShoppingBag, Building2, UserPlus } from 'lucide-react';
+import {
+  ChevronLeft, Loader2, Check, MapPin, Truck, CreditCard,
+  Building2, UserPlus, Package, ExternalLink,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useCart } from '@/lib/hooks/useCart';
-import { getUserAddresses } from '@/lib/api/addresses';
+import { getUserAddresses, createAddress, ARGENTINA_PROVINCES } from '@/lib/api/addresses';
 import { getActiveShippingZones } from '@/lib/api/settings';
 import { formatPrice } from '@/lib/utils/helpers';
-import type { Address, ShippingZone, MetodoPago } from '@/lib/types/database.types';
+import { lookupPostalCode, isValidPostalFormat } from '@/lib/utils/postalCodes';
+import type { Direccion, ZonaEnvio, MetodoPago } from '@/lib/types/database.types';
+
+// =============================================
+// TYPES
+// =============================================
+
+interface Identificacion {
+  email: string;
+  nombre: string;
+  apellido: string;
+  telefono: string;
+}
+
+interface DireccionEnvio {
+  calle: string;
+  numero: string;
+  piso_depto: string;
+  localidad: string;
+  destinatario: string;
+}
+
+// =============================================
+// STEP HEADER COMPONENT
+// =============================================
+
+function StepHeader({
+  number,
+  title,
+  isCompleted,
+  isActive,
+  onEdit,
+}: {
+  number: number;
+  title: string;
+  isCompleted: boolean;
+  isActive: boolean;
+  onEdit?: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between bg-gray-100 px-6 py-3 rounded-t-lg">
+      <div className="flex items-center gap-3">
+        <span className="text-sm font-bold uppercase tracking-wide text-foreground">
+          {title}
+        </span>
+        <span className="text-xs text-gray-500 font-medium">{number}/3</span>
+      </div>
+      {isCompleted && !isActive && onEdit && (
+        <button
+          onClick={onEdit}
+          className="text-sm font-medium text-foreground hover:underline"
+        >
+          Editar
+        </button>
+      )}
+    </div>
+  );
+}
+
+// =============================================
+// PROGRESS BAR
+// =============================================
+
+function ProgressBar({ currentStep, stepsCompleted }: { currentStep: number; stepsCompleted: boolean[] }) {
+  const steps = [
+    { label: 'CARRITO', completed: true },
+    { label: 'IDENTIFICACIÓN', completed: stepsCompleted[0] },
+    { label: 'ENVÍO', completed: stepsCompleted[1] },
+    { label: 'PAGO', completed: stepsCompleted[2] },
+  ];
+
+  return (
+    <div className="flex items-center justify-center gap-0 mb-8">
+      {steps.map((step, i) => (
+        <div key={step.label} className="flex items-center">
+          <div className="flex flex-col items-center">
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-colors ${
+                step.completed
+                  ? 'bg-foreground border-foreground text-white'
+                  : i === currentStep
+                  ? 'border-foreground text-foreground'
+                  : 'border-gray-300 text-gray-300'
+              }`}
+            >
+              {step.completed ? (
+                <Check className="w-4 h-4" />
+              ) : (
+                <span className="text-xs font-medium">{i + 1}</span>
+              )}
+            </div>
+            <span
+              className={`text-[10px] mt-1 font-medium tracking-wider ${
+                step.completed || i === currentStep ? 'text-foreground' : 'text-gray-400'
+              }`}
+            >
+              {step.label}
+            </span>
+          </div>
+          {i < steps.length - 1 && (
+            <div
+              className={`w-16 sm:w-24 h-0.5 mx-1 mt-[-12px] ${
+                step.completed ? 'bg-foreground' : 'bg-gray-300'
+              }`}
+            />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// =============================================
+// MAIN CHECKOUT PAGE
+// =============================================
 
 export default function CheckoutPage() {
   const router = useRouter();
   const { user, profile, isLoading: authLoading } = useAuth();
-  const { items, itemCount, subtotal, updateQuantity, removeItem, clearCart } = useCart();
+  const { items, itemCount, subtotal, clearCart } = useCart();
 
-  const [addresses, setAddresses] = useState<Address[]>([]);
-  const [shippingZones, setShippingZones] = useState<ShippingZone[]>([]);
-  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
-  const [selectedShippingZone, setSelectedShippingZone] = useState<ShippingZone | null>(null);
-  const [customerNotes, setCustomerNotes] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<MetodoPago>('mercadopago');
-  const [isLoading, setIsLoading] = useState(true);
-  const [isCreatingOrder, setIsCreatingOrder] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Guest checkout state
+  // Guest state
   const isGuest = !authLoading && !user;
   const [showGuestPrompt, setShowGuestPrompt] = useState(false);
   const [showGuestWarning, setShowGuestWarning] = useState(false);
   const [guestAccepted, setGuestAccepted] = useState(() => {
-    try { return typeof window !== 'undefined' && localStorage.getItem('softworks_guest_accepted') === 'true'; } catch { return false; }
-  });
-  const [guestInfo, setGuestInfo] = useState({
-    nombre: '',
-    email: '',
-    telefono: '',
-    calle: '',
-    numero: '',
-    piso_depto: '',
-    ciudad: '',
-    provincia: '',
-    codigo_postal: '',
+    try {
+      return typeof window !== 'undefined' && localStorage.getItem('softworks_guest_accepted') === 'true';
+    } catch {
+      return false;
+    }
   });
 
-  // Show guest prompt when unauthenticated user arrives
   const guestPromptShownRef = useRef(false);
   useEffect(() => {
     if (!authLoading && !user && !guestAccepted && !guestPromptShownRef.current) {
@@ -55,100 +154,261 @@ export default function CheckoutPage() {
     }
   }, [authLoading, user, guestAccepted]);
 
-  // Load addresses and shipping zones
+  // Wizard state
+  const [currentStep, setCurrentStep] = useState(1);
+  const [step1Done, setStep1Done] = useState(false);
+  const [step2Done, setStep2Done] = useState(false);
+  const [step3Done, setStep3Done] = useState(false);
+
+  // Step 1: Identificación
+  const [ident, setIdent] = useState<Identificacion>({
+    email: '',
+    nombre: '',
+    apellido: '',
+    telefono: '',
+  });
+  const [step1Error, setStep1Error] = useState('');
+
+  // Step 2: Envío
+  const [codigoPostal, setCodigoPostal] = useState('');
+  const [provinciaDetectada, setProvinciaDetectada] = useState('');
+  const [postalError, setPostalError] = useState('');
+  const [postalValidated, setPostalValidated] = useState(false);
+  const [showProvinciaSelector, setShowProvinciaSelector] = useState(false);
+  const [shippingZones, setShippingZones] = useState<ZonaEnvio[]>([]);
+  const [matchedZone, setMatchedZone] = useState<ZonaEnvio | null>(null);
+  const [direccion, setDireccion] = useState<DireccionEnvio>({
+    calle: '',
+    numero: '',
+    piso_depto: '',
+    localidad: '',
+    destinatario: '',
+  });
+  const [step2Error, setStep2Error] = useState('');
+
+  // Step 3: Pago
+  const [paymentMethod, setPaymentMethod] = useState<MetodoPago>('mercadopago');
+
+  // Order
+  const [isCreatingOrder, setIsCreatingOrder] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+
+  // Data
+  const [isLoading, setIsLoading] = useState(true);
+  const [savedAddresses, setSavedAddresses] = useState<Direccion[]>([]);
+
+  // =============================================
+  // COMPUTED VALUES
+  // =============================================
+
+  const shippingCost = matchedZone?.precio || 0;
+  const freeShippingThreshold = matchedZone?.envio_gratis_minimo;
+  const isFreeShipping = freeShippingThreshold ? subtotal >= freeShippingThreshold : false;
+  const finalShippingCost = isFreeShipping ? 0 : shippingCost;
+  const total = subtotal + finalShippingCost;
+  const canFinalize = step1Done && step2Done && step3Done && acceptedTerms && !isCreatingOrder;
+
+  // =============================================
+  // DATA LOADING
+  // =============================================
+
   useEffect(() => {
-    if (user) {
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        const zones = await getActiveShippingZones();
+        setShippingZones(zones);
+
+        if (user) {
+          const addrs = await getUserAddresses(user.id);
+          setSavedAddresses(addrs);
+        }
+      } catch (err) {
+        console.error('Error loading data:', err);
+      }
+      setIsLoading(false);
+    };
+
+    if (!authLoading) {
       loadData();
-    } else if (!authLoading) {
-      // Guest: only load shipping zones
-      loadGuestData();
     }
   }, [user, authLoading]);
 
-  // Auto-select default address
+  // Pre-fill for logged-in users
   useEffect(() => {
-    if (addresses.length > 0 && !selectedAddressId) {
-      const defaultAddress = addresses.find((a) => a.es_predeterminada) || addresses[0];
-      setSelectedAddressId(defaultAddress.id);
-    }
-  }, [addresses, selectedAddressId]);
+    if (profile && !step1Done) {
+      setIdent({
+        email: profile.email || user?.email || '',
+        nombre: profile.nombre || '',
+        apellido: profile.apellido || '',
+        telefono: profile.telefono || '',
+      });
 
-  // Auto-select shipping zone based on address province
-  useEffect(() => {
-    const province = isGuest ? guestInfo.provincia : addresses.find((a) => a.id === selectedAddressId)?.provincia;
-    if (province && shippingZones.length > 0) {
-      const matchingZone = shippingZones.find((z) =>
-        z.provincias.includes(province)
-      );
-      const defaultZone = shippingZones.find((z) => z.activa) || shippingZones[0];
-      setSelectedShippingZone(matchingZone || defaultZone);
-    }
-  }, [selectedAddressId, addresses, shippingZones, isGuest, guestInfo.provincia]);
-
-  const loadData = async () => {
-    setIsLoading(true);
-    const [addressData, zonesData] = await Promise.all([
-      getUserAddresses(user!.id),
-      getActiveShippingZones(),
-    ]);
-    setAddresses(addressData);
-    setShippingZones(zonesData);
-    setIsLoading(false);
-  };
-
-  const loadGuestData = async () => {
-    setIsLoading(true);
-    const zonesData = await getActiveShippingZones();
-    setShippingZones(zonesData);
-    setIsLoading(false);
-  };
-
-  const selectedAddress = addresses.find((a) => a.id === selectedAddressId);
-  const shippingCost = selectedShippingZone?.precio || 0;
-  const freeShippingThreshold = selectedShippingZone?.envio_gratis_minimo;
-  const isFreeShipping = freeShippingThreshold && subtotal >= freeShippingThreshold;
-  const finalShippingCost = isFreeShipping ? 0 : shippingCost;
-  const total = subtotal + finalShippingCost;
-
-  const handleCreateOrder = async () => {
-    if (isGuest) {
-      // Validate guest fields
-      if (!guestInfo.nombre || !guestInfo.email || !guestInfo.calle || !guestInfo.numero || !guestInfo.ciudad || !guestInfo.provincia || !guestInfo.codigo_postal) {
-        setError('Por favor completá todos los campos de envío');
-        return;
+      // If profile has all required fields, auto-complete step 1
+      if (profile.email && profile.nombre && profile.apellido) {
+        setStep1Done(true);
+        setCurrentStep(2);
       }
-    } else if (!selectedAddressId || !selectedAddress) {
-      setError('Por favor seleccioná una dirección de envío');
+    }
+  }, [profile, user]);
+
+  // Pre-fill address from saved default address
+  useEffect(() => {
+    if (savedAddresses.length > 0 && !postalValidated) {
+      const defaultAddr = savedAddresses.find((a) => a.es_predeterminada) || savedAddresses[0];
+      setCodigoPostal(defaultAddr.codigo_postal);
+      setDireccion({
+        calle: defaultAddr.calle,
+        numero: defaultAddr.numero,
+        piso_depto: defaultAddr.piso_depto || '',
+        localidad: defaultAddr.ciudad,
+        destinatario: defaultAddr.nombre_destinatario,
+      });
+
+      // Trigger postal lookup for saved address
+      const result = lookupPostalCode(defaultAddr.codigo_postal);
+      if (result) {
+        setProvinciaDetectada(result.provincia);
+        setPostalValidated(true);
+      } else {
+        setProvinciaDetectada(defaultAddr.provincia);
+        setPostalValidated(true);
+      }
+    }
+  }, [savedAddresses]);
+
+  // Match shipping zone when province changes
+  useEffect(() => {
+    if (provinciaDetectada && shippingZones.length > 0) {
+      const match = shippingZones.find((z) =>
+        z.provincias.some((p) => p.toLowerCase() === provinciaDetectada.toLowerCase())
+      );
+      setMatchedZone(match || shippingZones[0] || null);
+    }
+  }, [provinciaDetectada, shippingZones]);
+
+  // Auto-fill destinatario from step 1
+  useEffect(() => {
+    if (step1Done && !direccion.destinatario) {
+      setDireccion((d) => ({
+        ...d,
+        destinatario: `${ident.nombre} ${ident.apellido}`.trim(),
+      }));
+    }
+  }, [step1Done, ident.nombre, ident.apellido]);
+
+  // =============================================
+  // STEP 1 HANDLERS
+  // =============================================
+
+  const handleStep1Submit = () => {
+    setStep1Error('');
+    if (!ident.email || !ident.nombre || !ident.apellido) {
+      setStep1Error('Completá email, nombre y apellido para continuar.');
       return;
     }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(ident.email)) {
+      setStep1Error('Ingresá un email válido.');
+      return;
+    }
+    setStep1Done(true);
+    setCurrentStep(2);
+    if (!direccion.destinatario) {
+      setDireccion((d) => ({ ...d, destinatario: `${ident.nombre} ${ident.apellido}`.trim() }));
+    }
+  };
 
-    if (items.length === 0) return;
+  const handleStep1Edit = () => {
+    setStep1Done(false);
+    setCurrentStep(1);
+  };
+
+  // =============================================
+  // STEP 2 HANDLERS
+  // =============================================
+
+  const handlePostalCodeSubmit = useCallback(() => {
+    setPostalError('');
+    if (!codigoPostal.trim()) {
+      setPostalError('Ingresá tu código postal.');
+      return;
+    }
+    if (!isValidPostalFormat(codigoPostal)) {
+      setPostalError('Código postal inválido. Ingresá 4 dígitos.');
+      return;
+    }
+    const result = lookupPostalCode(codigoPostal);
+    if (result) {
+      setProvinciaDetectada(result.provincia);
+      setPostalValidated(true);
+    } else {
+      setPostalError('No encontramos tu código postal. Seleccioná tu provincia manualmente.');
+      setShowProvinciaSelector(true);
+      setPostalValidated(true);
+    }
+  }, [codigoPostal]);
+
+  // Auto-lookup on 4-digit input
+  useEffect(() => {
+    if (codigoPostal.length === 4 && /^\d{4}$/.test(codigoPostal)) {
+      handlePostalCodeSubmit();
+    }
+  }, [codigoPostal, handlePostalCodeSubmit]);
+
+  const handleStep2Submit = () => {
+    setStep2Error('');
+    if (!postalValidated || !provinciaDetectada) {
+      setStep2Error('Ingresá tu código postal primero.');
+      return;
+    }
+    if (!direccion.calle || !direccion.numero || !direccion.localidad || !direccion.destinatario) {
+      setStep2Error('Completá todos los campos obligatorios de la dirección.');
+      return;
+    }
+    setStep2Done(true);
+    setCurrentStep(3);
+    setStep3Done(true);
+  };
+
+  const handleStep2Edit = () => {
+    setStep2Done(false);
+    setStep3Done(false);
+    setCurrentStep(2);
+  };
+
+  // =============================================
+  // STEP 3 HANDLER
+  // =============================================
+
+  const handleSelectPaymentMethod = (method: MetodoPago) => {
+    setPaymentMethod(method);
+    setStep3Done(true);
+  };
+
+  // =============================================
+  // ORDER CREATION
+  // =============================================
+
+  const handleCreateOrder = async () => {
+    if (!canFinalize) return;
 
     setIsCreatingOrder(true);
     setError(null);
 
     try {
-      const direccion_envio = isGuest
-        ? {
-            nombre_destinatario: guestInfo.nombre,
-            calle: guestInfo.calle,
-            numero: guestInfo.numero,
-            piso_depto: guestInfo.piso_depto || undefined,
-            ciudad: guestInfo.ciudad,
-            provincia: guestInfo.provincia,
-            codigo_postal: guestInfo.codigo_postal,
-            telefono: guestInfo.telefono || undefined,
-          }
-        : {
-            nombre_destinatario: selectedAddress!.nombre_destinatario,
-            calle: selectedAddress!.calle,
-            numero: selectedAddress!.numero,
-            piso_depto: selectedAddress!.piso_depto || undefined,
-            ciudad: selectedAddress!.ciudad,
-            provincia: selectedAddress!.provincia,
-            codigo_postal: selectedAddress!.codigo_postal,
-            telefono: selectedAddress!.telefono || undefined,
-          };
+      const provincia = provinciaDetectada;
+      const direccion_envio = {
+        nombre_destinatario: direccion.destinatario,
+        calle: direccion.calle,
+        numero: direccion.numero,
+        piso_depto: direccion.piso_depto || undefined,
+        ciudad: direccion.localidad,
+        provincia,
+        codigo_postal: codigoPostal,
+        telefono: ident.telefono || undefined,
+      };
 
       const orderPayload = {
         direccion_envio,
@@ -164,17 +424,15 @@ export default function CheckoutPage() {
         subtotal,
         costo_envio: finalShippingCost,
         total,
-        customer_notes: customerNotes || undefined,
-        shipping_zone_id: selectedShippingZone?.id,
+        shipping_zone_id: matchedZone?.id,
         metodo_pago: paymentMethod,
         ...(isGuest && {
-          guest_nombre: guestInfo.nombre,
-          guest_email: guestInfo.email,
-          guest_telefono: guestInfo.telefono || undefined,
+          guest_nombre: `${ident.nombre} ${ident.apellido}`.trim(),
+          guest_email: ident.email,
+          guest_telefono: ident.telefono || undefined,
         }),
       };
 
-      // Use server API for order creation (supports both guest and auth)
       const orderRes = await fetch('/api/checkout/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -189,10 +447,42 @@ export default function CheckoutPage() {
 
       const order = orderData.order;
 
-      // If MercadoPago, create preference and redirect to MP checkout
+      // Auto-save address for logged-in users
+      if (user && !isGuest) {
+        try {
+          const existingMatch = savedAddresses.find(
+            (a) =>
+              a.codigo_postal === codigoPostal &&
+              a.calle.toLowerCase() === direccion.calle.toLowerCase() &&
+              a.numero === direccion.numero
+          );
+
+          if (!existingMatch) {
+            await createAddress({
+              usuario_id: user.id,
+              etiqueta: 'Casa',
+              nombre_destinatario: direccion.destinatario,
+              calle: direccion.calle,
+              numero: direccion.numero,
+              piso_depto: direccion.piso_depto || null,
+              ciudad: direccion.localidad,
+              provincia,
+              codigo_postal: codigoPostal,
+              pais: 'Argentina',
+              telefono: ident.telefono || null,
+              indicaciones: null,
+              es_predeterminada: savedAddresses.length === 0,
+            });
+          }
+        } catch (err) {
+          console.error('Error auto-saving address:', err);
+        }
+      }
+
+      // MercadoPago redirect
       if (paymentMethod === 'mercadopago') {
-        const payerEmail = isGuest ? guestInfo.email : (profile?.email || user?.email || '');
-        const payerName = isGuest ? guestInfo.nombre : (profile ? `${profile.nombre || ''} ${profile.apellido || ''}`.trim() : '');
+        const payerEmail = ident.email;
+        const payerName = `${ident.nombre} ${ident.apellido}`.trim();
 
         const mpResponse = await fetch('/api/mercadopago/create-preference', {
           method: 'POST',
@@ -220,15 +510,15 @@ export default function CheckoutPage() {
           return;
         }
 
-        // Clear cart and redirect to MercadoPago
         clearCart();
-        window.location.href = mpData.mode === 'sandbox'
-          ? (mpData.sandbox_init_point || mpData.init_point)
-          : (mpData.init_point || mpData.sandbox_init_point);
+        window.location.href =
+          mpData.mode === 'sandbox'
+            ? mpData.sandbox_init_point || mpData.init_point
+            : mpData.init_point || mpData.sandbox_init_point;
         return;
       }
 
-      // For bank transfer, redirect to confirmation
+      // Bank transfer → confirmation page
       clearCart();
       router.push(`/checkout/confirmacion?order=${order.id}`);
     } catch (err) {
@@ -238,6 +528,10 @@ export default function CheckoutPage() {
       setIsCreatingOrder(false);
     }
   };
+
+  // =============================================
+  // LOADING & EMPTY STATES
+  // =============================================
 
   if (authLoading || isLoading) {
     return (
@@ -250,7 +544,7 @@ export default function CheckoutPage() {
   if (items.length === 0) {
     return (
       <div className="pt-20 px-4 py-12 max-w-4xl mx-auto text-center">
-        <ShoppingBag className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+        <Package className="w-16 h-16 mx-auto mb-4 text-gray-300" />
         <h1 className="text-2xl font-medium mb-4">Tu carrito está vacío</h1>
         <p className="text-gray-500 mb-6">Agregá productos para continuar con la compra</p>
         <Link
@@ -263,438 +557,554 @@ export default function CheckoutPage() {
     );
   }
 
+  // =============================================
+  // RENDER
+  // =============================================
+
   return (
-    <div className="pt-20 px-4 py-12">
+    <div className="pt-20 px-4 py-8 bg-gray-50 min-h-screen">
       <div className="max-w-6xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+        {/* Back link */}
+        <Link
+          href="/colecciones"
+          className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-foreground transition-colors mb-6"
         >
-          {/* Back link */}
-          <Link
-            href="/colecciones"
-            className="flex items-center gap-2 text-sm text-gray-600 hover:text-foreground transition-colors mb-6"
-          >
-            <ChevronLeft className="w-4 h-4" />
-            Seguir comprando
-          </Link>
+          <ChevronLeft className="w-4 h-4" />
+          Ir al inicio
+        </Link>
 
-          <h1 className="text-2xl lg:text-3xl font-medium mb-8">Checkout</h1>
+        {/* Progress Bar */}
+        <ProgressBar
+          currentStep={currentStep}
+          stepsCompleted={[step1Done, step2Done, step3Done]}
+        />
 
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md text-red-700">
-              {error}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+            {error}
+          </div>
+        )}
+
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* ============================== */}
+          {/* LEFT COLUMN: Steps */}
+          {/* ============================== */}
+          <div className="lg:col-span-2 space-y-4">
+            {/* =================== STEP 1: IDENTIFICACIÓN =================== */}
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+              <StepHeader
+                number={1}
+                title="IDENTIFICACIÓN"
+                isCompleted={step1Done}
+                isActive={currentStep === 1}
+                onEdit={handleStep1Edit}
+              />
+
+              {step1Done && currentStep !== 1 ? (
+                <div className="px-6 py-4">
+                  <p className="text-sm text-gray-800">{ident.email}</p>
+                  <p className="text-sm text-gray-600">
+                    {ident.nombre} {ident.apellido}
+                  </p>
+                  {ident.telefono && (
+                    <p className="text-sm text-gray-600">{ident.telefono}</p>
+                  )}
+                </div>
+              ) : currentStep === 1 ? (
+                <div className="px-6 py-5 space-y-4">
+                  <div>
+                    <label className="block text-sm text-gray-500 mb-1">Ingresa correo</label>
+                    <input
+                      type="email"
+                      value={ident.email}
+                      onChange={(e) => setIdent({ ...ident, email: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 text-sm"
+                      placeholder="tu@email.com"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm text-gray-500 mb-1">Nombre</label>
+                      <input
+                        type="text"
+                        value={ident.nombre}
+                        onChange={(e) => setIdent({ ...ident, nombre: e.target.value })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 text-sm"
+                        placeholder="Nombre"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-500 mb-1">Apellido</label>
+                      <input
+                        type="text"
+                        value={ident.apellido}
+                        onChange={(e) => setIdent({ ...ident, apellido: e.target.value })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 text-sm"
+                        placeholder="Apellido"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-500 mb-1">Teléfono / Móvil</label>
+                    <input
+                      type="tel"
+                      value={ident.telefono}
+                      onChange={(e) => setIdent({ ...ident, telefono: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 text-sm"
+                      placeholder="+54 11 1234-5678"
+                    />
+                  </div>
+
+                  {step1Error && (
+                    <p className="text-red-500 text-sm">{step1Error}</p>
+                  )}
+
+                  <button
+                    onClick={handleStep1Submit}
+                    className="px-6 py-2.5 bg-gray-700 text-white text-sm rounded-md hover:bg-gray-800 transition-colors"
+                  >
+                    Ir al envío
+                  </button>
+                </div>
+              ) : null}
             </div>
-          )}
 
-          <div className="grid lg:grid-cols-3 gap-8">
-            {/* Main Content */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Cart Items */}
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
-                  <ShoppingBag className="w-5 h-5" />
-                  Productos ({itemCount})
-                </h2>
-                <div className="divide-y divide-gray-100">
-                  {items.map((item) => (
-                    <div key={`${item.producto_id}-${item.talle}`} className="py-4 flex gap-4">
-                      <div className="w-20 h-20 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
-                        {item.imagen ? (
-                          <img
-                            src={item.imagen}
-                            alt={item.nombre}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-400">
-                            <ShoppingBag className="w-8 h-8" />
+            {/* =================== STEP 2: ENVÍO =================== */}
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+              <StepHeader
+                number={2}
+                title="ENVÍO"
+                isCompleted={step2Done}
+                isActive={currentStep === 2}
+                onEdit={handleStep2Edit}
+              />
+
+              {step2Done && currentStep !== 2 ? (
+                <div className="px-6 py-4">
+                  {matchedZone && (
+                    <p className="text-sm text-gray-600 mb-1">
+                      En hasta {matchedZone.dias_estimados_max} días hábiles
+                    </p>
+                  )}
+                  <p className="text-sm text-gray-800">
+                    {direccion.calle} {direccion.numero}
+                    {direccion.piso_depto && `, ${direccion.piso_depto}`}
+                  </p>
+                  <p className="text-sm text-gray-800">{codigoPostal}</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-gray-600">
+                      {direccion.localidad}, {provinciaDetectada}
+                    </p>
+                    {matchedZone && (
+                      <span className="text-sm font-medium">
+                        {isFreeShipping ? 'Envío Gratis' : formatPrice(matchedZone.precio)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ) : currentStep === 2 ? (
+                <div className="px-6 py-5 space-y-5">
+                  {/* Postal code input */}
+                  <div>
+                    <label className="block text-sm text-gray-500 mb-1">Código postal</label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={codigoPostal}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                          setCodigoPostal(val);
+                          if (val.length < 4) {
+                            setPostalValidated(false);
+                            setProvinciaDetectada('');
+                            setMatchedZone(null);
+                          }
+                        }}
+                        className={`w-full px-4 py-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 text-sm ${
+                          postalValidated && provinciaDetectada
+                            ? 'border-green-400'
+                            : postalError
+                            ? 'border-red-400'
+                            : 'border-gray-300'
+                        }`}
+                        placeholder="Ej: 4000"
+                        maxLength={4}
+                        inputMode="numeric"
+                      />
+                      {postalValidated && provinciaDetectada && (
+                        <Check className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" />
+                      )}
+                    </div>
+                    {postalError && (
+                      <p className="text-red-500 text-xs mt-1">{postalError}</p>
+                    )}
+                    <a
+                      href="https://www.correoargentino.com.ar/formularios/cpa"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-foreground mt-1"
+                    >
+                      No sé mi código postal
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+
+                  {/* Shipping method */}
+                  {postalValidated && provinciaDetectada && matchedZone && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <p className="text-sm text-gray-500 mb-2">Método de entrega</p>
+                      <label className="flex items-center justify-between p-4 border border-foreground rounded-lg bg-gray-50 cursor-default">
+                        <div className="flex items-center gap-3">
+                          <div className="w-4 h-4 rounded-full border-4 border-foreground" />
+                          <div>
+                            <p className="font-medium text-sm">{matchedZone.nombre}</p>
+                            <p className="text-xs text-gray-500">
+                              En hasta {matchedZone.dias_estimados_max} días hábiles
+                            </p>
                           </div>
+                        </div>
+                        <span className="font-medium text-sm">
+                          {isFreeShipping ? (
+                            <span className="text-green-600">Gratis</span>
+                          ) : (
+                            formatPrice(matchedZone.precio)
+                          )}
+                        </span>
+                      </label>
+                      {freeShippingThreshold && !isFreeShipping && (
+                        <p className="text-xs text-green-600 mt-1">
+                          Envío gratis en compras mayores a {formatPrice(freeShippingThreshold)}
+                        </p>
+                      )}
+                    </motion.div>
+                  )}
+
+                  {/* No shipping zone found */}
+                  {postalValidated && provinciaDetectada && !matchedZone && (
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                      <p className="text-sm text-amber-800">
+                        No hay envíos disponibles para {provinciaDetectada} en este momento.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Address fields */}
+                  {postalValidated && provinciaDetectada && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      transition={{ duration: 0.3, delay: 0.1 }}
+                      className="space-y-4"
+                    >
+                      <p className="text-sm text-gray-500">Complete su dirección de entrega</p>
+
+                      {/* Province auto-detected */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">{provinciaDetectada}</span>
+                        <span className="text-sm text-gray-400">-</span>
+                        {!showProvinciaSelector ? (
+                          <button
+                            onClick={() => setShowProvinciaSelector(true)}
+                            className="text-sm font-semibold text-foreground hover:underline"
+                          >
+                            Cambiar
+                          </button>
+                        ) : (
+                          <select
+                            value={provinciaDetectada}
+                            onChange={(e) => {
+                              setProvinciaDetectada(e.target.value);
+                              setShowProvinciaSelector(false);
+                            }}
+                            className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                          >
+                            {ARGENTINA_PROVINCES.map((prov) => (
+                              <option key={prov} value={prov}>
+                                {prov}
+                              </option>
+                            ))}
+                          </select>
                         )}
                       </div>
-                      <div className="flex-1">
-                        <Link
-                          href={`/producto/${item.slug}`}
-                          className="font-medium hover:underline"
-                        >
-                          {item.nombre}
-                        </Link>
-                        <p className="text-sm text-gray-500">Talla: {item.talle}</p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <button
-                            onClick={() => updateQuantity(item.producto_id, item.talle, item.cantidad - 1)}
-                            className="w-7 h-7 rounded-md border border-gray-300 flex items-center justify-center hover:bg-gray-100"
-                          >
-                            <Minus className="w-4 h-4" />
-                          </button>
-                          <span className="w-8 text-center">{item.cantidad}</span>
-                          <button
-                            onClick={() => updateQuantity(item.producto_id, item.talle, item.cantidad + 1)}
-                            className="w-7 h-7 rounded-md border border-gray-300 flex items-center justify-center hover:bg-gray-100"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium">{formatPrice(item.precio * item.cantidad)}</p>
-                        <button
-                          onClick={() => removeItem(item.producto_id, item.talle)}
-                          className="text-gray-400 hover:text-red-500 mt-2"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
 
-              {/* Shipping Address */}
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
-                  <MapPin className="w-5 h-5" />
-                  Dirección de Envío
-                </h2>
-
-                {isGuest ? (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Nombre completo *</label>
+                      <div>
+                        <label className="block text-sm text-gray-500 mb-1">Calle</label>
                         <input
                           type="text"
-                          value={guestInfo.nombre}
-                          onChange={(e) => setGuestInfo({ ...guestInfo, nombre: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
-                          placeholder="Juan Pérez"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-                        <input
-                          type="email"
-                          value={guestInfo.email}
-                          onChange={(e) => setGuestInfo({ ...guestInfo, email: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
-                          placeholder="tu@email.com"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-                        <input
-                          type="tel"
-                          value={guestInfo.telefono}
-                          onChange={(e) => setGuestInfo({ ...guestInfo, telefono: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
-                          placeholder="+54 11 1234-5678"
-                        />
-                      </div>
-                    </div>
-                    <hr className="border-gray-100" />
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Calle *</label>
-                        <input
-                          type="text"
-                          value={guestInfo.calle}
-                          onChange={(e) => setGuestInfo({ ...guestInfo, calle: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                          value={direccion.calle}
+                          onChange={(e) => setDireccion({ ...direccion, calle: e.target.value })}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 text-sm"
                           placeholder="Av. Corrientes"
                         />
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Número *</label>
-                        <input
-                          type="text"
-                          value={guestInfo.numero}
-                          onChange={(e) => setGuestInfo({ ...guestInfo, numero: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
-                          placeholder="1234"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Piso/Depto</label>
-                        <input
-                          type="text"
-                          value={guestInfo.piso_depto}
-                          onChange={(e) => setGuestInfo({ ...guestInfo, piso_depto: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
-                          placeholder="3°A"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Ciudad *</label>
-                        <input
-                          type="text"
-                          value={guestInfo.ciudad}
-                          onChange={(e) => setGuestInfo({ ...guestInfo, ciudad: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
-                          placeholder="CABA"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Provincia *</label>
-                        <input
-                          type="text"
-                          value={guestInfo.provincia}
-                          onChange={(e) => setGuestInfo({ ...guestInfo, provincia: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
-                          placeholder="Buenos Aires"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Código Postal *</label>
-                        <input
-                          type="text"
-                          value={guestInfo.codigo_postal}
-                          onChange={(e) => setGuestInfo({ ...guestInfo, codigo_postal: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
-                          placeholder="C1000"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ) : addresses.length === 0 ? (
-                  <div className="text-center py-6">
-                    <p className="text-gray-500 mb-4">No tenés direcciones guardadas</p>
-                    <Link
-                      href="/cuenta/direcciones?redirect=/checkout"
-                      className="inline-block px-6 py-2 bg-foreground text-white rounded-md hover:bg-foreground/90 transition-colors"
-                    >
-                      Agregar Dirección
-                    </Link>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {addresses.map((address) => (
-                      <label
-                        key={address.id}
-                        className={`block p-4 border rounded-lg cursor-pointer transition-colors ${
-                          selectedAddressId === address.id
-                            ? 'border-foreground bg-gray-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <div className="flex items-start gap-3">
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm text-gray-500 mb-1">Número</label>
                           <input
-                            type="radio"
-                            name="address"
-                            value={address.id}
-                            checked={selectedAddressId === address.id}
-                            onChange={() => setSelectedAddressId(address.id)}
-                            className="mt-1"
+                            type="text"
+                            value={direccion.numero}
+                            onChange={(e) => setDireccion({ ...direccion, numero: e.target.value })}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 text-sm"
+                            placeholder="1234"
                           />
-                          <div>
-                            <p className="font-medium">{address.nombre_destinatario}</p>
-                            <p className="text-sm text-gray-600">
-                              {address.calle} {address.numero}
-                              {address.piso_depto && `, ${address.piso_depto}`}
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              {address.ciudad}, {address.provincia} - CP {address.codigo_postal}
-                            </p>
-                          </div>
                         </div>
-                      </label>
-                    ))}
-                    <Link
-                      href="/cuenta/direcciones?redirect=/checkout"
-                      className="block text-center text-sm text-foreground hover:underline mt-4"
-                    >
-                      + Agregar otra dirección
-                    </Link>
-                  </div>
-                )}
-              </div>
+                        <div>
+                          <label className="block text-sm text-gray-500 mb-1">Piso/Departamento</label>
+                          <input
+                            type="text"
+                            value={direccion.piso_depto}
+                            onChange={(e) => setDireccion({ ...direccion, piso_depto: e.target.value })}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 text-sm"
+                            placeholder="3°A"
+                          />
+                        </div>
+                      </div>
 
-              {/* Shipping Method */}
-              {shippingZones.length > 0 && (selectedAddress || isGuest) && (
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
-                  <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
-                    <Truck className="w-5 h-5" />
-                    Método de Envío
-                  </h2>
-                  <div className="space-y-3">
-                    {shippingZones.map((zone) => (
-                      <label
-                        key={zone.id}
-                        className={`block p-4 border rounded-lg cursor-pointer transition-colors ${
-                          selectedShippingZone?.id === zone.id
-                            ? 'border-foreground bg-gray-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
+                      <div>
+                        <label className="block text-sm text-gray-500 mb-1">Localidad</label>
+                        <input
+                          type="text"
+                          value={direccion.localidad}
+                          onChange={(e) => setDireccion({ ...direccion, localidad: e.target.value })}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 text-sm"
+                          placeholder="Tu localidad"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm text-gray-500 mb-1">Destinatario</label>
+                        <input
+                          type="text"
+                          value={direccion.destinatario}
+                          onChange={(e) => setDireccion({ ...direccion, destinatario: e.target.value })}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 text-sm"
+                          placeholder="Nombre del destinatario"
+                        />
+                      </div>
+
+                      {step2Error && (
+                        <p className="text-red-500 text-sm">{step2Error}</p>
+                      )}
+
+                      <button
+                        onClick={handleStep2Submit}
+                        disabled={!matchedZone}
+                        className="px-6 py-2.5 bg-gray-700 text-white text-sm rounded-md hover:bg-gray-800 transition-colors disabled:opacity-50"
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <input
-                              type="radio"
-                              name="shipping"
-                              value={zone.id}
-                              checked={selectedShippingZone?.id === zone.id}
-                              onChange={() => setSelectedShippingZone(zone)}
-                            />
-                            <div>
-                              <p className="font-medium">{zone.nombre}</p>
-                              <p className="text-sm text-gray-500">
-                                {zone.dias_estimados_min}-{zone.dias_estimados_max} días hábiles
-                              </p>
-                              {zone.envio_gratis_minimo && (
-                                <p className="text-sm text-green-600">
-                                  Envío gratis en compras mayores a {formatPrice(zone.envio_gratis_minimo)}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            {zone.envio_gratis_minimo && subtotal >= zone.envio_gratis_minimo ? (
-                              <span className="text-green-600 font-medium">Gratis</span>
-                            ) : (
-                              <span className="font-medium">{formatPrice(zone.precio)}</span>
-                            )}
-                          </div>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
+                        Continuar al pago
+                      </button>
+                    </motion.div>
+                  )}
 
-              {/* Customer Notes */}
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h2 className="text-lg font-medium mb-4">Notas del Pedido (opcional)</h2>
-                <textarea
-                  value={customerNotes}
-                  onChange={(e) => setCustomerNotes(e.target.value)}
-                  rows={3}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 resize-none"
-                  placeholder="¿Alguna indicación especial para tu pedido?"
-                />
-              </div>
+                  {/* Waiting state */}
+                  {!postalValidated && !codigoPostal && (
+                    <p className="text-sm text-gray-400 italic">
+                      Ingresá tu código postal para ver las opciones de envío.
+                    </p>
+                  )}
+                </div>
+              ) : currentStep < 2 ? (
+                <div className="px-6 py-4">
+                  <p className="text-sm text-gray-400 italic text-center">
+                    Esperando que se complete la información
+                  </p>
+                </div>
+              ) : null}
             </div>
 
-            {/* Order Summary Sidebar */}
-            <div className="lg:col-span-1">
-              <div className="bg-white rounded-lg border border-gray-200 p-6 sticky top-24">
-                <h2 className="text-lg font-medium mb-4">Resumen del Pedido</h2>
+            {/* =================== STEP 3: PAGO =================== */}
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+              <StepHeader
+                number={3}
+                title="PAGO"
+                isCompleted={step3Done}
+                isActive={currentStep === 3}
+              />
 
-                <div className="space-y-3 mb-6">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Subtotal ({itemCount} productos)</span>
-                    <span>{formatPrice(subtotal)}</span>
+              {currentStep === 3 ? (
+                <div className="px-6 py-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-[200px_1fr] gap-0 border border-gray-200 rounded-lg overflow-hidden">
+                    {/* Payment method tabs */}
+                    <div className="flex sm:flex-col border-b sm:border-b-0 sm:border-r border-gray-200">
+                      <button
+                        onClick={() => handleSelectPaymentMethod('mercadopago')}
+                        className={`flex items-center gap-2 px-4 py-4 text-sm transition-colors w-full text-left ${
+                          paymentMethod === 'mercadopago'
+                            ? 'bg-gray-50 font-medium border-l-2 border-l-foreground'
+                            : 'hover:bg-gray-50'
+                        }`}
+                      >
+                        <CreditCard className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                        <span>MercadoPago</span>
+                      </button>
+                      <button
+                        onClick={() => handleSelectPaymentMethod('transferencia')}
+                        className={`flex items-center gap-2 px-4 py-4 text-sm transition-colors w-full text-left ${
+                          paymentMethod === 'transferencia'
+                            ? 'bg-gray-50 font-medium border-l-2 border-l-foreground'
+                            : 'hover:bg-gray-50'
+                        }`}
+                      >
+                        <Building2 className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                        <span>Transferencia</span>
+                      </button>
+                    </div>
+
+                    {/* Payment method details */}
+                    <div className="p-5">
+                      {paymentMethod === 'mercadopago' ? (
+                        <div className="space-y-3">
+                          <p className="text-sm font-medium">Pagá con tarjeta de crédito o débito</p>
+                          <p className="text-sm text-gray-500">
+                            Serás redirigido a MercadoPago para completar el pago de forma segura.
+                            Aceptamos todas las tarjetas.
+                          </p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <img
+                              src="/images/mercadopago-logo.svg"
+                              alt="MercadoPago"
+                              className="h-6 object-contain"
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <p className="text-sm font-medium">Pagá mediante transferencia bancaria</p>
+                          <p className="text-sm text-gray-500">
+                            Al confirmar tu pedido, te mostraremos los datos bancarios para realizar
+                            la transferencia. Tu pedido será procesado una vez que confirmemos el pago.
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
+                </div>
+              ) : (
+                <div className="px-6 py-4">
+                  <p className="text-sm text-gray-400 italic text-center">
+                    Aún falta llenar con los datos
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ============================== */}
+          {/* RIGHT COLUMN: Order Summary */}
+          {/* ============================== */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden sticky top-24">
+              {/* Header */}
+              <div className="bg-gray-100 px-6 py-3 flex items-center gap-2">
+                <span className="text-sm font-bold uppercase tracking-wide">
+                  Resumen de compra
+                </span>
+                <span className="bg-foreground text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                  {itemCount}
+                </span>
+              </div>
+
+              {/* Product list */}
+              <div className="px-6 py-4 divide-y divide-gray-100 max-h-64 overflow-y-auto">
+                {items.map((item) => (
+                  <div key={`${item.producto_id}-${item.talle}`} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                    <div className="relative w-12 h-12 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
+                      {item.imagen ? (
+                        <img
+                          src={item.imagen}
+                          alt={item.nombre}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400">
+                          <Package className="w-5 h-5" />
+                        </div>
+                      )}
+                      {item.cantidad > 1 && (
+                        <span className="absolute -top-1 -right-1 bg-foreground text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                          {item.cantidad}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm truncate">{item.nombre}</p>
+                      <p className="text-xs text-gray-500">Talle: {item.talle}</p>
+                    </div>
+                    <p className="text-sm font-medium whitespace-nowrap">
+                      {formatPrice(item.precio * item.cantidad)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Price breakdown */}
+              <div className="px-6 py-4 border-t border-gray-200 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Subtotal</span>
+                  <span>{formatPrice(subtotal)}</span>
+                </div>
+                {step2Done && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Envío</span>
+                    <span className="text-gray-500">Gastos del envío</span>
                     {isFreeShipping ? (
                       <span className="text-green-600">Gratis</span>
                     ) : (
-                      <span>{formatPrice(shippingCost)}</span>
+                      <span>{formatPrice(finalShippingCost)}</span>
                     )}
                   </div>
-                  <div className="flex justify-between text-lg font-medium pt-3 border-t border-gray-200">
-                    <span>Total</span>
-                    <span>{formatPrice(total)}</span>
-                  </div>
+                )}
+                <div className="flex justify-between font-medium pt-2 border-t border-gray-100">
+                  <span>Total</span>
+                  <span>{formatPrice(step2Done ? total : subtotal)}</span>
                 </div>
+              </div>
 
-                {/* Payment Method Selector */}
-                <div className="mb-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <CreditCard className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm font-medium">Método de Pago</span>
-                  </div>
-                  <div className="space-y-2">
-                    <label
-                      className={`block p-3 border rounded-lg cursor-pointer transition-colors ${
-                        paymentMethod === 'mercadopago'
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="radio"
-                          name="paymentMethod"
-                          value="mercadopago"
-                          checked={paymentMethod === 'mercadopago'}
-                          onChange={() => setPaymentMethod('mercadopago')}
-                          className="accent-blue-500"
-                        />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-sm">Tarjeta de Crédito / Débito</span>
-                          </div>
-                          <p className="text-xs text-gray-500 mt-0.5">
-                            Pagá de forma segura con MercadoPago
-                          </p>
-                        </div>
-                        <img
-                          src="/images/mercadopago-logo.svg"
-                          alt="MercadoPago"
-                          className="h-6 object-contain"
-                        />
-                      </div>
-                    </label>
-                    <label
-                      className={`block p-3 border rounded-lg cursor-pointer transition-colors ${
-                        paymentMethod === 'transferencia'
-                          ? 'border-foreground bg-gray-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="radio"
-                          name="paymentMethod"
-                          value="transferencia"
-                          checked={paymentMethod === 'transferencia'}
-                          onChange={() => setPaymentMethod('transferencia')}
-                        />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <Building2 className="w-4 h-4 text-gray-500" />
-                            <span className="font-medium text-sm">Transferencia Bancaria</span>
-                          </div>
-                          <p className="text-xs text-gray-500 mt-0.5">
-                            Te mostraremos los datos para transferir
-                          </p>
-                        </div>
-                      </div>
-                    </label>
-                  </div>
-                </div>
+              {/* Terms & Finalize */}
+              <div className="px-6 py-4 border-t border-gray-200 space-y-3">
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={acceptedTerms}
+                    onChange={(e) => setAcceptedTerms(e.target.checked)}
+                    className="mt-0.5 accent-foreground"
+                  />
+                  <span className="text-xs text-gray-600 leading-relaxed">
+                    Acepto los{' '}
+                    <Link href="/terminos-servicio" className="underline font-medium" target="_blank">
+                      Términos y Condiciones
+                    </Link>
+                  </span>
+                </label>
 
                 <button
                   onClick={handleCreateOrder}
-                  disabled={isCreatingOrder || (!isGuest && !selectedAddressId) || items.length === 0}
-                  className="w-full py-4 bg-foreground text-white rounded-md hover:bg-foreground/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 text-lg font-medium"
+                  disabled={!canFinalize}
+                  className="w-full py-3.5 bg-foreground text-white text-sm font-medium rounded-md hover:bg-foreground/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isCreatingOrder ? (
                     <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <Loader2 className="w-4 h-4 animate-spin" />
                       Procesando...
                     </>
-                  ) : paymentMethod === 'mercadopago' ? (
-                    'Pagar con MercadoPago'
                   ) : (
-                    'Confirmar Pedido'
+                    'Finalizar compra'
                   )}
                 </button>
-
-                <p className="text-xs text-gray-500 text-center mt-4">
-                  Al confirmar, aceptás nuestros{' '}
-                  <Link href="/terminos-servicio" className="underline">
-                    términos y condiciones
-                  </Link>
-                </p>
               </div>
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
 
-      {/* Guest Checkout Prompt Modal - Step 1 */}
+      {/* ============================== */}
+      {/* GUEST MODALS */}
+      {/* ============================== */}
+
       <AnimatePresence>
         {showGuestPrompt && (
           <motion.div
@@ -712,7 +1122,8 @@ export default function CheckoutPage() {
               <UserPlus className="w-12 h-12 mx-auto mb-4 text-foreground" />
               <h2 className="text-xl font-medium mb-2">¿Querés registrarte?</h2>
               <p className="text-gray-600 mb-6 text-sm leading-relaxed">
-                Si creás una cuenta, vas a poder hacer seguimiento de tus pedidos y ver tu historial de compras. Recibirás emails con las actualizaciones de tus envíos.
+                Si creás una cuenta, vas a poder hacer seguimiento de tus pedidos y ver tu historial
+                de compras. Recibirás emails con las actualizaciones de tus envíos.
               </p>
               <div className="space-y-3">
                 <Link
@@ -728,7 +1139,10 @@ export default function CheckoutPage() {
                   Ya tengo cuenta
                 </Link>
                 <button
-                  onClick={() => { setShowGuestPrompt(false); setShowGuestWarning(true); }}
+                  onClick={() => {
+                    setShowGuestPrompt(false);
+                    setShowGuestWarning(true);
+                  }}
                   className="block w-full py-3 text-gray-500 hover:text-foreground transition-colors text-sm underline"
                 >
                   Continuar sin registrarme
@@ -739,7 +1153,6 @@ export default function CheckoutPage() {
         )}
       </AnimatePresence>
 
-      {/* Guest Checkout Warning Modal - Step 2 */}
       <AnimatePresence>
         {showGuestWarning && (
           <motion.div
@@ -759,23 +1172,37 @@ export default function CheckoutPage() {
               </div>
               <h2 className="text-xl font-medium mb-2">Antes de continuar</h2>
               <p className="text-gray-600 mb-4 text-sm leading-relaxed">
-                Al comprar sin cuenta, <strong>no vas a poder visualizar ni hacer seguimiento de tus pedidos</strong> desde la web. Igualmente recibirás emails con las actualizaciones de tu pedido.
+                Al comprar sin cuenta,{' '}
+                <strong>no vas a poder visualizar ni hacer seguimiento de tus pedidos</strong> desde
+                la web. Igualmente recibirás emails con las actualizaciones de tu pedido.
               </p>
               <p className="text-gray-600 mb-6 text-sm leading-relaxed">
                 Si tenés alguna duda sobre tu compra, podés contactarnos a:{' '}
-                <a href="mailto:administracion@softworks.com.ar" className="text-foreground font-medium underline">
+                <a
+                  href="mailto:administracion@softworks.com.ar"
+                  className="text-foreground font-medium underline"
+                >
                   administracion@softworks.com.ar
                 </a>
               </p>
               <div className="space-y-3">
                 <button
-                  onClick={() => { setShowGuestWarning(false); setGuestAccepted(true); try { localStorage.setItem('softworks_guest_accepted', 'true'); } catch {} }}
+                  onClick={() => {
+                    setShowGuestWarning(false);
+                    setGuestAccepted(true);
+                    try {
+                      localStorage.setItem('softworks_guest_accepted', 'true');
+                    } catch {}
+                  }}
                   className="block w-full py-3 bg-foreground text-white rounded-md hover:bg-foreground/90 transition-colors font-medium"
                 >
                   Entendido, continuar
                 </button>
                 <button
-                  onClick={() => { setShowGuestWarning(false); setShowGuestPrompt(true); }}
+                  onClick={() => {
+                    setShowGuestWarning(false);
+                    setShowGuestPrompt(true);
+                  }}
                   className="block w-full py-3 text-gray-500 hover:text-foreground transition-colors text-sm"
                 >
                   Volver
