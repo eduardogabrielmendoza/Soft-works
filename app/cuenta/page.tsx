@@ -6,7 +6,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, Eye, EyeOff, Mail } from 'lucide-react';
 import { useAuth } from '@/lib/hooks/useAuth';
-import { getSupabaseClient } from '@/lib/supabase/client';
 
 function CuentaContent() {
   const router = useRouter();
@@ -62,13 +61,14 @@ function CuentaContent() {
     setResetError('');
 
     try {
-      const supabase = getSupabaseClient();
-      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent('/cuenta/reset-password')}`,
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: resetEmail }),
       });
 
-      if (error) {
-        setResetError(error.message);
+      if (!res.ok) {
+        setResetError('Ocurrió un error. Intentá de nuevo.');
         return;
       }
 

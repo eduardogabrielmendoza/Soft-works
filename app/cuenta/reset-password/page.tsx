@@ -81,13 +81,14 @@ function ResetPasswordContent() {
     setError(null);
 
     try {
-      const supabase = getSupabaseClient();
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent('/cuenta/reset-password')}`,
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
       });
 
-      if (error) {
-        setError(error.message);
+      if (!res.ok) {
+        setError('Error inesperado');
         return;
       }
 
