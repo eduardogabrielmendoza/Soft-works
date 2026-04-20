@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Save, Loader2, ArrowLeft, Monitor, Tablet, Smartphone,
-  Home, Users, Calendar, MapPin, Phone,
+  Home, Users, Calendar, MapPin, Phone, UserPlus,
   Plus, Trash2, ChevronDown, ChevronUp, Check, AlertCircle,
   GripVertical, Link as LinkIcon, ExternalLink, Globe, Youtube, MousePointerClick,
   Layout, PanelTop, PanelBottom, Type, Palette, RotateCcw,
@@ -15,12 +15,13 @@ import { useIndexContent, type IndexContent, type HeroSlide, type ProductCard, t
 import { usePagesContent, type NosotrosContent, type EventosContent, type EventoItem, type UbicacionesContent, type ContactoContent } from '@/lib/hooks/usePagesContent';
 import { useLayoutContent, type LayoutContent, type NavLink, type FooterLinkColumn, defaultLayoutContent } from '@/lib/hooks/useLayoutContent';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import { useSiteConfig } from '@/lib/hooks/useSiteConfig';
 import { type CustomSection, type CustomButton, type TextStyle, type ButtonAlignment, type CustomSectionType, SECTION_TYPE_OPTIONS, BTN_ALIGN_CLASS, createEmptySection, toEmbedUrl } from '@/lib/types/sections';
 
 // ============================================================
 // TYPES
 // ============================================================
-type PageId = 'layout' | 'index' | 'nosotros' | 'eventos' | 'ubicaciones' | 'contacto';
+type PageId = 'layout' | 'index' | 'nosotros' | 'eventos' | 'ubicaciones' | 'contacto' | 'registro';
 type DevicePreview = 'desktop' | 'tablet' | 'mobile';
 
 const PAGE_TABS: { id: PageId; label: string; icon: React.ReactNode; path: string }[] = [
@@ -30,6 +31,7 @@ const PAGE_TABS: { id: PageId; label: string; icon: React.ReactNode; path: strin
   { id: 'eventos', label: 'Eventos', icon: <Calendar className="w-4 h-4" />, path: '/eventos' },
   { id: 'ubicaciones', label: 'Ubicaciones', icon: <MapPin className="w-4 h-4" />, path: '/ubicaciones' },
   { id: 'contacto', label: 'Contacto', icon: <Phone className="w-4 h-4" />, path: '/contacto' },
+  { id: 'registro', label: 'Registro', icon: <UserPlus className="w-4 h-4" />, path: '/cuenta/registro' },
 ];
 
 // ============================================================
@@ -1302,6 +1304,20 @@ function LayoutEditor({ content, onChange }: { content: LayoutContent; onChange:
 }
 
 // ============================================================
+// REGISTRO EDITOR
+// ============================================================
+function RegistroEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <div>
+      <SectionCard title="Imagen de la página de registro">
+        <p className="text-xs text-foreground/50 pb-1">Se muestra en el panel izquierdo del formulario de registro de nuevos clientes. Relación recomendada 4:5, mínimo 800×1000 px.</p>
+        <ImageInput value={value} onChange={onChange} />
+      </SectionCard>
+    </div>
+  );
+}
+
+// ============================================================
 // MAIN EDITOR PAGE
 // ============================================================
 export default function AdminContenidosPage() {
@@ -1309,6 +1325,7 @@ export default function AdminContenidosPage() {
   const { content: indexContent, refreshContent: refreshIndex } = useIndexContent();
   const { nosotros, eventos, ubicaciones, contacto, refreshContent: refreshPages } = usePagesContent();
   const { layout: layoutContent, refreshLayout } = useLayoutContent();
+  const { config, refreshConfig } = useSiteConfig();
 
   const [activePage, setActivePage] = useState<PageId>('index');
   const [device, setDevice] = useState<DevicePreview>('desktop');
@@ -1325,6 +1342,7 @@ export default function AdminContenidosPage() {
   const [ubicacionesData, setUbicacionesData] = useState<UbicacionesContent>(ubicaciones);
   const [contactoData, setContactoData] = useState<ContactoContent>(contacto);
   const [layoutData, setLayoutData] = useState<LayoutContent>(layoutContent);
+  const [registroData, setRegistroData] = useState({ registro_imagen: '' });
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [iframeKey, setIframeKey] = useState(0);
@@ -1338,6 +1356,7 @@ export default function AdminContenidosPage() {
       setUbicacionesData(ubicaciones);
       setContactoData(contacto);
       setLayoutData(layoutContent);
+      setRegistroData({ registro_imagen: config.registro_imagen || '' });
       setIsLoaded(true);
     }
   }, [authLoading]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1355,6 +1374,7 @@ export default function AdminContenidosPage() {
   const handleUbicacionesChange = useCallback((c: UbicacionesContent) => { setUbicacionesData(c); markChanged(); }, [markChanged]);
   const handleContactoChange = useCallback((c: ContactoContent) => { setContactoData(c); markChanged(); }, [markChanged]);
   const handleLayoutChange = useCallback((c: LayoutContent) => { setLayoutData(c); markChanged(); }, [markChanged]);
+  const handleRegistroChange = useCallback((v: string) => { setRegistroData({ registro_imagen: v }); markChanged(); }, [markChanged]);
 
   // ---- REAL-TIME PREVIEW via postMessage ----
   const sendPreview = useCallback((key: string, value: unknown) => {
@@ -1376,6 +1396,7 @@ export default function AdminContenidosPage() {
         eventos: { key: 'contenido_eventos', value: eventosData },
         ubicaciones: { key: 'contenido_ubicaciones', value: ubicacionesData },
         contacto: { key: 'contenido_contacto', value: contactoData },
+        registro: { key: 'apariencia', value: registroData },
       };
       const entry = keyMap[activePage];
       if (entry) sendPreview(entry.key, entry.value);
@@ -1401,6 +1422,7 @@ export default function AdminContenidosPage() {
         { clave: 'contenido_ubicaciones', valor: JSON.stringify(ubicacionesData) },
         { clave: 'contenido_contacto', valor: JSON.stringify(contactoData) },
         { clave: 'contenido_layout', valor: JSON.stringify(layoutData) },
+        { clave: 'apariencia', valor: JSON.stringify(registroData) },
       ];
 
       for (const u of updates) {
@@ -1411,7 +1433,7 @@ export default function AdminContenidosPage() {
         if (error) throw error;
       }
 
-      await Promise.all([refreshIndex(), refreshPages(), refreshLayout()]);
+      await Promise.all([refreshIndex(), refreshPages(), refreshLayout(), refreshConfig()]);
       setHasChanges(false);
       setSaveStatus('saved');
       // Refresh iframe preview
@@ -1531,6 +1553,7 @@ export default function AdminContenidosPage() {
             {activePage === 'eventos' && <EventosEditor content={eventosData} onChange={handleEventosChange} />}
             {activePage === 'ubicaciones' && <UbicacionesEditor content={ubicacionesData} onChange={handleUbicacionesChange} />}
             {activePage === 'contacto' && <ContactoEditor content={contactoData} onChange={handleContactoChange} />}
+            {activePage === 'registro' && <RegistroEditor value={registroData.registro_imagen} onChange={handleRegistroChange} />}
           </div>
         </div>
 

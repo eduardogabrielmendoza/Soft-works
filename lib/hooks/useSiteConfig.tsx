@@ -39,7 +39,7 @@ export interface SiteConfig {
   mercadopago_mode: 'production' | 'sandbox';
 
   // Apariencia
-  registro_imagen: string;
+  registro_imagen?: string;
 }
 
 const defaultConfig: SiteConfig = {
