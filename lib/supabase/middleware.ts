@@ -86,7 +86,9 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Redirigir usuarios autenticados que intentan acceder a login/registro
-  if (user && (request.nextUrl.pathname === '/cuenta' || request.nextUrl.pathname === '/cuenta/registro')) {
+  // (salvo que sea una vista previa del panel admin)
+  const isPreview = request.nextUrl.searchParams.get('preview') === '1';
+  if (!isPreview && user && (request.nextUrl.pathname === '/cuenta' || request.nextUrl.pathname === '/cuenta/registro')) {
     const redirect = request.nextUrl.searchParams.get('redirect')
     const url = request.nextUrl.clone()
     url.pathname = redirect || '/cuenta/perfil'

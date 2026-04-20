@@ -2,10 +2,9 @@
 -- Actualizar datos bancarios al Banco Galicia
 -- ============================================================
 
--- Desactivar todas las cuentas existentes
-UPDATE cuentas_bancarias SET activa = false;
+-- Eliminar todas las cuentas existentes e insertar la nueva
+DELETE FROM cuentas_bancarias;
 
--- Insertar la nueva cuenta de Banco Galicia (o actualizar si ya existe con ese CBU)
 INSERT INTO cuentas_bancarias (banco, titular, cuit, cbu, alias, tipo_cuenta, activa, orden_visualizacion)
 VALUES (
   'Banco Galicia',
@@ -16,11 +15,4 @@ VALUES (
   'corriente',
   true,
   1
-)
-ON CONFLICT (cbu) DO UPDATE SET
-  banco = EXCLUDED.banco,
-  titular = EXCLUDED.titular,
-  cuit = EXCLUDED.cuit,
-  alias = EXCLUDED.alias,
-  activa = true,
-  orden_visualizacion = 1;
+);

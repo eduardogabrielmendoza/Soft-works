@@ -31,7 +31,7 @@ const PAGE_TABS: { id: PageId; label: string; icon: React.ReactNode; path: strin
   { id: 'eventos', label: 'Eventos', icon: <Calendar className="w-4 h-4" />, path: '/eventos' },
   { id: 'ubicaciones', label: 'Ubicaciones', icon: <MapPin className="w-4 h-4" />, path: '/ubicaciones' },
   { id: 'contacto', label: 'Contacto', icon: <Phone className="w-4 h-4" />, path: '/contacto' },
-  { id: 'registro', label: 'Registro', icon: <UserPlus className="w-4 h-4" />, path: '/cuenta/registro' },
+  { id: 'registro', label: 'Registro', icon: <UserPlus className="w-4 h-4" />, path: '/cuenta/registro?preview=1' },
 ];
 
 // ============================================================
@@ -1406,7 +1406,7 @@ export default function AdminContenidosPage() {
       }
     }, 150);
     return () => clearTimeout(previewTimerRef.current);
-  }, [activePage, indexData, nosotrosData, eventosData, ubicacionesData, contactoData, layoutData, sendPreview]);
+  }, [activePage, indexData, nosotrosData, eventosData, ubicacionesData, contactoData, layoutData, registroData, sendPreview]);
 
   // ---- SAVE ----
   const handleSave = useCallback(async () => {
@@ -1445,7 +1445,7 @@ export default function AdminContenidosPage() {
     } finally {
       setIsSaving(false);
     }
-  }, [indexData, nosotrosData, eventosData, ubicacionesData, contactoData, layoutData, refreshIndex, refreshPages, refreshLayout]);
+  }, [indexData, nosotrosData, eventosData, ubicacionesData, contactoData, layoutData, registroData, refreshIndex, refreshPages, refreshLayout, refreshConfig]);
 
   // Ctrl+S
   useEffect(() => {
