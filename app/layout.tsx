@@ -30,6 +30,16 @@ export const metadata: Metadata = {
 
 async function getInitialData() {
   try {
+    const parseValue = (value: unknown) => {
+      if (typeof value !== 'string') return value;
+
+      try {
+        return JSON.parse(value);
+      } catch {
+        return value;
+      }
+    };
+
     const supabase = await createClient();
     const { data } = await supabase
       .from('configuracion_sitio')
@@ -40,12 +50,15 @@ async function getInitialData() {
     const result: Record<string, any> = {};
     for (const row of data) {
       if (row.clave === 'contenido_layout') {
-        result.layout = typeof row.valor === 'string' ? JSON.parse(row.valor) : row.valor;
+        result.layout = parseValue(row.valor);
       } else if (row.clave === 'contenido_index') {
-        result.index = typeof row.valor === 'string' ? JSON.parse(row.valor) : row.valor;
-      } else if (row.valor && typeof row.valor === 'object') {
+        result.index = parseValue(row.valor);
+      } else {
+        const parsed = parseValue(row.valor);
+        if (parsed && typeof parsed === 'object') {
         if (!result.siteConfig) result.siteConfig = {};
-        Object.assign(result.siteConfig, row.valor);
+          Object.assign(result.siteConfig, parsed);
+        }
       }
     }
     return result;

@@ -7,6 +7,16 @@ import { getCached, setCache, isCacheFresh } from '@/lib/utils/cache';
 
 const CACHE_KEY = 'site_config';
 
+function parseConfigValue(value: unknown) {
+  if (typeof value !== 'string') return value;
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+}
+
 export interface SiteConfig {
   // Información general
   site_name: string;
@@ -92,8 +102,9 @@ export function SiteConfigProvider({ children, initialData }: { children: ReactN
       if (data && data.length > 0) {
         const loadedConfig: Partial<SiteConfig> = {};
         data.forEach((item: { clave: string; valor: any }) => {
-          if (item.valor && typeof item.valor === 'object') {
-            Object.assign(loadedConfig, item.valor);
+          const parsed = parseConfigValue(item.valor);
+          if (parsed && typeof parsed === 'object') {
+            Object.assign(loadedConfig, parsed);
           }
         });
 
@@ -117,6 +128,21 @@ export function SiteConfigProvider({ children, initialData }: { children: ReactN
     if (isCacheFresh(CACHE_KEY)) return; // skip if cache is fresh
     loadConfig();
   }, [loadConfig]);
+
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      if (e.data?.type === 'content-preview' && e.data?.key === 'apariencia') {
+        setConfig(prev => {
+          const merged = { ...defaultConfig, ...prev, ...e.data.value };
+          setCache(CACHE_KEY, merged);
+          return merged;
+        });
+      }
+    };
+
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, []);
 
   // Actualizar el título del documento dinámicamente según la ruta
   useEffect(() => {

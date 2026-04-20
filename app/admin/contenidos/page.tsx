@@ -1422,7 +1422,7 @@ export default function AdminContenidosPage() {
         { clave: 'contenido_ubicaciones', valor: JSON.stringify(ubicacionesData) },
         { clave: 'contenido_contacto', valor: JSON.stringify(contactoData) },
         { clave: 'contenido_layout', valor: JSON.stringify(layoutData) },
-        { clave: 'apariencia', valor: JSON.stringify(registroData) },
+        { clave: 'apariencia', valor: registroData },
       ];
 
       for (const u of updates) {
