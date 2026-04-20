@@ -23,6 +23,8 @@ import { type CustomSection, type CustomButton, type TextStyle, type ButtonAlign
 // ============================================================
 type PageId = 'layout' | 'index' | 'nosotros' | 'eventos' | 'ubicaciones' | 'contacto' | 'registro';
 type DevicePreview = 'desktop' | 'tablet' | 'mobile';
+type AuthPreviewMode = 'login' | 'registro';
+type AuthImages = { login_imagen: string; registro_imagen: string };
 
 const PAGE_TABS: { id: PageId; label: string; icon: React.ReactNode; path: string }[] = [
   { id: 'layout', label: 'Layout', icon: <Layout className="w-4 h-4" />, path: '/' },
@@ -31,7 +33,7 @@ const PAGE_TABS: { id: PageId; label: string; icon: React.ReactNode; path: strin
   { id: 'eventos', label: 'Eventos', icon: <Calendar className="w-4 h-4" />, path: '/eventos' },
   { id: 'ubicaciones', label: 'Ubicaciones', icon: <MapPin className="w-4 h-4" />, path: '/ubicaciones' },
   { id: 'contacto', label: 'Contacto', icon: <Phone className="w-4 h-4" />, path: '/contacto' },
-  { id: 'registro', label: 'Registro', icon: <UserPlus className="w-4 h-4" />, path: '/cuenta/registro?preview=1' },
+  { id: 'registro', label: 'Login/Registro', icon: <UserPlus className="w-4 h-4" />, path: '/cuenta?preview=1' },
 ];
 
 // ============================================================
@@ -1304,14 +1306,49 @@ function LayoutEditor({ content, onChange }: { content: LayoutContent; onChange:
 }
 
 // ============================================================
-// REGISTRO EDITOR
+// LOGIN / REGISTRO EDITOR
 // ============================================================
-function RegistroEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function LoginRegistroEditor({
+  value,
+  onChange,
+  previewMode,
+  onPreviewModeChange,
+}: {
+  value: AuthImages;
+  onChange: (value: Partial<AuthImages>) => void;
+  previewMode: AuthPreviewMode;
+  onPreviewModeChange: (mode: AuthPreviewMode) => void;
+}) {
   return (
     <div>
-      <SectionCard title="Imagen de la página de registro">
-        <p className="text-xs text-foreground/50 pb-1">Se muestra en el panel izquierdo del formulario de registro de nuevos clientes. Relación recomendada 4:5, mínimo 800×1000 px.</p>
-        <ImageInput value={value} onChange={onChange} />
+      <SectionCard title="Vista previa">
+        <p className="text-xs text-foreground/50 pb-1">Elegí qué pantalla querés ver en el visor de tiempo real.</p>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => onPreviewModeChange('login')}
+            className={`px-3 py-2 text-xs font-medium rounded-lg border transition-colors ${previewMode === 'login' ? 'bg-foreground text-white border-foreground' : 'bg-white text-foreground/70 border-gray-200 hover:bg-gray-100'}`}
+          >
+            Iniciar sesión
+          </button>
+          <button
+            type="button"
+            onClick={() => onPreviewModeChange('registro')}
+            className={`px-3 py-2 text-xs font-medium rounded-lg border transition-colors ${previewMode === 'registro' ? 'bg-foreground text-white border-foreground' : 'bg-white text-foreground/70 border-gray-200 hover:bg-gray-100'}`}
+          >
+            Registro
+          </button>
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Imagen de iniciar sesión">
+        <p className="text-xs text-foreground/50 pb-1">Se muestra en el panel izquierdo de la página de acceso de clientes. Relación recomendada 4:5, mínimo 800×1000 px.</p>
+        <ImageInput value={value.login_imagen} onChange={v => onChange({ login_imagen: v })} />
+      </SectionCard>
+
+      <SectionCard title="Imagen de registro">
+        <p className="text-xs text-foreground/50 pb-1">Se muestra en el panel izquierdo del formulario de alta de nuevos clientes. Relación recomendada 4:5, mínimo 800×1000 px.</p>
+        <ImageInput value={value.registro_imagen} onChange={v => onChange({ registro_imagen: v })} />
       </SectionCard>
     </div>
   );
@@ -1342,7 +1379,8 @@ export default function AdminContenidosPage() {
   const [ubicacionesData, setUbicacionesData] = useState<UbicacionesContent>(ubicaciones);
   const [contactoData, setContactoData] = useState<ContactoContent>(contacto);
   const [layoutData, setLayoutData] = useState<LayoutContent>(layoutContent);
-  const [registroData, setRegistroData] = useState({ registro_imagen: '' });
+  const [authData, setAuthData] = useState<AuthImages>({ login_imagen: '', registro_imagen: '' });
+  const [authPreviewMode, setAuthPreviewMode] = useState<AuthPreviewMode>('login');
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [iframeKey, setIframeKey] = useState(0);
@@ -1356,7 +1394,10 @@ export default function AdminContenidosPage() {
       setUbicacionesData(ubicaciones);
       setContactoData(contacto);
       setLayoutData(layoutContent);
-      setRegistroData({ registro_imagen: config.registro_imagen || '' });
+      setAuthData({
+        login_imagen: config.login_imagen || '',
+        registro_imagen: config.registro_imagen || '',
+      });
       setIsLoaded(true);
     }
   }, [authLoading]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1374,7 +1415,10 @@ export default function AdminContenidosPage() {
   const handleUbicacionesChange = useCallback((c: UbicacionesContent) => { setUbicacionesData(c); markChanged(); }, [markChanged]);
   const handleContactoChange = useCallback((c: ContactoContent) => { setContactoData(c); markChanged(); }, [markChanged]);
   const handleLayoutChange = useCallback((c: LayoutContent) => { setLayoutData(c); markChanged(); }, [markChanged]);
-  const handleRegistroChange = useCallback((v: string) => { setRegistroData({ registro_imagen: v }); markChanged(); }, [markChanged]);
+  const handleAuthChange = useCallback((value: Partial<AuthImages>) => {
+    setAuthData(prev => ({ ...prev, ...value }));
+    markChanged();
+  }, [markChanged]);
 
   // ---- REAL-TIME PREVIEW via postMessage ----
   const sendPreview = useCallback((key: string, value: unknown) => {
@@ -1396,7 +1440,7 @@ export default function AdminContenidosPage() {
         eventos: { key: 'contenido_eventos', value: eventosData },
         ubicaciones: { key: 'contenido_ubicaciones', value: ubicacionesData },
         contacto: { key: 'contenido_contacto', value: contactoData },
-        registro: { key: 'apariencia', value: registroData },
+        registro: { key: 'apariencia', value: authData },
       };
       const entry = keyMap[activePage];
       if (entry) sendPreview(entry.key, entry.value);
@@ -1406,7 +1450,7 @@ export default function AdminContenidosPage() {
       }
     }, 150);
     return () => clearTimeout(previewTimerRef.current);
-  }, [activePage, indexData, nosotrosData, eventosData, ubicacionesData, contactoData, layoutData, registroData, sendPreview]);
+  }, [activePage, indexData, nosotrosData, eventosData, ubicacionesData, contactoData, layoutData, authData, sendPreview]);
 
   // ---- SAVE ----
   const handleSave = useCallback(async () => {
@@ -1422,7 +1466,7 @@ export default function AdminContenidosPage() {
         { clave: 'contenido_ubicaciones', valor: JSON.stringify(ubicacionesData) },
         { clave: 'contenido_contacto', valor: JSON.stringify(contactoData) },
         { clave: 'contenido_layout', valor: JSON.stringify(layoutData) },
-        { clave: 'apariencia', valor: registroData },
+        { clave: 'apariencia', valor: authData },
       ];
 
       for (const u of updates) {
@@ -1445,7 +1489,7 @@ export default function AdminContenidosPage() {
     } finally {
       setIsSaving(false);
     }
-  }, [indexData, nosotrosData, eventosData, ubicacionesData, contactoData, layoutData, registroData, refreshIndex, refreshPages, refreshLayout, refreshConfig]);
+  }, [indexData, nosotrosData, eventosData, ubicacionesData, contactoData, layoutData, authData, refreshIndex, refreshPages, refreshLayout, refreshConfig]);
 
   // Ctrl+S
   useEffect(() => {
@@ -1480,6 +1524,11 @@ export default function AdminContenidosPage() {
 
   const getPreviewUrl = () => {
     if (typeof window === 'undefined') return '';
+    if (activePage === 'registro') {
+      return authPreviewMode === 'login'
+        ? `${window.location.origin}/cuenta?preview=1`
+        : `${window.location.origin}/cuenta/registro?preview=1`;
+    }
     return `${window.location.origin}${activeTab.path}`;
   };
 
@@ -1553,7 +1602,14 @@ export default function AdminContenidosPage() {
             {activePage === 'eventos' && <EventosEditor content={eventosData} onChange={handleEventosChange} />}
             {activePage === 'ubicaciones' && <UbicacionesEditor content={ubicacionesData} onChange={handleUbicacionesChange} />}
             {activePage === 'contacto' && <ContactoEditor content={contactoData} onChange={handleContactoChange} />}
-            {activePage === 'registro' && <RegistroEditor value={registroData.registro_imagen} onChange={handleRegistroChange} />}
+            {activePage === 'registro' && (
+              <LoginRegistroEditor
+                value={authData}
+                onChange={handleAuthChange}
+                previewMode={authPreviewMode}
+                onPreviewModeChange={setAuthPreviewMode}
+              />
+            )}
           </div>
         </div>
 
@@ -1569,7 +1625,7 @@ export default function AdminContenidosPage() {
             }}
           >
             <iframe
-              key={iframeKey}
+              key={`${iframeKey}-${activePage}-${activePage === 'registro' ? authPreviewMode : 'default'}`}
               ref={iframeRef}
               src={getPreviewUrl()}
               className="w-full h-full border-0"

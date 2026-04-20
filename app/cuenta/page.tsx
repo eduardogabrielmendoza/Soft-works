@@ -2,10 +2,12 @@
 
 import { useState, useRef, Suspense } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, Eye, EyeOff, Mail, Check, ShieldCheck, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/lib/hooks/useAuth';
+import { useSiteConfig } from '@/lib/hooks/useSiteConfig';
 
 function CuentaContent() {
   const router = useRouter();
@@ -13,6 +15,7 @@ function CuentaContent() {
   const redirect = searchParams.get('redirect') || '/cuenta/perfil';
   
   const { signIn, isLoading: authLoading } = useAuth();
+  const { config } = useSiteConfig();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -210,7 +213,18 @@ function CuentaContent() {
             transition={{ duration: 0.6 }}
             className="relative aspect-[4/5] rounded-lg overflow-hidden hidden lg:block bg-gray-100"
           >
-            <div className="flex items-center justify-center h-full text-gray-400 text-sm">SOFTWORKS</div>
+            {config.login_imagen ? (
+              <Image
+                src={config.login_imagen}
+                alt="Softworks iniciar sesión"
+                fill
+                className="object-cover"
+                sizes="(max-width: 1024px) 0px, 50vw"
+                priority
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-400 text-sm">SOFTWORKS</div>
+            )}
           </motion.div>
 
           {/* Right Form */}
