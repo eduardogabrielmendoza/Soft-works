@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Settings, 
@@ -11,10 +11,12 @@ import {
   Save,
   Loader2,
   Globe,
-  DollarSign,
   Megaphone,
   AlertTriangle,
-  TestTube2
+  TestTube2,
+  ImagePlus,
+  X,
+  Upload
 } from 'lucide-react';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { getSupabaseClient } from '@/lib/supabase/client';
@@ -42,10 +44,13 @@ export default function ConfiguracionAdminPage() {
     shipping_cost: 5000,
     payment_methods: ['transferencia', 'mercadopago'],
     mercadopago_mode: 'production' as 'production' | 'sandbox',
+    registro_imagen: '',
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [savedMessage, setSavedMessage] = useState('');
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadSettings();
@@ -75,6 +80,24 @@ export default function ConfiguracionAdminPage() {
       // Si no existe la tabla, usar valores por defecto
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleRegistroImageUpload = async (file: File) => {
+    setIsUploadingImage(true);
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      form.append('folder', 'softworks/apariencia');
+      const res = await fetch('/api/upload', { method: 'POST', body: form });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al subir imagen');
+      setSettings(prev => ({ ...prev, registro_imagen: data.url }));
+    } catch (err: any) {
+      setSavedMessage('Error al subir imagen: ' + err.message);
+      setTimeout(() => setSavedMessage(''), 5000);
+    } finally {
+      setIsUploadingImage(false);
     }
   };
 
@@ -136,6 +159,12 @@ export default function ConfiguracionAdminPage() {
           clave: 'mercadopago',
           valor: {
             mercadopago_mode: settings.mercadopago_mode,
+          },
+        },
+        {
+          clave: 'apariencia',
+          valor: {
+            registro_imagen: settings.registro_imagen,
           },
         },
       ];
@@ -656,6 +685,85 @@ export default function ConfiguracionAdminPage() {
                       </>
                     )}
                   </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Apariencia — Modal de Registro */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <ImagePlus className="w-6 h-6 text-foreground" />
+                <h2 className="text-lg font-medium">Apariencia — Modal de Registro</h2>
+              </div>
+              <p className="text-sm text-gray-500 mb-5">
+                Esta imagen se muestra en el panel izquierdo de la página de registro de nuevos clientes.
+                Recomendado: relación 4:5, mínimo 800×1000px.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-6 items-start">
+                {/* Preview */}
+                <div className="w-40 h-52 rounded-lg border-2 border-dashed border-gray-300 overflow-hidden flex-shrink-0 bg-gray-50 flex items-center justify-center relative">
+                  {settings.registro_imagen ? (
+                    <>
+                      <img
+                        src={settings.registro_imagen}
+                        alt="Modal de registro"
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setSettings(prev => ({ ...prev, registro_imagen: '' }))}
+                        className="absolute top-1 right-1 p-1 bg-black/60 rounded-full text-white hover:bg-black/80 transition-colors"
+                        title="Quitar imagen"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </>
+                  ) : (
+                    <div className="text-center p-4">
+                      <ImagePlus className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                      <p className="text-xs text-gray-400">Sin imagen</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Upload controls */}
+                <div className="flex-1 space-y-3">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleRegistroImageUpload(file);
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploadingImage}
+                    className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
+                  >
+                    {isUploadingImage ? (
+                      <><Loader2 className="w-4 h-4 animate-spin" />Subiendo...</>
+                    ) : (
+                      <><Upload className="w-4 h-4" />Subir imagen</>
+                    )}
+                  </button>
+                  {settings.registro_imagen && (
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">URL de la imagen</label>
+                      <input
+                        type="text"
+                        value={settings.registro_imagen}
+                        onChange={(e) => setSettings(prev => ({ ...prev, registro_imagen: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-xs font-mono focus:ring-2 focus:ring-foreground focus:border-transparent"
+                        placeholder="https://..."
+                      />
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-400">Formatos: JPG, PNG, WebP. Máx 10MB.</p>
                 </div>
               </div>
             </div>

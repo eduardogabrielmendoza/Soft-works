@@ -413,3 +413,105 @@ export async function sendPasswordResetEmail(params: {
 
   return sendEmail({ to, subject: 'Tu código de verificación | Softworks', html: emailLayout(content) });
 }
+
+// ============================================================
+// TEMPLATE: NOTIFICACIÓN AL ADMINISTRADOR — NUEVA COMPRA
+// ============================================================
+const ADMIN_EMAIL = 'administracion@softworks.com.ar';
+
+export async function sendAdminNewOrderEmail(params: {
+  orderNumber: string;
+  customerName: string;
+  customerEmail: string;
+  total: number;
+  subtotal: number;
+  shippingCost: number;
+  paymentMethod: string;
+  isGuest: boolean;
+  eventType: 'mp_approved' | 'transfer_receipt';
+  items: Array<{
+    producto_nombre: string;
+    producto_imagen: string | null;
+    talle: string;
+    cantidad: number;
+    producto_precio: number;
+  }>;
+  orderId?: string;
+}) {
+  const {
+    orderNumber, customerName, customerEmail, total, subtotal,
+    shippingCost, paymentMethod, isGuest, eventType, items, orderId,
+  } = params;
+
+  const isMp = eventType === 'mp_approved';
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' });
+  const timeStr = now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+  const paymentLabel = paymentMethod === 'mercadopago' ? 'MercadoPago / Tarjeta' : 'Transferencia Bancaria';
+
+  const subject = isMp
+    ? `💳 Nueva compra aprobada — Pedido #${orderNumber} | $${total.toLocaleString('es-AR')}`
+    : `🧾 Comprobante recibido — Pedido #${orderNumber} | $${total.toLocaleString('es-AR')}`;
+
+  const eventBadge = isMp
+    ? `<div style="display:inline-block;background-color:#dcfce7;color:#166534;font-size:13px;font-weight:600;padding:6px 16px;border-radius:20px;">✅ Pago aprobado por MercadoPago</div>`
+    : `<div style="display:inline-block;background-color:#fef3c7;color:#92400e;font-size:13px;font-weight:600;padding:6px 16px;border-radius:20px;">🧾 Comprobante de transferencia enviado — pendiente de verificación</div>`;
+
+  const actionNote = isMp
+    ? `<p style="color:#374151;font-size:14px;line-height:1.7;margin:0;">El pago fue <strong>confirmado automáticamente</strong> por MercadoPago. Podés marcar el pedido como enviado desde el panel de administración.</p>`
+    : `<p style="color:#374151;font-size:14px;line-height:1.7;margin:0;">El cliente envió su comprobante de transferencia. <strong>Verificá el pago</strong> en el panel de administración antes de procesar el envío.</p>`;
+
+  const itemsHtml = buildItemsTable(items);
+  const summaryHtml = buildOrderSummary({ orderNumber, subtotal, shippingCost, total, paymentMethod, date: `${dateStr} ${timeStr}` });
+  const adminLink = orderId ? buildButton('Ver Pedido en el Panel', `${SITE_URL}/admin/pedidos/${orderId}`, '#111827') : '';
+
+  const content = `
+    <div style="padding:36px 28px 24px;">
+      <div style="text-align:center;margin:0 0 24px;">
+        <div style="font-size:36px;margin-bottom:8px;">${isMp ? '💳' : '🧾'}</div>
+        <h2 style="color:#111827;font-size:22px;font-weight:700;margin:0 0 12px;">${isMp ? '¡Nueva compra aprobada!' : 'Comprobante de transferencia recibido'}</h2>
+        ${eventBadge}
+      </div>
+      
+      <!-- Action Required -->
+      <div style="background-color:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:16px;margin:0 0 24px;">
+        <p style="color:#0c4a6e;font-size:13px;font-weight:600;margin:0 0 6px;">📋 Acción requerida</p>
+        ${actionNote}
+      </div>
+
+      <!-- Customer Info -->
+      <div style="background-color:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:20px;margin:0 0 20px;">
+        <p style="color:#111827;font-size:14px;font-weight:600;margin:0 0 12px;">Datos del cliente</p>
+        <table cellpadding="0" cellspacing="0" border="0" width="100%">
+          <tr>
+            <td style="color:#6b7280;font-size:13px;padding:4px 0;width:120px;">Nombre</td>
+            <td style="color:#111827;font-size:13px;font-weight:600;padding:4px 0;">${customerName}</td>
+          </tr>
+          <tr>
+            <td style="color:#6b7280;font-size:13px;padding:4px 0;">Email</td>
+            <td style="color:#111827;font-size:13px;padding:4px 0;"><a href="mailto:${customerEmail}" style="color:#111827;">${customerEmail}</a></td>
+          </tr>
+          <tr>
+            <td style="color:#6b7280;font-size:13px;padding:4px 0;">Tipo</td>
+            <td style="color:#111827;font-size:13px;padding:4px 0;">${isGuest ? 'Compra sin cuenta (invitado)' : 'Cliente registrado'}</td>
+          </tr>
+          <tr>
+            <td style="color:#6b7280;font-size:13px;padding:4px 0;">Método de pago</td>
+            <td style="color:#111827;font-size:13px;font-weight:600;padding:4px 0;">${paymentLabel}</td>
+          </tr>
+          <tr>
+            <td style="color:#6b7280;font-size:13px;padding:4px 0;">Fecha y hora</td>
+            <td style="color:#111827;font-size:13px;padding:4px 0;">${dateStr} a las ${timeStr}</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Products -->
+      <p style="color:#111827;font-size:14px;font-weight:600;margin:0 0 12px;">Productos del pedido</p>
+      <table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">${itemsHtml}</table>
+      ${summaryHtml}
+      ${adminLink}
+    </div>`;
+
+  return sendEmail({ to: ADMIN_EMAIL, subject, html: emailLayout(content) });
+}

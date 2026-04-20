@@ -2,14 +2,17 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, Eye, EyeOff, Check, X, ShoppingBag, User, Truck } from 'lucide-react';
 import { useAuth } from '@/lib/hooks/useAuth';
+import { useSiteConfig } from '@/lib/hooks/useSiteConfig';
 
 export default function RegistroPage() {
   const router = useRouter();
   const { signUp, isLoading: authLoading } = useAuth();
+  const { config } = useSiteConfig();
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -174,7 +177,18 @@ export default function RegistroPage() {
             transition={{ duration: 0.6 }}
             className="relative aspect-[4/5] rounded-lg overflow-hidden hidden lg:block bg-gray-100"
           >
-            <div className="flex items-center justify-center h-full text-gray-400 text-sm">SOFTWORKS</div>
+            {config.registro_imagen ? (
+              <Image
+                src={config.registro_imagen}
+                alt="Softworks registro"
+                fill
+                className="object-cover"
+                sizes="(max-width: 1024px) 0px, 50vw"
+                priority
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-400 text-sm">SOFTWORKS</div>
+            )}
           </motion.div>
 
           {/* Right Form */}

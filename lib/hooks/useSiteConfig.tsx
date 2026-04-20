@@ -37,6 +37,9 @@ export interface SiteConfig {
   // Pagos
   payment_methods: string[];
   mercadopago_mode: 'production' | 'sandbox';
+
+  // Apariencia
+  registro_imagen: string;
 }
 
 const defaultConfig: SiteConfig = {
@@ -58,6 +61,7 @@ const defaultConfig: SiteConfig = {
   shipping_cost: 5000,
   payment_methods: ['transferencia', 'mercadopago'],
   mercadopago_mode: 'production',
+  registro_imagen: '',
 };
 
 interface SiteConfigContextType {

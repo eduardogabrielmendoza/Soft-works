@@ -265,6 +265,12 @@ function ConfirmacionContent() {
           monto_transferido: uploadData.transfer_amount ? parseFloat(uploadData.transfer_amount) : undefined,
           notas_cliente: uploadData.customer_notes || undefined,
         });
+        // Notify admin
+        fetch('/api/notifications/new-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: order.id }),
+        }).catch(() => {});
       }
 
       setStep2Done(true);

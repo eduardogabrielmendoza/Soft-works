@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Payment } from 'mercadopago';
 import { createClient } from '@supabase/supabase-js';
 import { getMercadoPagoMode, createMPClient } from '@/lib/api/mercadopago-config';
-import { sendPaymentApprovedEmail } from '@/lib/email';
+import { sendPaymentApprovedEmail, sendAdminNewOrderEmail } from '@/lib/email';
 
 // Use service role to update orders (bypass RLS)
 function getSupabaseAdmin() {
@@ -99,6 +99,14 @@ export async function POST(req: NextRequest) {
               .eq('pedido_id', orderId);
 
             if (orderData && orderItems) {
+              const mappedItems = orderItems.map((item: any) => ({
+                producto_nombre: item.producto_nombre,
+                producto_imagen: item.producto_imagen,
+                talle: item.talle,
+                cantidad: item.cantidad,
+                producto_precio: item.producto_precio,
+              }));
+
               await sendPaymentApprovedEmail({
                 to: orderData.cliente_email,
                 customerName: orderData.cliente_nombre,
@@ -109,15 +117,24 @@ export async function POST(req: NextRequest) {
                 shippingCost: orderData.costo_envio || 0,
                 paymentMethod: 'mercadopago',
                 isGuest: !orderData.usuario_id,
-                items: orderItems.map((item: any) => ({
-                  producto_nombre: item.producto_nombre,
-                  producto_imagen: item.producto_imagen,
-                  talle: item.talle,
-                  cantidad: item.cantidad,
-                  producto_precio: item.producto_precio,
-                })),
+                items: mappedItems,
               });
               console.log(`Payment success email sent for order ${orderId}`);
+
+              // Notify admin
+              await sendAdminNewOrderEmail({
+                orderNumber: orderData.numero_pedido,
+                customerName: orderData.cliente_nombre,
+                customerEmail: orderData.cliente_email,
+                total: orderData.total,
+                subtotal: orderData.subtotal,
+                shippingCost: orderData.costo_envio || 0,
+                paymentMethod: 'mercadopago',
+                isGuest: !orderData.usuario_id,
+                eventType: 'mp_approved',
+                orderId: orderData.id,
+                items: mappedItems,
+              }).catch((err: any) => console.error('Admin email error (mp):', err));
             }
           } catch (emailErr) {
             console.error('Error sending payment success email:', emailErr);

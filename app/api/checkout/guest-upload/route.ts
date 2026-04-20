@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { sendAdminNewOrderEmail } from '@/lib/email';
 
 function getSupabaseAdmin() {
   return createClient(
@@ -105,6 +106,34 @@ export async function POST(req: NextRequest) {
       .from('pedidos')
       .update({ estado: 'esperando_verificacion' })
       .eq('id', orderId);
+
+    // Notify admin
+    const { data: orderForEmail } = await supabase
+      .from('pedidos')
+      .select('numero_pedido, cliente_nombre, cliente_email, total, subtotal, costo_envio')
+      .eq('id', orderId)
+      .single();
+
+    const { data: itemsForEmail } = await supabase
+      .from('items_pedido')
+      .select('producto_nombre, producto_imagen, talle, cantidad, producto_precio')
+      .eq('pedido_id', orderId);
+
+    if (orderForEmail) {
+      sendAdminNewOrderEmail({
+        orderNumber: orderForEmail.numero_pedido,
+        customerName: orderForEmail.cliente_nombre,
+        customerEmail: orderForEmail.cliente_email,
+        total: orderForEmail.total,
+        subtotal: orderForEmail.subtotal,
+        shippingCost: orderForEmail.costo_envio || 0,
+        paymentMethod: 'transferencia',
+        isGuest: true,
+        eventType: 'transfer_receipt',
+        orderId,
+        items: (itemsForEmail || []) as Array<{ producto_nombre: string; producto_imagen: string | null; talle: string; cantidad: number; producto_precio: number; }>,
+      }).catch((err: any) => console.error('Admin email error (guest transfer):', err));
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

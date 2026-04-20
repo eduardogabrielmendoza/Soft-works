@@ -107,6 +107,13 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
       });
       console.log('Verificación enviada correctamente');
 
+      // Notify admin
+      fetch('/api/notifications/new-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: order.id }),
+      }).catch(() => {});
+
       // Reload order to get updated status
       await loadOrder();
       setShowUploadForm(false);
