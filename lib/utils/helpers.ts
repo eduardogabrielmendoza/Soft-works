@@ -1,4 +1,70 @@
-import type { EstadoPedido } from '@/lib/types/database.types'
+import type { DireccionEnvioSnapshot, EstadoPedido, TipoEntrega } from '@/lib/types/database.types'
+
+function resolveDeliveryType(input?: DireccionEnvioSnapshot | TipoEntrega | null): TipoEntrega {
+  if (typeof input === 'string') {
+    return input === 'sucursal_correo' ? 'sucursal_correo' : 'domicilio'
+  }
+
+  if (input?.tipo_entrega === 'sucursal_correo' && input.sucursal_correo) {
+    return 'sucursal_correo'
+  }
+
+  return 'domicilio'
+}
+
+export function isBranchPickupDelivery(input?: DireccionEnvioSnapshot | null): boolean {
+  return resolveDeliveryType(input) === 'sucursal_correo'
+}
+
+export function getShippingMethodLabel(input?: DireccionEnvioSnapshot | TipoEntrega | null): string {
+  return resolveDeliveryType(input) === 'sucursal_correo'
+    ? 'Correo Argentino a sucursal'
+    : 'Correo Argentino Regular'
+}
+
+export function getShippingMethodEtaLabel(input?: DireccionEnvioSnapshot | TipoEntrega | null): string {
+  return resolveDeliveryType(input) === 'sucursal_correo'
+    ? 'Retiro en sucursal en hasta 6 días hábiles'
+    : 'En hasta 6 días hábiles'
+}
+
+export function getShippingAddressSectionTitle(address: DireccionEnvioSnapshot): string {
+  return isBranchPickupDelivery(address) ? 'Sucursal de Entrega' : 'Dirección de Envío'
+}
+
+export function getShippingAddressLines(address: DireccionEnvioSnapshot): string[] {
+  if (isBranchPickupDelivery(address) && address.sucursal_correo) {
+    const branch = address.sucursal_correo
+    const lines = [
+      `${branch.nombre} (${branch.tipo_sucursal})`,
+      branch.direccion,
+      `${branch.localidad_nombre}, ${branch.provincia_nombre} - CP ${branch.codigo_postal || address.codigo_postal}`,
+    ]
+
+    if (branch.horarios) {
+      lines.push(`Horario: ${branch.horarios}`)
+    }
+
+    if (address.telefono) {
+      lines.push(`Tel: ${address.telefono}`)
+    }
+
+    return lines
+  }
+
+  const streetLine = [address.calle, address.numero].filter(Boolean).join(' ').trim()
+  const apartment = address.piso_depto ? `, ${address.piso_depto}` : ''
+  const lines = [
+    `${streetLine}${apartment}`.trim(),
+    `${address.ciudad}, ${address.provincia} - CP ${address.codigo_postal}`,
+  ]
+
+  if (address.telefono) {
+    lines.push(`Tel: ${address.telefono}`)
+  }
+
+  return lines
+}
 
 // Helper para obtener nombre del transportista
 export function getCarrierDisplayName(carrier: string): string {

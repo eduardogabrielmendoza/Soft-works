@@ -8,16 +8,16 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import CorreoArgentinoBranchSelector from '../components/CorreoArgentinoBranchSelector';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useCart } from '@/lib/hooks/useCart';
 import { getUserAddresses, createAddress, ARGENTINA_PROVINCES } from '@/lib/api/addresses';
-import { formatPrice } from '@/lib/utils/helpers';
+import { formatPrice, getShippingMethodEtaLabel, getShippingMethodLabel } from '@/lib/utils/helpers';
 import { lookupPostalCode, isValidPostalFormat } from '@/lib/utils/postalCodes';
-import type { Direccion, MetodoPago } from '@/lib/types/database.types';
+import type { Direccion, MetodoPago, SucursalCorreoSeleccionada, TipoEntrega } from '@/lib/types/database.types';
 
 // Fixed shipping config
 const SHIPPING_COST = 9000;
-const SHIPPING_LABEL = 'Correo Argentino Regular';
 const SHIPPING_DAYS = 6;
 
 // =============================================
@@ -179,6 +179,8 @@ export default function CheckoutPage() {
   const [postalError, setPostalError] = useState('');
   const [postalValidated, setPostalValidated] = useState(false);
   const [showProvinciaSelector, setShowProvinciaSelector] = useState(false);
+  const [shippingMode, setShippingMode] = useState<TipoEntrega>('domicilio');
+  const [selectedBranch, setSelectedBranch] = useState<SucursalCorreoSeleccionada | null>(null);
   const [direccion, setDireccion] = useState<DireccionEnvio>({
     calle: '',
     numero: '',
@@ -207,6 +209,8 @@ export default function CheckoutPage() {
   const finalShippingCost = SHIPPING_COST;
   const total = subtotal + finalShippingCost;
   const canFinalize = step1Done && step2Done && step3Done && acceptedTerms && !isCreatingOrder;
+  const shippingLabel = getShippingMethodLabel(shippingMode);
+  const shippingEtaLabel = getShippingMethodEtaLabel(shippingMode);
 
   // =============================================
   // DATA LOADING
@@ -261,6 +265,8 @@ export default function CheckoutPage() {
         localidad: defaultAddr.ciudad,
         destinatario: defaultAddr.nombre_destinatario,
       });
+      setShippingMode('domicilio');
+      setSelectedBranch(null);
 
       const result = lookupPostalCode(defaultAddr.codigo_postal);
       if (result) {
@@ -348,7 +354,15 @@ export default function CheckoutPage() {
       setStep2Error('Ingresá tu código postal primero.');
       return;
     }
-    if (!direccion.calle || !direccion.numero || !direccion.localidad || !direccion.destinatario) {
+    if (!direccion.destinatario) {
+      setStep2Error('Indicá quién retira o recibe el pedido.');
+      return;
+    }
+    if (shippingMode === 'sucursal_correo' && !selectedBranch) {
+      setStep2Error('Seleccioná una sucursal de Correo Argentino para continuar.');
+      return;
+    }
+    if (shippingMode === 'domicilio' && (!direccion.calle || !direccion.numero || !direccion.localidad)) {
       setStep2Error('Completá todos los campos obligatorios de la dirección.');
       return;
     }
@@ -384,16 +398,30 @@ export default function CheckoutPage() {
 
     try {
       const provincia = provinciaDetectada;
-      const direccion_envio = {
-        nombre_destinatario: direccion.destinatario,
-        calle: direccion.calle,
-        numero: direccion.numero,
-        piso_depto: direccion.piso_depto || undefined,
-        ciudad: direccion.localidad,
-        provincia,
-        codigo_postal: codigoPostal,
-        telefono: ident.telefono || undefined,
-      };
+      const direccion_envio = shippingMode === 'sucursal_correo' && selectedBranch
+        ? {
+            tipo_entrega: 'sucursal_correo' as const,
+            nombre_destinatario: direccion.destinatario,
+            calle: selectedBranch.direccion,
+            numero: '',
+            piso_depto: undefined,
+            ciudad: selectedBranch.localidad_nombre,
+            provincia,
+            codigo_postal: selectedBranch.codigo_postal || codigoPostal,
+            telefono: ident.telefono || undefined,
+            sucursal_correo: selectedBranch,
+          }
+        : {
+            tipo_entrega: 'domicilio' as const,
+            nombre_destinatario: direccion.destinatario,
+            calle: direccion.calle,
+            numero: direccion.numero,
+            piso_depto: direccion.piso_depto || undefined,
+            ciudad: direccion.localidad,
+            provincia,
+            codigo_postal: codigoPostal,
+            telefono: ident.telefono || undefined,
+          };
 
       const orderPayload = {
         direccion_envio,
@@ -433,7 +461,7 @@ export default function CheckoutPage() {
       const order = orderData.order;
 
       // Auto-save address for logged-in users
-      if (user && !isGuest) {
+      if (user && !isGuest && shippingMode === 'domicilio') {
         try {
           const existingMatch = savedAddresses.find(
             (a) =>
@@ -667,21 +695,40 @@ export default function CheckoutPage() {
               {step2Done && currentStep !== 2 ? (
                 <div className="px-6 py-4">
                   <p className="text-sm text-gray-600 mb-1">
-                    {SHIPPING_LABEL} — En hasta {SHIPPING_DAYS} días hábiles
+                    {shippingLabel} — {shippingEtaLabel}
                   </p>
-                  <p className="text-sm text-gray-800">
-                    {direccion.calle} {direccion.numero}
-                    {direccion.piso_depto && `, ${direccion.piso_depto}`}
-                  </p>
-                  <p className="text-sm text-gray-800">{codigoPostal}</p>
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-gray-600">
-                      {direccion.localidad}, {provinciaDetectada}
-                    </p>
-                    <span className="text-sm font-medium">
-                      {formatPrice(SHIPPING_COST)}
-                    </span>
-                  </div>
+                  {shippingMode === 'sucursal_correo' && selectedBranch ? (
+                    <>
+                      <p className="text-sm font-medium text-gray-800">{selectedBranch.nombre}</p>
+                      <p className="text-sm text-gray-800">{selectedBranch.direccion}</p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm text-gray-600">
+                          {selectedBranch.localidad_nombre}, {selectedBranch.provincia_nombre}
+                          {selectedBranch.codigo_postal ? ` - CP ${selectedBranch.codigo_postal}` : ''}
+                        </p>
+                        <span className="text-sm font-medium">{formatPrice(SHIPPING_COST)}</span>
+                      </div>
+                      {selectedBranch.horarios && (
+                        <p className="text-xs text-gray-500">{selectedBranch.horarios}</p>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm text-gray-800">
+                        {direccion.calle} {direccion.numero}
+                        {direccion.piso_depto && `, ${direccion.piso_depto}`}
+                      </p>
+                      <p className="text-sm text-gray-800">{codigoPostal}</p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm text-gray-600">
+                          {direccion.localidad}, {provinciaDetectada}
+                        </p>
+                        <span className="text-sm font-medium">
+                          {formatPrice(SHIPPING_COST)}
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </div>
               ) : currentStep === 2 ? (
                 <div className="px-6 py-5 space-y-5">
@@ -695,6 +742,9 @@ export default function CheckoutPage() {
                         onChange={(e) => {
                           const val = e.target.value.replace(/\D/g, '').slice(0, 4);
                           setCodigoPostal(val);
+                          setSelectedBranch(null);
+                          setStep2Done(false);
+                          setStep3Done(false);
                           if (val.length < 4) {
                             setPostalValidated(false);
                             setProvinciaDetectada('');
@@ -737,20 +787,53 @@ export default function CheckoutPage() {
                       transition={{ duration: 0.3 }}
                     >
                       <p className="text-sm text-gray-500 mb-2">Método de entrega</p>
-                      <label className="flex items-center justify-between p-4 border border-foreground rounded-lg bg-gray-50 cursor-default">
-                        <div className="flex items-center gap-3">
-                          <div className="w-4 h-4 rounded-full border-4 border-foreground" />
-                          <div>
-                            <p className="font-medium text-sm">{SHIPPING_LABEL}</p>
-                            <p className="text-xs text-gray-500">
-                              En hasta {SHIPPING_DAYS} días hábiles
-                            </p>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShippingMode('domicilio');
+                            setStep2Done(false);
+                            setStep3Done(false);
+                            setStep2Error('');
+                          }}
+                          className={`rounded-lg border p-4 text-left transition-colors ${
+                            shippingMode === 'domicilio'
+                              ? 'border-foreground bg-gray-50'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="mb-3 flex items-center gap-3">
+                            <Truck className="h-4 w-4 text-gray-500" />
+                            <div className={`h-4 w-4 rounded-full border-4 ${shippingMode === 'domicilio' ? 'border-foreground' : 'border-gray-300'}`} />
+                            <p className="font-medium text-sm">Envío a domicilio</p>
                           </div>
-                        </div>
-                        <span className="font-medium text-sm">
-                          {formatPrice(SHIPPING_COST)}
-                        </span>
-                      </label>
+                          <p className="text-xs text-gray-500">{SHIPPING_DAYS} días hábiles aprox.</p>
+                          <p className="mt-2 text-sm font-medium">{formatPrice(SHIPPING_COST)}</p>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShippingMode('sucursal_correo');
+                            setStep2Done(false);
+                            setStep3Done(false);
+                            setStep2Error('');
+                          }}
+                          className={`rounded-lg border p-4 text-left transition-colors ${
+                            shippingMode === 'sucursal_correo'
+                              ? 'border-foreground bg-gray-50'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="mb-3 flex items-center gap-3">
+                            <MapPin className="h-4 w-4 text-gray-500" />
+                            <div className={`h-4 w-4 rounded-full border-4 ${shippingMode === 'sucursal_correo' ? 'border-foreground' : 'border-gray-300'}`} />
+                            <p className="font-medium text-sm">Envío a sucursal</p>
+                          </div>
+                          <p className="text-xs text-gray-500">Retirá en una sucursal sugerida según tu CP.</p>
+                          <p className="mt-2 text-sm font-medium">{formatPrice(SHIPPING_COST)}</p>
+                        </button>
+                      </div>
                     </motion.div>
                   )}
 
@@ -762,7 +845,11 @@ export default function CheckoutPage() {
                       transition={{ duration: 0.3, delay: 0.1 }}
                       className="space-y-4"
                     >
-                      <p className="text-sm text-gray-500">Complete su dirección de entrega</p>
+                      <p className="text-sm text-gray-500">
+                        {shippingMode === 'sucursal_correo'
+                          ? 'Elegí la sucursal donde querés retirar tu pedido.'
+                          : 'Completá tu dirección de entrega.'}
+                      </p>
 
                       {/* Province auto-detected */}
                       <div className="flex items-center gap-2">
@@ -780,6 +867,9 @@ export default function CheckoutPage() {
                             value={provinciaDetectada}
                             onChange={(e) => {
                               setProvinciaDetectada(e.target.value);
+                              setSelectedBranch(null);
+                              setStep2Done(false);
+                              setStep3Done(false);
                               setShowProvinciaSelector(false);
                             }}
                             className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-gray-400"
@@ -793,53 +883,75 @@ export default function CheckoutPage() {
                         )}
                       </div>
 
-                      <div>
-                        <label className="block text-sm text-gray-500 mb-1">Calle</label>
-                        <input
-                          type="text"
-                          value={direccion.calle}
-                          onChange={(e) => setDireccion({ ...direccion, calle: e.target.value })}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 text-sm"
-                          placeholder="Av. Corrientes"
+                      {shippingMode === 'sucursal_correo' ? (
+                        <CorreoArgentinoBranchSelector
+                          postalCode={codigoPostal}
+                          province={provinciaDetectada}
+                          selectedBranch={selectedBranch}
+                          onSelect={(branch: SucursalCorreoSeleccionada) => {
+                            setSelectedBranch(branch);
+                            setDireccion((current) => ({
+                              ...current,
+                              localidad: branch.localidad_nombre,
+                            }));
+                            setStep2Done(false);
+                            setStep3Done(false);
+                            setStep2Error('');
+                          }}
                         />
-                      </div>
+                      ) : (
+                        <>
+                          <div>
+                            <label className="block text-sm text-gray-500 mb-1">Calle</label>
+                            <input
+                              type="text"
+                              value={direccion.calle}
+                              onChange={(e) => setDireccion({ ...direccion, calle: e.target.value })}
+                              className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 text-sm"
+                              placeholder="Av. Corrientes"
+                            />
+                          </div>
 
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm text-gray-500 mb-1">Número</label>
-                          <input
-                            type="text"
-                            value={direccion.numero}
-                            onChange={(e) => setDireccion({ ...direccion, numero: e.target.value })}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 text-sm"
-                            placeholder="1234"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm text-gray-500 mb-1">Piso/Departamento</label>
-                          <input
-                            type="text"
-                            value={direccion.piso_depto}
-                            onChange={(e) => setDireccion({ ...direccion, piso_depto: e.target.value })}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 text-sm"
-                            placeholder="3°A"
-                          />
-                        </div>
-                      </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm text-gray-500 mb-1">Número</label>
+                              <input
+                                type="text"
+                                value={direccion.numero}
+                                onChange={(e) => setDireccion({ ...direccion, numero: e.target.value })}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 text-sm"
+                                placeholder="1234"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm text-gray-500 mb-1">Piso/Departamento</label>
+                              <input
+                                type="text"
+                                value={direccion.piso_depto}
+                                onChange={(e) => setDireccion({ ...direccion, piso_depto: e.target.value })}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 text-sm"
+                                placeholder="3°A"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm text-gray-500 mb-1">Localidad</label>
+                            <input
+                              type="text"
+                              value={direccion.localidad}
+                              onChange={(e) => setDireccion({ ...direccion, localidad: e.target.value })}
+                              className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 text-sm"
+                              placeholder="Tu localidad"
+                            />
+                          </div>
+                        </>
+                      )}
 
                       <div>
-                        <label className="block text-sm text-gray-500 mb-1">Localidad</label>
-                        <input
-                          type="text"
-                          value={direccion.localidad}
-                          onChange={(e) => setDireccion({ ...direccion, localidad: e.target.value })}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 text-sm"
-                          placeholder="Tu localidad"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm text-gray-500 mb-1">Destinatario</label>
+                        <label className="block text-sm text-gray-500 mb-1">
+                          {shippingMode === 'sucursal_correo' ? 'Nombre de quien retira' : 'Destinatario'}
+                        </label>
                         <input
                           type="text"
                           value={direccion.destinatario}

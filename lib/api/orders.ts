@@ -6,7 +6,8 @@ import type {
   InfoEnvio,
   EstadoPedido,
   Transportista,
-  MetodoPago
+  MetodoPago,
+  DireccionEnvioSnapshot
 } from '@/lib/types/database.types'
 
 // Cliente sin tipado estricto hasta que el schema exista
@@ -20,16 +21,7 @@ function getSupabase() {
 // Tipos para crear orden
 interface CreateOrderData {
   user_id?: string
-  direccion_envio: {
-    nombre_destinatario: string
-    calle: string
-    numero: string
-    piso_depto?: string
-    ciudad: string
-    provincia: string
-    codigo_postal: string
-    telefono?: string
-  }
+  direccion_envio: DireccionEnvioSnapshot
   items: {
     producto_id: string | null
     talle: string

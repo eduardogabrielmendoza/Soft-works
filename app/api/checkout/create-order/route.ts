@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import type { DireccionEnvioSnapshot } from '@/lib/types/database.types';
 
 function getSupabaseAdmin() {
   return createClient(
@@ -27,6 +28,27 @@ async function getAuthUser(req: NextRequest) {
   return user;
 }
 
+function isBranchPickupAddress(address: DireccionEnvioSnapshot) {
+  return address.tipo_entrega === 'sucursal_correo' && !!address.sucursal_correo;
+}
+
+function isValidShippingAddress(address: DireccionEnvioSnapshot) {
+  if (!address?.nombre_destinatario || !address?.provincia || !address?.codigo_postal) {
+    return false;
+  }
+
+  if (isBranchPickupAddress(address)) {
+    return Boolean(
+      address.sucursal_correo?.id &&
+      address.sucursal_correo?.nombre &&
+      address.sucursal_correo?.direccion &&
+      address.sucursal_correo?.localidad_nombre
+    );
+  }
+
+  return Boolean(address.calle && address.numero && address.ciudad);
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -47,6 +69,10 @@ export async function POST(req: NextRequest) {
 
     if (!direccion_envio || !items?.length || !subtotal || !total) {
       return NextResponse.json({ error: 'Datos incompletos' }, { status: 400 });
+    }
+
+    if (!isValidShippingAddress(direccion_envio)) {
+      return NextResponse.json({ error: 'La información de envío es inválida.' }, { status: 400 });
     }
 
     const supabase = getSupabaseAdmin();

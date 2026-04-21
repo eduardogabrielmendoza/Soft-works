@@ -9,7 +9,17 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import { getOrderById, submitPaymentVerification } from '@/lib/api/orders';
 import { getActiveBankAccounts } from '@/lib/api/settings';
 import { uploadReceipt } from '@/lib/api/storage';
-import { formatPrice, formatDate, formatDateTime, getOrderStatusLabel, getOrderStatusColor, getCarrierDisplayName, copyToClipboard } from '@/lib/utils/helpers';
+import {
+  copyToClipboard,
+  formatDate,
+  formatDateTime,
+  formatPrice,
+  getCarrierDisplayName,
+  getOrderStatusColor,
+  getOrderStatusLabel,
+  getShippingAddressLines,
+  getShippingAddressSectionTitle,
+} from '@/lib/utils/helpers';
 import type { OrderWithItems, BankAccount } from '@/lib/types/database.types';
 
 export default function PedidoDetallePage({ params }: { params: Promise<{ id: string }> }) {
@@ -170,6 +180,9 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
       </div>
     );
   }
+
+  const shippingAddressLines = getShippingAddressLines(order.direccion_envio);
+  const shippingAddressTitle = getShippingAddressSectionTitle(order.direccion_envio);
 
   return (
     <div className="pt-20 px-4 py-12 max-w-4xl mx-auto">
@@ -583,17 +596,12 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
 
         {/* Shipping Address */}
         <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-medium mb-4">Dirección de Envío</h2>
+          <h2 className="text-lg font-medium mb-4">{shippingAddressTitle}</h2>
           <div className="text-gray-600">
             <p className="font-medium text-foreground">{order.direccion_envio.nombre_destinatario}</p>
-            <p>
-              {order.direccion_envio.calle} {order.direccion_envio.numero}
-              {order.direccion_envio.piso_depto && `, ${order.direccion_envio.piso_depto}`}
-            </p>
-            <p>
-              {order.direccion_envio.ciudad}, {order.direccion_envio.provincia} - CP {order.direccion_envio.codigo_postal}
-            </p>
-            {order.direccion_envio.telefono && <p>Tel: {order.direccion_envio.telefono}</p>}
+            {shippingAddressLines.map((line) => (
+              <p key={line}>{line}</p>
+            ))}
           </div>
         </div>
       </motion.div>

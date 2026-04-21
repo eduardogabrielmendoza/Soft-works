@@ -28,7 +28,14 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import { getOrderById, submitPaymentVerification } from '@/lib/api/orders';
 import { uploadReceipt } from '@/lib/api/storage';
 import { getActiveBankAccounts } from '@/lib/api/settings';
-import { formatPrice, copyToClipboard } from '@/lib/utils/helpers';
+import {
+  copyToClipboard,
+  formatPrice,
+  getShippingAddressLines,
+  getShippingAddressSectionTitle,
+  getShippingMethodEtaLabel,
+  getShippingMethodLabel,
+} from '@/lib/utils/helpers';
 import type { OrderWithItems, BankAccount } from '@/lib/types/database.types';
 
 // =============================================
@@ -314,6 +321,10 @@ function ConfirmacionContent() {
 
   const guestEmail = order.cliente_email;
   const isTransfer = !isMercadoPago;
+  const shippingAddressLines = getShippingAddressLines(order.direccion_envio);
+  const shippingAddressTitle = getShippingAddressSectionTitle(order.direccion_envio);
+  const shippingMethodLabel = getShippingMethodLabel(order.direccion_envio);
+  const shippingMethodEta = getShippingMethodEtaLabel(order.direccion_envio);
 
   // =============================================
   // RENDER: SIDEBAR (shared between transfer wizard & MP)
@@ -381,17 +392,12 @@ function ConfirmacionContent() {
         transition={{ duration: 0.4, delay: 0.2 }}
         className="bg-white rounded-lg border border-gray-200 overflow-hidden"
       >
-        <SectionHeader icon={MapPin} title="Dirección de Envío" />
+        <SectionHeader icon={MapPin} title={shippingAddressTitle} />
         <div className="px-6 py-5 text-sm text-gray-600">
           <p className="font-medium text-foreground">{order.direccion_envio.nombre_destinatario}</p>
-          <p>
-            {order.direccion_envio.calle} {order.direccion_envio.numero}
-            {order.direccion_envio.piso_depto && `, ${order.direccion_envio.piso_depto}`}
-          </p>
-          <p>
-            {order.direccion_envio.ciudad}, {order.direccion_envio.provincia} - CP{' '}
-            {order.direccion_envio.codigo_postal}
-          </p>
+          {shippingAddressLines.map((line) => (
+            <p key={line}>{line}</p>
+          ))}
         </div>
       </motion.div>
 
@@ -406,8 +412,8 @@ function ConfirmacionContent() {
         <div className="px-6 py-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium text-sm">Correo Argentino Regular</p>
-              <p className="text-xs text-gray-500">En hasta 6 días hábiles</p>
+              <p className="font-medium text-sm">{shippingMethodLabel}</p>
+              <p className="text-xs text-gray-500">{shippingMethodEta}</p>
             </div>
             <span className="text-sm font-medium">{formatPrice(order.costo_envio)}</span>
           </div>

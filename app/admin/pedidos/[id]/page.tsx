@@ -23,7 +23,15 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { getOrderById, updateOrderStatus, approvePayment, rejectPayment, addShippingInfo } from '@/lib/api/orders';
-import { formatPrice, formatDateTime, getOrderStatusLabel, getOrderStatusColor, getCarrierDisplayName } from '@/lib/utils/helpers';
+import {
+  formatDateTime,
+  formatPrice,
+  getCarrierDisplayName,
+  getOrderStatusColor,
+  getOrderStatusLabel,
+  getShippingAddressLines,
+  getShippingAddressSectionTitle,
+} from '@/lib/utils/helpers';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { OrderWithItems } from '@/lib/types/database.types';
 
@@ -309,6 +317,9 @@ export default function AdminPedidoDetailPage({ params }: { params: Promise<{ id
       </div>
     );
   }
+
+  const shippingAddressLines = getShippingAddressLines(order.direccion_envio);
+  const shippingAddressTitle = getShippingAddressSectionTitle(order.direccion_envio);
 
   return (
     <div className="pt-20 px-4 py-8">
@@ -744,19 +755,13 @@ export default function AdminPedidoDetailPage({ params }: { params: Promise<{ id
               <div className="bg-white rounded-lg border border-gray-200 p-6">
                 <h3 className="font-medium mb-4 flex items-center gap-2">
                   <MapPin className="w-5 h-5" />
-                  Dirección de Envío
+                  {shippingAddressTitle}
                 </h3>
                 <div className="text-sm text-gray-600">
                   <p className="font-medium text-foreground">{order.direccion_envio.nombre_destinatario}</p>
-                  <p>
-                    {order.direccion_envio.calle} {order.direccion_envio.numero}
-                    {order.direccion_envio.piso_depto && `, ${order.direccion_envio.piso_depto}`}
-                  </p>
-                  <p>
-                    {order.direccion_envio.ciudad}, {order.direccion_envio.provincia}
-                  </p>
-                  <p>CP {order.direccion_envio.codigo_postal}</p>
-                  {order.direccion_envio.telefono && <p>Tel: {order.direccion_envio.telefono}</p>}
+                  {shippingAddressLines.map((line) => (
+                    <p key={line}>{line}</p>
+                  ))}
                 </div>
               </div>
 

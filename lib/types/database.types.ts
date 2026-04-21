@@ -34,6 +34,8 @@ export type CategoriaProducto = 'camisetas' | 'hoodies' | 'gorras' | 'accesorios
 
 export type Transportista = 'correo_argentino'
 
+export type TipoEntrega = 'domicilio' | 'sucursal_correo'
+
 // =============================================
 // INTERFACES DE TABLAS
 // =============================================
@@ -121,6 +123,69 @@ export interface ZonaEnvio {
   fecha_creacion: string
 }
 
+export interface SucursalCorreoArgentino {
+  id: string
+  source_key: string
+  provincia_codigo: string
+  provincia_nombre: string
+  normalized_province_name: string
+  localidad_id: string
+  localidad_nombre: string
+  localidad_nombre_solicitada: string
+  codigo_postal: string | null
+  tipo_sucursal: string
+  nombre: string
+  direccion: string
+  horarios: string | null
+  latitud: number | null
+  longitud: number | null
+  service_ids: string[]
+  service_names: string[]
+  normalized_branch_name: string
+  normalized_address: string
+  normalized_locality_name: string
+  normalized_search_text: string
+  admite_recepcion_ecommerce: boolean
+  admite_entrega_ecommerce: boolean
+  admite_etienda: boolean
+  es_elegible_envio_sucursal: boolean
+  activa: boolean
+  ultimo_scrapeo: string
+  fecha_creacion: string
+  fecha_actualizacion: string
+}
+
+export interface SucursalCorreoSeleccionada {
+  id: string
+  source_key: string
+  tipo_sucursal: string
+  nombre: string
+  direccion: string
+  localidad_nombre: string
+  provincia_nombre: string
+  codigo_postal: string | null
+  horarios?: string | null
+  latitud?: number | null
+  longitud?: number | null
+  service_ids?: string[]
+  service_names?: string[]
+  es_elegible_envio_sucursal?: boolean
+}
+
+export interface CorreoArgentinoBranchSearchResult extends SucursalCorreoArgentino {
+  score: number
+  postal_code_match: boolean
+  query_match: boolean
+}
+
+export interface CorreoArgentinoBranchSearchResponse {
+  postalCode: string
+  province: string | null
+  query: string
+  recommendation: CorreoArgentinoBranchSearchResult | null
+  results: CorreoArgentinoBranchSearchResult[]
+}
+
 export type MetodoPago = 'transferencia' | 'mercadopago'
 
 export interface Pedido {
@@ -151,6 +216,7 @@ export interface Pedido {
 }
 
 export interface DireccionEnvioSnapshot {
+  tipo_entrega?: TipoEntrega
   nombre_destinatario: string
   calle: string
   numero: string
@@ -159,6 +225,7 @@ export interface DireccionEnvioSnapshot {
   provincia: string
   codigo_postal: string
   telefono?: string
+  sucursal_correo?: SucursalCorreoSeleccionada
 }
 
 export interface ItemPedido {
@@ -283,6 +350,7 @@ export type Address = Direccion
 export type Product = Producto
 export type BankAccount = CuentaBancaria
 export type ShippingZone = ZonaEnvio
+export type CorreoArgentinoBranch = SucursalCorreoArgentino
 export type Order = Pedido
 export type OrderItem = ItemPedido
 export type OrderWithItems = PedidoConItems
@@ -389,6 +457,11 @@ export interface Database {
         Row: InfoEnvio
         Insert: Omit<InfoEnvio, 'id' | 'fecha_creacion' | 'fecha_actualizacion'>
         Update: Partial<Omit<InfoEnvio, 'id' | 'fecha_creacion'>>
+      }
+      sucursales_correo_argentino: {
+        Row: SucursalCorreoArgentino
+        Insert: Omit<SucursalCorreoArgentino, 'id' | 'fecha_creacion'>
+        Update: Partial<Omit<SucursalCorreoArgentino, 'id' | 'fecha_creacion'>>
       }
       carrito_items: {
         Row: ItemCarrito
