@@ -64,7 +64,7 @@ export default function NoVenderInformacionPage() {
             contactanos en:
           </p>
           <div className="mt-3 p-4 bg-gray-50 rounded-lg">
-            <p className="mb-2"><strong>Email:</strong> softworksargentina@gmail.com</p>
+            <p className="mb-2"><strong>Email:</strong> administracion@softworks.com.ar</p>
           </div>
         </section>
 

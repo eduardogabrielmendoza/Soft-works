@@ -52,8 +52,8 @@ export default function AccesibilidadPage() {
           Valoramos tus comentarios sobre la accesibilidad de nuestro sitio. 
           Si encuentras alguna barrera de accesibilidad o tienes sugerencias para mejorar, 
           por favor contáctanos en 
-          <a href="mailto:softworksargentina@gmail.com" className="text-[#545454] underline hover:no-underline ml-1">
-            softworksargentina@gmail.com
+          <a href="mailto:administracion@softworks.com.ar" className="text-[#545454] underline hover:no-underline ml-1">
+            administracion@softworks.com.ar
           </a>
         </p>
       </section>

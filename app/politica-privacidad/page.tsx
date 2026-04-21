@@ -49,8 +49,8 @@ export default function PoliticaPrivacidadPage() {
         <h2 className="text-xl font-medium text-[#545454] mb-4">6. Contacto</h2>
         <p className="text-[#545454]/70 leading-relaxed">
           Si tenés preguntas sobre esta Política de Privacidad, contactanos en 
-          <a href="mailto:softworksargentina@gmail.com" className="text-[#545454] underline hover:no-underline ml-1">
-            softworksargentina@gmail.com
+          <a href="mailto:administracion@softworks.com.ar" className="text-[#545454] underline hover:no-underline ml-1">
+            administracion@softworks.com.ar
           </a>
         </p>
       </section>

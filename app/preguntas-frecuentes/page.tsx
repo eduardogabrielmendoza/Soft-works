@@ -243,7 +243,7 @@ export default function FAQPage() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <a
-                  href="mailto:softworksargentina@gmail.com"
+                  href="mailto:administracion@softworks.com.ar"
                   className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-foreground text-white rounded-full hover:bg-foreground/90 transition-all duration-300 font-medium shadow-lg hover:shadow-xl"
                 >
                   <Mail className="w-5 h-5" />

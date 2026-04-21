@@ -36,7 +36,7 @@ export default function ContactoPage() {
         
         <div className="text-center mb-8">
           <a
-            href="mailto:softworksargentina@gmail.com"
+            href="mailto:administracion@softworks.com.ar"
             className="inline-flex items-center gap-2 px-8 py-3 bg-foreground text-white rounded-md hover:bg-foreground/90 transition-colors font-medium"
           >
             <Mail className="w-5 h-5" />

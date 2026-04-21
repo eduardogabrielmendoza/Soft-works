@@ -40,7 +40,7 @@ const faqs: FAQItem[] = [
   },
   {
     question: '¿Puedo cambiar un producto por otro talle?',
-    answer: 'Sí, aceptamos cambios por talle. Contactanos a softworksargentina@gmail.com con tu número de pedido y te enviaremos las instrucciones. Los gastos de envío del cambio corren por cuenta del cliente.',
+    answer: 'Sí, aceptamos cambios por talle. Contactanos a administracion@softworks.com.ar con tu número de pedido y te enviaremos las instrucciones. Los gastos de envío del cambio corren por cuenta del cliente.',
   },
 ];
 
@@ -121,7 +121,7 @@ export default function FAQSection() {
             ¿No encontraste lo que buscabas?
           </p>
           <a
-            href="mailto:softworksargentina@gmail.com"
+            href="mailto:administracion@softworks.com.ar"
             className="inline-block px-8 py-3 border-2 border-foreground rounded-full hover:bg-foreground hover:text-white transition-all font-medium"
           >
             Contactanos

@@ -114,7 +114,7 @@ export const defaultLayoutContent: LayoutContent = {
         ],
       },
     ],
-    contactEmail: 'softworksargentina@gmail.com',
+    contactEmail: 'administracion@softworks.com.ar',
   },
   brandSection: {
     text: 'Softworks',
