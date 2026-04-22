@@ -198,6 +198,7 @@ export default function CheckoutPage() {
   const { config: siteConfig } = useSiteConfig();
   const [draftReady, setDraftReady] = useState(false);
   const [restoredDraft, setRestoredDraft] = useState(false);
+  const profilePrefillDoneRef = useRef(false);
 
   // Guest state
   const isGuest = !authLoading && !user;
@@ -385,27 +386,32 @@ export default function CheckoutPage() {
     }
   }, [user, authLoading]);
 
-  // Pre-fill for logged-in users
+  // Pre-fill for logged-in users — runs at most once per component lifetime
   useEffect(() => {
-    if (!draftReady || restoredDraft) {
+    if (!draftReady || restoredDraft || profilePrefillDoneRef.current) {
       return;
     }
 
-    if (profile && !step1Done) {
-      setIdent({
-        email: profile.email || user?.email || '',
-        nombre: profile.nombre || '',
-        apellido: profile.apellido || '',
-        telefono: profile.telefono || '',
-      });
+    if (profile) {
+      profilePrefillDoneRef.current = true;
 
-      // If profile has all required fields, auto-complete step 1
-      if (profile.email && profile.nombre && profile.apellido) {
-        setStep1Done(true);
-        setCurrentStep(2);
+      if (!step1Done) {
+        setIdent({
+          email: profile.email || user?.email || '',
+          nombre: profile.nombre || '',
+          apellido: profile.apellido || '',
+          telefono: profile.telefono || '',
+        });
+
+        // If profile has all required fields, auto-complete step 1
+        if (profile.email && profile.nombre && profile.apellido) {
+          setStep1Done(true);
+          setCurrentStep(2);
+        }
       }
     }
-  }, [draftReady, profile, restoredDraft, step1Done, user]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftReady, profile, restoredDraft, user]);
 
   // Pre-fill address from saved default address
   useEffect(() => {
