@@ -4,6 +4,12 @@ import { createContext, useContext, useEffect, useState, ReactNode, useCallback 
 import { usePathname } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { getCached, setCache, isCacheFresh } from '@/lib/utils/cache';
+import {
+  DEFAULT_SHIPPING_RATES,
+  getLegacyShippingCost,
+  normalizeShippingRatesConfig,
+  type ShippingRatesConfig,
+} from '@/lib/utils/shipping';
 
 const CACHE_KEY = 'site_config';
 
@@ -43,6 +49,7 @@ export interface SiteConfig {
   shipping_enabled: boolean;
   free_shipping_threshold: number;
   shipping_cost: number;
+  shipping_rates: ShippingRatesConfig;
   
   // Pagos
   payment_methods: string[];
@@ -51,6 +58,11 @@ export interface SiteConfig {
   // Apariencia
   login_imagen?: string;
   registro_imagen?: string;
+}
+
+function toSafeNumber(value: unknown, fallback: number) {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : fallback;
 }
 
 const defaultConfig: SiteConfig = {
@@ -69,12 +81,27 @@ const defaultConfig: SiteConfig = {
   social_facebook: '',
   shipping_enabled: true,
   free_shipping_threshold: 50000,
-  shipping_cost: 5000,
+  shipping_cost: getLegacyShippingCost(DEFAULT_SHIPPING_RATES),
+  shipping_rates: DEFAULT_SHIPPING_RATES,
   payment_methods: ['transferencia', 'mercadopago'],
   mercadopago_mode: 'production',
   login_imagen: '',
   registro_imagen: '',
 };
+
+function normalizeSiteConfig(config?: Partial<SiteConfig> | null): SiteConfig {
+  const merged = { ...defaultConfig, ...config };
+
+  return {
+    ...merged,
+    free_shipping_threshold: toSafeNumber(
+      merged.free_shipping_threshold,
+      defaultConfig.free_shipping_threshold,
+    ),
+    shipping_cost: toSafeNumber(merged.shipping_cost, defaultConfig.shipping_cost),
+    shipping_rates: normalizeShippingRatesConfig(config?.shipping_rates),
+  };
+}
 
 interface SiteConfigContextType {
   config: SiteConfig;
@@ -85,9 +112,9 @@ interface SiteConfigContextType {
 const SiteConfigContext = createContext<SiteConfigContextType | undefined>(undefined);
 
 export function SiteConfigProvider({ children, initialData }: { children: ReactNode; initialData?: Partial<SiteConfig> }) {
-  const serverData = initialData ? { ...defaultConfig, ...initialData } : null;
-  const cached = serverData || getCached<SiteConfig>(CACHE_KEY);
-  const [config, setConfig] = useState<SiteConfig>(cached || defaultConfig);
+  const serverData = initialData ? normalizeSiteConfig(initialData) : null;
+  const cached = serverData || getCached<Partial<SiteConfig>>(CACHE_KEY);
+  const [config, setConfig] = useState<SiteConfig>(normalizeSiteConfig(cached || defaultConfig));
   const [isLoading, setIsLoading] = useState(!cached);
   const pathname = usePathname();
 
@@ -110,7 +137,7 @@ export function SiteConfigProvider({ children, initialData }: { children: ReactN
           }
         });
 
-        const merged = { ...defaultConfig, ...loadedConfig };
+        const merged = normalizeSiteConfig(loadedConfig);
         setConfig(merged);
         setCache(CACHE_KEY, merged);
       }
@@ -135,7 +162,7 @@ export function SiteConfigProvider({ children, initialData }: { children: ReactN
     const handler = (e: MessageEvent) => {
       if (e.data?.type === 'content-preview' && e.data?.key === 'apariencia') {
         setConfig(prev => {
-          const merged = { ...defaultConfig, ...prev, ...e.data.value };
+          const merged = normalizeSiteConfig({ ...prev, ...e.data.value });
           setCache(CACHE_KEY, merged);
           return merged;
         });

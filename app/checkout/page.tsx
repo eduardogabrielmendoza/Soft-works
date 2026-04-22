@@ -11,13 +11,13 @@ import { useRouter } from 'next/navigation';
 import CorreoArgentinoBranchSelector from '../components/CorreoArgentinoBranchSelector';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useCart } from '@/lib/hooks/useCart';
+import { useSiteConfig } from '@/lib/hooks/useSiteConfig';
 import { getUserAddresses, createAddress, ARGENTINA_PROVINCES } from '@/lib/api/addresses';
 import { formatPrice, getShippingMethodEtaLabel, getShippingMethodLabel } from '@/lib/utils/helpers';
 import { lookupPostalCode, isValidPostalFormat } from '@/lib/utils/postalCodes';
+import { getShippingCostForProvince } from '@/lib/utils/shipping';
 import type { Direccion, MetodoPago, SucursalCorreoSeleccionada, TipoEntrega } from '@/lib/types/database.types';
 
-// Fixed shipping config
-const SHIPPING_COST = 9000;
 const SHIPPING_DAYS = 6;
 
 // =============================================
@@ -137,6 +137,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { user, profile, isLoading: authLoading } = useAuth();
   const { items, itemCount, subtotal, clearCart } = useCart();
+  const { config: siteConfig } = useSiteConfig();
 
   // Guest state
   const isGuest = !authLoading && !user;
@@ -206,7 +207,13 @@ export default function CheckoutPage() {
   // COMPUTED VALUES
   // =============================================
 
-  const finalShippingCost = SHIPPING_COST;
+  const domicilioShippingCost = provinciaDetectada
+    ? getShippingCostForProvince(provinciaDetectada, 'domicilio', siteConfig.shipping_rates)
+    : 0;
+  const branchShippingCost = provinciaDetectada
+    ? getShippingCostForProvince(provinciaDetectada, 'sucursal_correo', siteConfig.shipping_rates)
+    : 0;
+  const finalShippingCost = shippingMode === 'sucursal_correo' ? branchShippingCost : domicilioShippingCost;
   const total = subtotal + finalShippingCost;
   const canFinalize = step1Done && step2Done && step3Done && acceptedTerms && !isCreatingOrder;
   const shippingLabel = getShippingMethodLabel(shippingMode);
@@ -706,7 +713,7 @@ export default function CheckoutPage() {
                           {selectedBranch.localidad_nombre}, {selectedBranch.provincia_nombre}
                           {selectedBranch.codigo_postal ? ` - CP ${selectedBranch.codigo_postal}` : ''}
                         </p>
-                        <span className="text-sm font-medium">{formatPrice(SHIPPING_COST)}</span>
+                        <span className="text-sm font-medium">{formatPrice(finalShippingCost)}</span>
                       </div>
                       {selectedBranch.horarios && (
                         <p className="text-xs text-gray-500">{selectedBranch.horarios}</p>
@@ -724,7 +731,7 @@ export default function CheckoutPage() {
                           {direccion.localidad}, {provinciaDetectada}
                         </p>
                         <span className="text-sm font-medium">
-                          {formatPrice(SHIPPING_COST)}
+                          {formatPrice(finalShippingCost)}
                         </span>
                       </div>
                     </>
@@ -808,7 +815,7 @@ export default function CheckoutPage() {
                             <p className="font-medium text-sm">Envío a domicilio</p>
                           </div>
                           <p className="text-xs text-gray-500">{SHIPPING_DAYS} días hábiles aprox.</p>
-                          <p className="mt-2 text-sm font-medium">{formatPrice(SHIPPING_COST)}</p>
+                          <p className="mt-2 text-sm font-medium">{formatPrice(domicilioShippingCost)}</p>
                         </button>
 
                         <button
@@ -830,8 +837,8 @@ export default function CheckoutPage() {
                             <div className={`h-4 w-4 rounded-full border-4 ${shippingMode === 'sucursal_correo' ? 'border-foreground' : 'border-gray-300'}`} />
                             <p className="font-medium text-sm">Envío a sucursal</p>
                           </div>
-                          <p className="text-xs text-gray-500">Retirá en una sucursal sugerida según tu CP.</p>
-                          <p className="mt-2 text-sm font-medium">{formatPrice(SHIPPING_COST)}</p>
+                          <p className="text-xs text-gray-500">Retirá en la sucursal que prefieras segun tu codigo postal.</p>
+                          <p className="mt-2 text-sm font-medium">{formatPrice(branchShippingCost)}</p>
                         </button>
                       </div>
                     </motion.div>

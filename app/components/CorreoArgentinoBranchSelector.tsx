@@ -58,7 +58,7 @@ function BranchCard({
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-semibold text-foreground">{branch.nombre}</span>
             <span className="rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-gray-600">
-              {branch.tipo_sucursal}
+              {branch.tipo_sucursal.toUpperCase()}
             </span>
             {branch.postal_code_match && (
               <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700">
@@ -85,13 +85,13 @@ function BranchCard({
         </div>
 
         <span
-          className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide ${
+          className={`rounded-full px-3 py-1 text-[11px] font-semibold ${
             isSelected
               ? 'bg-foreground text-white'
               : 'bg-gray-100 text-gray-600'
           }`}
         >
-          {isSelected ? 'Seleccionada' : 'Elegir'}
+          {isSelected ? 'Seleccionada' : 'Seleccionar'}
         </span>
       </div>
     </button>
@@ -169,7 +169,6 @@ export default function CorreoArgentinoBranchSelector({
     };
   }, [postalCode, province, deferredQuery]);
 
-  const recommendedBranch = data?.recommendation ?? null;
   const branches = data?.results ?? [];
 
   return (
@@ -188,7 +187,7 @@ export default function CorreoArgentinoBranchSelector({
           {isLoading && <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-gray-400" />}
         </div>
         <p className="mt-1 text-xs text-gray-500">
-          Te sugerimos la más cercana por código postal y también podés refinar por nombre, dirección o localidad.
+          Buscá por nombre, direccion o localidad para elegir la sucursal que prefieras.
         </p>
       </div>
 
@@ -216,20 +215,9 @@ export default function CorreoArgentinoBranchSelector({
         </div>
       )}
 
-      {!selectedBranch && recommendedBranch && !deferredQuery && (
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">Recomendada para tu CP</p>
-          <BranchCard
-            branch={recommendedBranch}
-            isSelected={false}
-            onSelect={(branch) => onSelect(mapBranchSelection(branch))}
-          />
-        </div>
-      )}
-
       <div className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
-          {deferredQuery ? 'Resultados' : 'Otras sucursales disponibles'}
+        <p className="text-sm font-medium text-gray-700">
+          {deferredQuery ? 'Resultados' : 'Sucursales disponibles'}
         </p>
 
         {branches.length > 0 ? (

@@ -18,30 +18,74 @@ import {
 import { useAuth } from '@/lib/hooks/useAuth';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { useSiteConfig, SiteConfig } from '@/lib/hooks/useSiteConfig';
+import {
+  DEFAULT_SHIPPING_RATES,
+  SHIPPING_ZONE_DEFINITIONS,
+  getLegacyShippingCost,
+  normalizeShippingRatesConfig,
+  type ShippingDeliveryKey,
+  type ShippingZoneKey,
+} from '@/lib/utils/shipping';
+
+function parseConfigValue(value: unknown) {
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+}
+
+function toSafeNumber(value: unknown, fallback: number) {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : fallback;
+}
+
+const defaultSettings: SiteConfig = {
+  site_name: 'Softworks',
+  site_description: 'Ropa de calidad premium',
+  announcement_text: 'Envío gratis en pedidos mayores a $100.000',
+  announcement_enabled: true,
+  contact_email: 'hola@softworks.com',
+  contact_phone: '+54 11 1234-5678',
+  contact_address: '',
+  contact_hours: 'Lunes a Viernes, 9:00 AM - 5:00 PM',
+  social_instagram: '@softworks',
+  social_youtube: 'Softworks',
+  social_tiktok: '',
+  social_twitter: '',
+  social_facebook: '',
+  shipping_enabled: true,
+  free_shipping_threshold: 50000,
+  shipping_cost: getLegacyShippingCost(DEFAULT_SHIPPING_RATES),
+  shipping_rates: DEFAULT_SHIPPING_RATES,
+  payment_methods: ['transferencia', 'mercadopago'],
+  mercadopago_mode: 'production',
+  login_imagen: '',
+  registro_imagen: '',
+};
+
+function normalizeSettings(config?: Partial<SiteConfig> | null): SiteConfig {
+  const merged = { ...defaultSettings, ...config };
+
+  return {
+    ...merged,
+    free_shipping_threshold: toSafeNumber(
+      merged.free_shipping_threshold,
+      defaultSettings.free_shipping_threshold,
+    ),
+    shipping_cost: toSafeNumber(merged.shipping_cost, defaultSettings.shipping_cost),
+    shipping_rates: normalizeShippingRatesConfig(config?.shipping_rates),
+  };
+}
 
 export default function ConfiguracionAdminPage() {
   const { isAdmin, isLoading: authLoading } = useAuth();
   const { refreshConfig } = useSiteConfig();
-  const [settings, setSettings] = useState<SiteConfig>({
-    site_name: 'Softworks',
-    site_description: 'Ropa de calidad premium',
-    announcement_text: 'Envío gratis en pedidos mayores a $100.000',
-    announcement_enabled: true,
-    contact_email: 'hola@softworks.com',
-    contact_phone: '+54 11 1234-5678',
-    contact_address: '',
-    contact_hours: 'Lunes a Viernes, 9:00 AM - 5:00 PM',
-    social_instagram: '@softworks',
-    social_youtube: 'Softworks',
-    social_tiktok: '',
-    social_twitter: '',
-    social_facebook: '',
-    shipping_enabled: true,
-    free_shipping_threshold: 50000,
-    shipping_cost: 5000,
-    payment_methods: ['transferencia', 'mercadopago'],
-    mercadopago_mode: 'production' as 'production' | 'sandbox',
-  });
+  const [settings, setSettings] = useState<SiteConfig>(defaultSettings);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [savedMessage, setSavedMessage] = useState('');
@@ -63,12 +107,14 @@ export default function ConfiguracionAdminPage() {
       if (data && data.length > 0) {
         const config: Partial<SiteConfig> = {};
         data.forEach((item: { clave: string; valor: any }) => {
-          if (item.valor && typeof item.valor === 'object') {
-            Object.assign(config, item.valor);
+          const parsed = parseConfigValue(item.valor);
+
+          if (parsed && typeof parsed === 'object') {
+            Object.assign(config, parsed);
           }
         });
 
-        setSettings(prev => ({ ...prev, ...config }));
+        setSettings(normalizeSettings(config));
       }
     } catch {
       // Si no existe la tabla, usar valores por defecto
@@ -122,7 +168,8 @@ export default function ConfiguracionAdminPage() {
           valor: {
             shipping_enabled: settings.shipping_enabled,
             free_shipping_threshold: settings.free_shipping_threshold,
-            shipping_cost: settings.shipping_cost,
+            shipping_cost: getLegacyShippingCost(settings.shipping_rates),
+            shipping_rates: settings.shipping_rates,
           },
         },
         {
@@ -163,6 +210,23 @@ export default function ConfiguracionAdminPage() {
       setIsSaving(false);
       setTimeout(() => setSavedMessage(''), 5000);
     }
+  };
+
+  const handleShippingRateChange = (
+    zone: ShippingZoneKey,
+    deliveryType: ShippingDeliveryKey,
+    value: string,
+  ) => {
+    setSettings((current) => ({
+      ...current,
+      shipping_rates: {
+        ...current.shipping_rates,
+        [zone]: {
+          ...current.shipping_rates[zone],
+          [deliveryType]: parseInt(value, 10) || 0,
+        },
+      },
+    }));
   };
 
   if (authLoading) {
@@ -505,20 +569,7 @@ export default function ConfiguracionAdminPage() {
                 </div>
 
                 {settings.shipping_enabled && (
-                  <div className="grid md:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Costo de Envío (ARS)
-                      </label>
-                      <input
-                        type="number"
-                        value={settings.shipping_cost}
-                        onChange={(e) => setSettings({ ...settings, shipping_cost: parseInt(e.target.value) || 0 })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-foreground focus:border-transparent"
-                        placeholder="5000"
-                      />
-                    </div>
-
+                  <div className="space-y-5 pt-4 border-t border-gray-200">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Envío Gratis a partir de (ARS)
@@ -526,11 +577,61 @@ export default function ConfiguracionAdminPage() {
                       <input
                         type="number"
                         value={settings.free_shipping_threshold}
-                        onChange={(e) => setSettings({ ...settings, free_shipping_threshold: parseInt(e.target.value) || 0 })}
+                        onChange={(e) => setSettings({ ...settings, free_shipping_threshold: parseInt(e.target.value, 10) || 0 })}
                         className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-foreground focus:border-transparent"
                         placeholder="50000"
                       />
                       <p className="text-xs text-gray-500 mt-1">Coloca 0 para deshabilitar envío gratis</p>
+                    </div>
+
+                    <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                      <div className="mb-4">
+                        <h3 className="text-sm font-medium text-gray-900">Tarifas internas por zona</h3>
+                        <p className="mt-1 text-xs text-gray-500">
+                          Estas zonas son solo administrativas. En el checkout el cliente ve el precio final, no la clasificación interna.
+                        </p>
+                      </div>
+
+                      <div className="grid gap-4 lg:grid-cols-2">
+                        {SHIPPING_ZONE_DEFINITIONS.map((zone) => (
+                          <div key={zone.key} className="rounded-lg border border-gray-200 bg-white p-4">
+                            <div className="mb-3">
+                              <p className="text-sm font-medium text-gray-900">{zone.label}</p>
+                              <p className="mt-1 text-xs text-gray-500">{zone.description}</p>
+                            </div>
+
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-2">
+                                  Domicilio (ARS)
+                                </label>
+                                <input
+                                  type="number"
+                                  value={settings.shipping_rates[zone.key].domicilio}
+                                  onChange={(e) => handleShippingRateChange(zone.key, 'domicilio', e.target.value)}
+                                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-foreground focus:border-transparent"
+                                  min={0}
+                                  step={100}
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-2">
+                                  Sucursal (ARS)
+                                </label>
+                                <input
+                                  type="number"
+                                  value={settings.shipping_rates[zone.key].sucursal_correo}
+                                  onChange={(e) => handleShippingRateChange(zone.key, 'sucursal_correo', e.target.value)}
+                                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-foreground focus:border-transparent"
+                                  min={0}
+                                  step={100}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}

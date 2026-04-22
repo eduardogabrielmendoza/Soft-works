@@ -7,6 +7,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import SideDrawer from './SideDrawer';
 import { useCart } from '@/lib/hooks/useCart';
+import { useSiteConfig } from '@/lib/hooks/useSiteConfig';
 import { formatPrice } from '@/lib/utils/helpers';
 
 interface CartDrawerProps {
@@ -14,18 +15,21 @@ interface CartDrawerProps {
   onClose: () => void;
 }
 
-// Umbral para envío gratis
-const FREE_SHIPPING_THRESHOLD = 100000;
-
 export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
   const { items, itemCount, subtotal, updateQuantity, removeItem } = useCart();
+  const { config: siteConfig } = useSiteConfig();
+  const freeShippingThreshold = Math.max(siteConfig.free_shipping_threshold || 0, 0);
 
   // Calcular progreso para envío gratis
   const freeShippingProgress = useMemo(() => {
-    const progress = Math.min((subtotal / FREE_SHIPPING_THRESHOLD) * 100, 100);
-    const remaining = Math.max(FREE_SHIPPING_THRESHOLD - subtotal, 0);
-    return { progress, remaining, achieved: subtotal >= FREE_SHIPPING_THRESHOLD };
-  }, [subtotal]);
+    if (freeShippingThreshold <= 0) {
+      return null;
+    }
+
+    const progress = Math.min((subtotal / freeShippingThreshold) * 100, 100);
+    const remaining = Math.max(freeShippingThreshold - subtotal, 0);
+    return { progress, remaining, achieved: subtotal >= freeShippingThreshold };
+  }, [subtotal, freeShippingThreshold]);
 
   // Header personalizado con contador
   const headerContent = (
@@ -79,7 +83,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
       width="md"
     >
       {/* Barra de progreso para envío gratis */}
-      {items.length > 0 && (
+      {items.length > 0 && freeShippingProgress && (
         <div className="px-6 py-4 bg-[#F2F0EB]/30 border-b border-[#545454]/10">
           <div className="flex items-center gap-2 mb-2">
             <Truck className={`w-4 h-4 ${freeShippingProgress.achieved ? 'text-green-600' : 'text-[#545454]/60'}`} />
