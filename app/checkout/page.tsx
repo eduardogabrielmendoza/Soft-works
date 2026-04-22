@@ -44,6 +44,59 @@ interface DireccionEnvio {
   destinatario: string;
 }
 
+interface CheckoutDraft {
+  currentStep: number;
+  step1Done: boolean;
+  step2Done: boolean;
+  step3Done: boolean;
+  ident: Identificacion;
+  codigoPostal: string;
+  provinciaDetectada: string;
+  postalValidated: boolean;
+  showProvinciaSelector: boolean;
+  shippingMode: TipoEntrega;
+  selectedBranch: SucursalCorreoSeleccionada | null;
+  direccion: DireccionEnvio;
+  paymentMethod: MetodoPago;
+  acceptedTerms: boolean;
+}
+
+const CHECKOUT_DRAFT_KEY = 'softworks_checkout_draft';
+
+function loadCheckoutDraft(): CheckoutDraft | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  try {
+    const rawDraft = window.sessionStorage.getItem(CHECKOUT_DRAFT_KEY);
+
+    if (!rawDraft) {
+      return null;
+    }
+
+    return JSON.parse(rawDraft) as CheckoutDraft;
+  } catch {
+    return null;
+  }
+}
+
+function saveCheckoutDraft(draft: CheckoutDraft) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.sessionStorage.setItem(CHECKOUT_DRAFT_KEY, JSON.stringify(draft));
+}
+
+function clearCheckoutDraft() {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.sessionStorage.removeItem(CHECKOUT_DRAFT_KEY);
+}
+
 // =============================================
 // STEP HEADER COMPONENT
 // =============================================
@@ -143,6 +196,7 @@ export default function CheckoutPage() {
   const { user, profile, isLoading: authLoading } = useAuth();
   const { items, itemCount, subtotal, clearCart } = useCart();
   const { config: siteConfig } = useSiteConfig();
+  const [draftReady, setDraftReady] = useState(false);
 
   // Guest state
   const isGuest = !authLoading && !user;
@@ -241,6 +295,76 @@ export default function CheckoutPage() {
   // =============================================
 
   useEffect(() => {
+    const draft = loadCheckoutDraft();
+
+    if (draft) {
+      setCurrentStep(draft.currentStep);
+      setStep1Done(draft.step1Done);
+      setStep2Done(draft.step2Done);
+      setStep3Done(draft.step3Done);
+      setIdent(draft.ident);
+      setCodigoPostal(draft.codigoPostal);
+      setProvinciaDetectada(draft.provinciaDetectada);
+      setPostalValidated(draft.postalValidated);
+      setShowProvinciaSelector(draft.showProvinciaSelector);
+      setShippingMode(draft.shippingMode);
+      setSelectedBranch(draft.selectedBranch);
+      setDireccion(draft.direccion);
+      setPaymentMethod(draft.paymentMethod);
+      setAcceptedTerms(draft.acceptedTerms);
+    }
+
+    setDraftReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!draftReady) {
+      return;
+    }
+
+    saveCheckoutDraft({
+      currentStep,
+      step1Done,
+      step2Done,
+      step3Done,
+      ident,
+      codigoPostal,
+      provinciaDetectada,
+      postalValidated,
+      showProvinciaSelector,
+      shippingMode,
+      selectedBranch,
+      direccion,
+      paymentMethod,
+      acceptedTerms,
+    });
+  }, [
+    draftReady,
+    currentStep,
+    step1Done,
+    step2Done,
+    step3Done,
+    ident,
+    codigoPostal,
+    provinciaDetectada,
+    postalValidated,
+    showProvinciaSelector,
+    shippingMode,
+    selectedBranch,
+    direccion,
+    paymentMethod,
+    acceptedTerms,
+  ]);
+
+  useEffect(() => {
+    if (!draftReady || items.length > 0) {
+      return;
+    }
+
+    clearCheckoutDraft();
+  }, [draftReady, items.length]);
+
+  useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
       try {
@@ -261,6 +385,10 @@ export default function CheckoutPage() {
 
   // Pre-fill for logged-in users
   useEffect(() => {
+    if (!draftReady) {
+      return;
+    }
+
     if (profile && !step1Done) {
       setIdent({
         email: profile.email || user?.email || '',
@@ -275,10 +403,14 @@ export default function CheckoutPage() {
         setCurrentStep(2);
       }
     }
-  }, [profile, user]);
+  }, [draftReady, profile, step1Done, user]);
 
   // Pre-fill address from saved default address
   useEffect(() => {
+    if (!draftReady) {
+      return;
+    }
+
     if (savedAddresses.length > 0 && !postalValidated) {
       const defaultAddr = savedAddresses.find((a) => a.es_predeterminada) || savedAddresses[0];
       setCodigoPostal(defaultAddr.codigo_postal);
@@ -301,7 +433,7 @@ export default function CheckoutPage() {
         setPostalValidated(true);
       }
     }
-  }, [savedAddresses]);
+  }, [draftReady, postalValidated, savedAddresses]);
 
   // Auto-fill destinatario from step 1
   useEffect(() => {
@@ -367,10 +499,10 @@ export default function CheckoutPage() {
 
   // Auto-lookup on 4-digit input
   useEffect(() => {
-    if (codigoPostal.length === 4 && /^\d{4}$/.test(codigoPostal)) {
+    if (draftReady && codigoPostal.length === 4 && /^\d{4}$/.test(codigoPostal) && !postalValidated) {
       handlePostalCodeSubmit();
     }
-  }, [codigoPostal, handlePostalCodeSubmit]);
+  }, [draftReady, codigoPostal, handlePostalCodeSubmit, postalValidated]);
 
   const handleStep2Submit = () => {
     setStep2Error('');
@@ -547,6 +679,7 @@ export default function CheckoutPage() {
           return;
         }
 
+        clearCheckoutDraft();
         clearCart();
         window.location.href =
           mpData.mode === 'sandbox'
@@ -556,6 +689,7 @@ export default function CheckoutPage() {
       }
 
       // Bank transfer → confirmation page
+  clearCheckoutDraft();
       clearCart();
       router.push(`/checkout/confirmacion?order=${order.id}`);
     } catch (err) {
@@ -570,7 +704,7 @@ export default function CheckoutPage() {
   // LOADING & EMPTY STATES
   // =============================================
 
-  if (authLoading || isLoading) {
+  if (authLoading || isLoading || !draftReady) {
     return (
       <div className="min-h-screen flex items-center justify-center pt-20">
         <Loader2 className="w-8 h-8 animate-spin text-foreground" />
