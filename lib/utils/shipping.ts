@@ -199,6 +199,34 @@ export function getShippingCostForProvince(
   return normalizedRates.interior_norte[deliveryType];
 }
 
+export function getFreeShippingThreshold(value?: number | null) {
+  const numericValue = Number(value);
+
+  if (!Number.isFinite(numericValue) || numericValue <= 0) {
+    return 0;
+  }
+
+  return numericValue;
+}
+
+export function hasFreeShipping(subtotal: number, threshold?: number | null) {
+  const normalizedThreshold = getFreeShippingThreshold(threshold);
+
+  if (normalizedThreshold <= 0) {
+    return false;
+  }
+
+  return subtotal >= normalizedThreshold;
+}
+
+export function getEffectiveShippingCost(
+  subtotal: number,
+  baseShippingCost: number,
+  freeShippingThreshold?: number | null,
+) {
+  return hasFreeShipping(subtotal, freeShippingThreshold) ? 0 : baseShippingCost;
+}
+
 export function getLegacyShippingCost(rates?: PartialShippingRatesConfig | null) {
   const normalizedRates = normalizeShippingRatesConfig(rates);
   return Math.max(

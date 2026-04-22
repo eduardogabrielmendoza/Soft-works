@@ -15,17 +15,39 @@ interface CorreoArgentinoBranchSelectorProps {
   onSelect: (branch: SucursalCorreoSeleccionada) => void;
 }
 
+function toTitleCase(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/(^|\s|\/|-|\()([a-záéíóúüñ])/g, (_, prefix: string, char: string) => `${prefix}${char.toUpperCase()}`)
+    .replace(/\bCp\b/g, 'CP')
+    .replace(/\bN°\b/gi, 'N°');
+}
+
+function formatBranchText(value: string | null | undefined) {
+  if (!value) {
+    return '';
+  }
+
+  const normalizedValue = value.replace(/\s+/g, ' ').trim();
+
+  if (!normalizedValue) {
+    return '';
+  }
+
+  return toTitleCase(normalizedValue);
+}
+
 function mapBranchSelection(branch: CorreoArgentinoBranchSearchResult): SucursalCorreoSeleccionada {
   return {
     id: branch.id,
     source_key: branch.source_key,
     tipo_sucursal: branch.tipo_sucursal,
-    nombre: branch.nombre,
-    direccion: branch.direccion,
-    localidad_nombre: branch.localidad_nombre,
-    provincia_nombre: branch.provincia_nombre,
+    nombre: formatBranchText(branch.nombre),
+    direccion: formatBranchText(branch.direccion),
+    localidad_nombre: formatBranchText(branch.localidad_nombre),
+    provincia_nombre: formatBranchText(branch.provincia_nombre),
     codigo_postal: branch.codigo_postal,
-    horarios: branch.horarios,
+    horarios: formatBranchText(branch.horarios),
     latitud: branch.latitud,
     longitud: branch.longitud,
     service_ids: branch.service_ids,
@@ -56,7 +78,7 @@ function BranchCard({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1.5">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-semibold text-foreground">{branch.nombre}</span>
+            <span className="text-sm font-semibold text-foreground">{formatBranchText(branch.nombre)}</span>
             <span className="rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-gray-600">
               {branch.tipo_sucursal.toUpperCase()}
             </span>
@@ -69,9 +91,9 @@ function BranchCard({
           <div className="flex items-start gap-2 text-sm text-gray-600">
             <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0" />
             <div>
-              <p>{branch.direccion}</p>
+              <p>{formatBranchText(branch.direccion)}</p>
               <p>
-                {branch.localidad_nombre}, {branch.provincia_nombre}
+                {formatBranchText(branch.localidad_nombre)}, {formatBranchText(branch.provincia_nombre)}
                 {branch.codigo_postal ? ` - CP ${branch.codigo_postal}` : ''}
               </p>
             </div>
@@ -79,7 +101,7 @@ function BranchCard({
           {branch.horarios && (
             <div className="flex items-start gap-2 text-sm text-gray-500">
               <Clock3 className="mt-0.5 h-4 w-4 flex-shrink-0" />
-              <p>{branch.horarios}</p>
+              <p>{formatBranchText(branch.horarios)}</p>
             </div>
           )}
         </div>

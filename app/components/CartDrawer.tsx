@@ -9,6 +9,7 @@ import SideDrawer from './SideDrawer';
 import { useCart } from '@/lib/hooks/useCart';
 import { useSiteConfig } from '@/lib/hooks/useSiteConfig';
 import { formatPrice } from '@/lib/utils/helpers';
+import { getFreeShippingThreshold, hasFreeShipping } from '@/lib/utils/shipping';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -18,7 +19,7 @@ interface CartDrawerProps {
 export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
   const { items, itemCount, subtotal, updateQuantity, removeItem } = useCart();
   const { config: siteConfig } = useSiteConfig();
-  const freeShippingThreshold = Math.max(siteConfig.free_shipping_threshold || 0, 0);
+  const freeShippingThreshold = getFreeShippingThreshold(siteConfig.free_shipping_threshold);
 
   // Calcular progreso para envío gratis
   const freeShippingProgress = useMemo(() => {
@@ -28,7 +29,11 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
 
     const progress = Math.min((subtotal / freeShippingThreshold) * 100, 100);
     const remaining = Math.max(freeShippingThreshold - subtotal, 0);
-    return { progress, remaining, achieved: subtotal >= freeShippingThreshold };
+    return {
+      progress,
+      remaining,
+      achieved: hasFreeShipping(subtotal, freeShippingThreshold),
+    };
   }, [subtotal, freeShippingThreshold]);
 
   // Header personalizado con contador
