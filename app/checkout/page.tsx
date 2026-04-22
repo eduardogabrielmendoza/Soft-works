@@ -197,6 +197,7 @@ export default function CheckoutPage() {
   const { items, itemCount, subtotal, clearCart } = useCart();
   const { config: siteConfig } = useSiteConfig();
   const [draftReady, setDraftReady] = useState(false);
+  const [restoredDraft, setRestoredDraft] = useState(false);
 
   // Guest state
   const isGuest = !authLoading && !user;
@@ -298,6 +299,7 @@ export default function CheckoutPage() {
     const draft = loadCheckoutDraft();
 
     if (draft) {
+      setRestoredDraft(true);
       setCurrentStep(draft.currentStep);
       setStep1Done(draft.step1Done);
       setStep2Done(draft.step2Done);
@@ -385,7 +387,7 @@ export default function CheckoutPage() {
 
   // Pre-fill for logged-in users
   useEffect(() => {
-    if (!draftReady) {
+    if (!draftReady || restoredDraft) {
       return;
     }
 
@@ -403,11 +405,11 @@ export default function CheckoutPage() {
         setCurrentStep(2);
       }
     }
-  }, [draftReady, profile, step1Done, user]);
+  }, [draftReady, profile, restoredDraft, step1Done, user]);
 
   // Pre-fill address from saved default address
   useEffect(() => {
-    if (!draftReady) {
+    if (!draftReady || restoredDraft) {
       return;
     }
 
@@ -433,7 +435,7 @@ export default function CheckoutPage() {
         setPostalValidated(true);
       }
     }
-  }, [draftReady, postalValidated, savedAddresses]);
+  }, [draftReady, restoredDraft, savedAddresses]);
 
   // Auto-fill destinatario from step 1
   useEffect(() => {
