@@ -61,7 +61,7 @@ export default function ProductoPage({ params }: { params: Promise<{ slug: strin
     try { return localStorage.getItem('softworks_guest_accepted') === 'true'; } catch { return false; }
   };
 
-  const sizes = ['XS', 'S', 'M', 'L', 'XL'];
+  const sizes = ['S', 'M', 'L', 'XL', 'XXL'];
 
   // Desktop lens zoom: follow mouse over main image (rAF for perf)
   const handleLensMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -326,139 +326,41 @@ export default function ProductoPage({ params }: { params: Promise<{ slug: strin
                     </button>
                   </div>
                   <div className="overflow-x-auto">
-                    {/* Guía de tallas para mujer */}
-                    {product.tipo_guia_talles === 'mujer' && (
+                    {/* Guía de tallas unificada (remeras, hoodies, etc.) */}
+                    {(product.tipo_guia_talles === 'mujer' || product.tipo_guia_talles === 'varon' || product.tipo_guia_talles === 'hoodie') && (
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b">
                             <th className="text-left py-2 pr-4">Talla</th>
-                            <th className="text-left py-2 pr-4">Busto (cm)</th>
-                            <th className="text-left py-2 pr-4">Cintura (cm)</th>
+                            <th className="text-left py-2 pr-4">Ancho (cm)</th>
                             <th className="text-left py-2">Largo (cm)</th>
                           </tr>
                         </thead>
                         <tbody className="text-foreground/70">
                           <tr className="border-b">
-                            <td className="py-2 pr-4">XS</td>
-                            <td className="py-2 pr-4">81-86</td>
-                            <td className="py-2 pr-4">63-68</td>
-                            <td className="py-2">62</td>
-                          </tr>
-                          <tr className="border-b">
                             <td className="py-2 pr-4">S</td>
-                            <td className="py-2 pr-4">86-91</td>
-                            <td className="py-2 pr-4">68-73</td>
-                            <td className="py-2">64</td>
+                            <td className="py-2 pr-4">51</td>
+                            <td className="py-2">68</td>
                           </tr>
                           <tr className="border-b">
                             <td className="py-2 pr-4">M</td>
-                            <td className="py-2 pr-4">91-96</td>
-                            <td className="py-2 pr-4">73-78</td>
-                            <td className="py-2">66</td>
+                            <td className="py-2 pr-4">53</td>
+                            <td className="py-2">70</td>
                           </tr>
                           <tr className="border-b">
                             <td className="py-2 pr-4">L</td>
-                            <td className="py-2 pr-4">96-101</td>
-                            <td className="py-2 pr-4">78-83</td>
-                            <td className="py-2">68</td>
-                          </tr>
-                          <tr>
-                            <td className="py-2 pr-4">XL</td>
-                            <td className="py-2 pr-4">101-106</td>
-                            <td className="py-2 pr-4">83-88</td>
-                            <td className="py-2">70</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    )}
-
-                    {/* Guía de tallas para varón */}
-                    {product.tipo_guia_talles === 'varon' && (
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b">
-                            <th className="text-left py-2 pr-4">Talla</th>
-                            <th className="text-left py-2 pr-4">Pecho (cm)</th>
-                            <th className="text-left py-2 pr-4">Cintura (cm)</th>
-                            <th className="text-left py-2">Largo (cm)</th>
-                          </tr>
-                        </thead>
-                        <tbody className="text-foreground/70">
-                          <tr className="border-b">
-                            <td className="py-2 pr-4">XS</td>
-                            <td className="py-2 pr-4">86-91</td>
-                            <td className="py-2 pr-4">71-76</td>
-                            <td className="py-2">68</td>
-                          </tr>
-                          <tr className="border-b">
-                            <td className="py-2 pr-4">S</td>
-                            <td className="py-2 pr-4">91-96</td>
-                            <td className="py-2 pr-4">76-81</td>
-                            <td className="py-2">70</td>
-                          </tr>
-                          <tr className="border-b">
-                            <td className="py-2 pr-4">M</td>
-                            <td className="py-2 pr-4">96-101</td>
-                            <td className="py-2 pr-4">81-86</td>
+                            <td className="py-2 pr-4">57</td>
                             <td className="py-2">72</td>
                           </tr>
                           <tr className="border-b">
-                            <td className="py-2 pr-4">L</td>
-                            <td className="py-2 pr-4">101-106</td>
-                            <td className="py-2 pr-4">86-91</td>
+                            <td className="py-2 pr-4">XL</td>
+                            <td className="py-2 pr-4">58</td>
                             <td className="py-2">74</td>
                           </tr>
                           <tr>
-                            <td className="py-2 pr-4">XL</td>
-                            <td className="py-2 pr-4">106-111</td>
-                            <td className="py-2 pr-4">91-96</td>
-                            <td className="py-2">76</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    )}
-
-                    {/* Guía de tallas para hoodie unisex slim */}
-                    {product.tipo_guia_talles === 'hoodie' && (
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b">
-                            <th className="text-left py-2 pr-4">Talla</th>
-                            <th className="text-left py-2 pr-4">Pecho (cm)</th>
-                            <th className="text-left py-2 pr-4">Largo (cm)</th>
-                            <th className="text-left py-2">Manga (cm)</th>
-                          </tr>
-                        </thead>
-                        <tbody className="text-foreground/70">
-                          <tr className="border-b">
-                            <td className="py-2 pr-4">XS</td>
-                            <td className="py-2 pr-4">96-101</td>
-                            <td className="py-2 pr-4">66</td>
-                            <td className="py-2">61</td>
-                          </tr>
-                          <tr className="border-b">
-                            <td className="py-2 pr-4">S</td>
-                            <td className="py-2 pr-4">101-106</td>
-                            <td className="py-2 pr-4">68</td>
-                            <td className="py-2">63</td>
-                          </tr>
-                          <tr className="border-b">
-                            <td className="py-2 pr-4">M</td>
-                            <td className="py-2 pr-4">106-111</td>
-                            <td className="py-2 pr-4">70</td>
-                            <td className="py-2">65</td>
-                          </tr>
-                          <tr className="border-b">
-                            <td className="py-2 pr-4">L</td>
-                            <td className="py-2 pr-4">111-116</td>
-                            <td className="py-2 pr-4">72</td>
-                            <td className="py-2">67</td>
-                          </tr>
-                          <tr>
-                            <td className="py-2 pr-4">XL</td>
-                            <td className="py-2 pr-4">116-121</td>
-                            <td className="py-2 pr-4">74</td>
-                            <td className="py-2">69</td>
+                            <td className="py-2 pr-4">XXL</td>
+                            <td className="py-2 pr-4">59</td>
+                            <td className="py-2">75</td>
                           </tr>
                         </tbody>
                       </table>

@@ -22,6 +22,7 @@ import {
   hasFreeShipping,
 } from '@/lib/utils/shipping';
 import type { Direccion, MetodoPago, SucursalCorreoSeleccionada, TipoEntrega } from '@/lib/types/database.types';
+import { validateEmail } from '@/lib/utils/emailValidator';
 
 const SHIPPING_DAYS = 6;
 
@@ -234,6 +235,7 @@ export default function CheckoutPage() {
     telefono: '',
   });
   const [step1Error, setStep1Error] = useState('');
+  const [emailSuggestion, setEmailSuggestion] = useState<string | null>(null);
 
   // Step 2: Envío
   const [codigoPostal, setCodigoPostal] = useState('');
@@ -459,13 +461,18 @@ export default function CheckoutPage() {
 
   const handleStep1Submit = () => {
     setStep1Error('');
+    setEmailSuggestion(null);
     if (!ident.email || !ident.nombre || !ident.apellido) {
       setStep1Error('Completá email, nombre y apellido para continuar.');
       return;
     }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(ident.email)) {
-      setStep1Error('Ingresá un email válido.');
+    // Validate email domain (real provider check)
+    const emailValidation = validateEmail(ident.email);
+    if (!emailValidation.valid) {
+      setStep1Error(emailValidation.error || 'Email inválido.');
+      if (emailValidation.suggestion) {
+        setEmailSuggestion(emailValidation.suggestion);
+      }
       return;
     }
     setStep1Done(true);
@@ -796,10 +803,15 @@ export default function CheckoutPage() {
                     <input
                       type="email"
                       value={ident.email}
-                      onChange={(e) => setIdent({ ...ident, email: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 text-sm"
+                      onChange={(e) => { setIdent({ ...ident, email: e.target.value }); setStep1Error(''); setEmailSuggestion(null); }}
+                      className={`w-full px-4 py-3 border rounded-md focus:outline-none focus:ring-2 text-sm ${step1Error && !ident.nombre ? 'border-red-300 focus:ring-red-400' : 'border-gray-300 focus:ring-gray-400'}`}
                       placeholder="tu@email.com"
                     />
+                    {emailSuggestion && (
+                      <button type="button" onClick={() => { setIdent({ ...ident, email: emailSuggestion }); setStep1Error(''); setEmailSuggestion(null); }} className="text-xs text-blue-600 hover:underline mt-1">
+                        ¿Quisiste decir {emailSuggestion}?
+                      </button>
+                    )}
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>

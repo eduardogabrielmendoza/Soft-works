@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { sendAdminNewOrderEmail } from '@/lib/email';
-import { verifyAdmin } from '@/lib/supabase/server';
 
 function getSupabaseAdmin() {
   return createClient(
@@ -11,11 +10,9 @@ function getSupabaseAdmin() {
 }
 
 export async function POST(req: NextRequest) {
-  // Only admins can manually trigger order notifications
-  const admin = await verifyAdmin();
-  if (!admin) {
-    return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
-  }
+  // This endpoint is called by clients after submitting a payment receipt.
+  // It notifies the admin — no admin auth required here, but we validate
+  // the orderId to prevent abuse.
 
   try {
     const { orderId } = await req.json();
@@ -24,7 +21,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'orderId requerido' }, { status: 400 });
     }
 
-    // Validate UUID
+    // Validate UUID format
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(orderId)) {
       return NextResponse.json({ error: 'orderId inválido' }, { status: 400 });

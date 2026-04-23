@@ -350,7 +350,7 @@ function CuentaContent() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-            onClick={closeResetModal}
+            onClick={resetStep === 'email' ? closeResetModal : undefined}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}

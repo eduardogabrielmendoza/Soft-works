@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, Eye, EyeOff, Check, X, ShoppingBag, User, Truck } from 'lucide-react';
+import { validateEmail } from '@/lib/utils/emailValidator';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useSiteConfig } from '@/lib/hooks/useSiteConfig';
 
@@ -22,6 +23,8 @@ export default function RegistroPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [emailSuggestion, setEmailSuggestion] = useState<string | null>(null);
   const [showWelcome, setShowWelcome] = useState(false);
 
   const passwordChecks = {
@@ -34,9 +37,27 @@ export default function RegistroPage() {
   const isPasswordValid = Object.values(passwordChecks).every(Boolean);
   const passwordsMatch = password === confirmPassword && confirmPassword.length > 0;
 
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    setEmailError(null);
+    setEmailSuggestion(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setEmailError(null);
+    setEmailSuggestion(null);
+
+    // Validate email domain
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.valid) {
+      setEmailError(emailValidation.error || 'Email inválido');
+      if (emailValidation.suggestion) {
+        setEmailSuggestion(emailValidation.suggestion);
+      }
+      return;
+    }
 
     if (!isPasswordValid) {
       setError('La contraseña no cumple con los requisitos');
@@ -224,8 +245,18 @@ export default function RegistroPage() {
 
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">Correo Electrónico</label>
-                <input type="email" id="email" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isLoading}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white disabled:opacity-50" placeholder="tu@email.com" />
+                <input type="email" id="email" value={email} onChange={(e) => handleEmailChange(e.target.value)} required disabled={isLoading}
+                  className={`w-full px-4 py-3 border rounded-md focus:outline-none focus:ring-2 bg-white disabled:opacity-50 ${emailError ? 'border-red-300 focus:ring-red-400' : 'border-gray-300 focus:ring-gray-400'}`} placeholder="tu@email.com" />
+                {emailError && (
+                  <div className="mt-1">
+                    <p className="text-xs text-red-600">{emailError}</p>
+                    {emailSuggestion && (
+                      <button type="button" onClick={() => { setEmail(emailSuggestion); setEmailError(null); setEmailSuggestion(null); }} className="text-xs text-blue-600 hover:underline mt-0.5">
+                        ¿Quisiste decir {emailSuggestion}?
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div>
