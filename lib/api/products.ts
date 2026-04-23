@@ -1,13 +1,5 @@
-import { createBrowserClient } from '@supabase/ssr'
+import { getSupabaseClient } from '@/lib/supabase/client'
 import type { Producto, CategoriaProducto } from '@/lib/types/database.types'
-
-// Cliente sin tipado estricto hasta que el schema exista
-function getSupabase() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  ) as any
-}
 
 // =============================================
 // Funciones públicas (para clientes)
@@ -19,7 +11,7 @@ export async function getProducts(filters?: {
   limit?: number
   offset?: number
 }): Promise<Producto[]> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   let query = supabase
     .from('productos')
@@ -50,11 +42,11 @@ export async function getProducts(filters?: {
     return []
   }
 
-  return data as Producto[]
+  return data ?? []
 }
 
 export async function getProductBySlug(slug: string): Promise<Producto | null> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   const { data, error } = await supabase
     .from('productos')
@@ -68,11 +60,11 @@ export async function getProductBySlug(slug: string): Promise<Producto | null> {
     return null
   }
 
-  return data as Producto
+  return data
 }
 
 export async function getProductById(id: string): Promise<Producto | null> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   const { data, error } = await supabase
     .from('productos')
@@ -85,7 +77,7 @@ export async function getProductById(id: string): Promise<Producto | null> {
     return null
   }
 
-  return data as Producto
+  return data
 }
 
 export async function getFeaturedProducts(limit: number = 4): Promise<Producto[]> {
@@ -96,14 +88,25 @@ export async function getProductsByCategory(category: CategoriaProducto): Promis
   return getProducts({ category })
 }
 
+/**
+ * Search products by name or description.
+ * Uses separate .ilike() filters to prevent PostgREST filter injection (C4 fix).
+ */
 export async function searchProducts(query: string): Promise<Producto[]> {
-  const supabase = getSupabase()
-  
+  const supabase = getSupabaseClient()
+
+  // Sanitize the query: escape PostgREST special characters to prevent filter injection.
+  // PostgREST uses commas and dots as filter operators — strip them.
+  const sanitized = query.replace(/[%_,.*()]/g, '').trim()
+  if (!sanitized) return []
+
+  const pattern = `%${sanitized}%`
+
   const { data, error } = await supabase
     .from('productos')
     .select('*')
     .eq('activo', true)
-    .or(`nombre.ilike.%${query}%,descripcion.ilike.%${query}%`)
+    .or(`nombre.ilike.${pattern},descripcion.ilike.${pattern}`)
     .order('fecha_creacion', { ascending: false })
 
   if (error) {
@@ -111,7 +114,7 @@ export async function searchProducts(query: string): Promise<Producto[]> {
     return []
   }
 
-  return data as Producto[]
+  return data ?? []
 }
 
 // =============================================
@@ -119,7 +122,7 @@ export async function searchProducts(query: string): Promise<Producto[]> {
 // =============================================
 
 export async function getAllProducts(includeInactive: boolean = false): Promise<Producto[]> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   let query = supabase
     .from('productos')
@@ -137,13 +140,13 @@ export async function getAllProducts(includeInactive: boolean = false): Promise<
     return []
   }
 
-  return data as Producto[]
+  return data ?? []
 }
 
 export async function createProduct(
   product: Omit<Producto, 'id' | 'fecha_creacion' | 'fecha_actualizacion'>
 ): Promise<Producto | null> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   const { data, error } = await supabase
     .from('productos')
@@ -156,14 +159,14 @@ export async function createProduct(
     return null
   }
 
-  return data as Producto
+  return data
 }
 
 export async function updateProduct(
   productId: string,
   updates: Partial<Omit<Producto, 'id' | 'fecha_creacion' | 'fecha_actualizacion'>>
 ): Promise<Producto | null> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   const { data, error } = await supabase
     .from('productos')
@@ -177,11 +180,11 @@ export async function updateProduct(
     return null
   }
 
-  return data as Producto
+  return data
 }
 
 export async function deleteProduct(productId: string): Promise<boolean> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   // Soft delete: marcar como inactivo
   const { error } = await supabase
@@ -201,7 +204,7 @@ export async function updateProductStock(
   productId: string,
   stock: Record<string, number>
 ): Promise<boolean> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   const { error } = await supabase
     .from('productos')

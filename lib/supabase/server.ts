@@ -32,3 +32,32 @@ export async function createClient() {
     }
   )
 }
+
+/**
+ * Get the authenticated user from cookies, validated against Supabase Auth server.
+ * Returns null if no valid session exists.
+ */
+export async function getAuthenticatedUser() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  return user
+}
+
+/**
+ * Verify the current request is from an admin user.
+ * Returns the user if admin, null otherwise.
+ */
+export async function verifyAdmin() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+
+  const { data: profile } = await supabase
+    .from('perfiles')
+    .select('rol')
+    .eq('id', user.id)
+    .single<{ rol: string }>()
+
+  if (profile?.rol !== 'admin') return null
+  return user
+}

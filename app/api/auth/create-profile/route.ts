@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { getAuthenticatedUser } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,6 +10,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
+      )
+    }
+
+    // Validate that the caller owns this userId
+    const authenticatedUser = await getAuthenticatedUser()
+    if (!authenticatedUser || authenticatedUser.id !== userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized: userId does not match authenticated session' },
+        { status: 403 }
       )
     }
 
@@ -24,14 +34,13 @@ export async function POST(request: NextRequest) {
       }
     )
 
-    // Crear el perfil
+    // Crear el perfil — rol is ALWAYS 'cliente' to prevent privilege escalation
     const profileData: Record<string, unknown> = {
       id: userId,
       email: email,
       nombre: firstName || '',
       apellido: lastName || '',
       rol: 'cliente',
-      email_verificado: true,
     }
     if (avatarUrl) {
       profileData.avatar_url = avatarUrl
@@ -54,10 +63,11 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ data })
-  } catch (error: any) {
-    console.error('Error in create-profile:', error)
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    console.error('Error in create-profile:', message)
     return NextResponse.json(
-      { error: error.message },
+      { error: message },
       { status: 500 }
     )
   }

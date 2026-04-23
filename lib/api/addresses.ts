@@ -1,13 +1,5 @@
-import { createBrowserClient } from '@supabase/ssr'
-import type { Direccion, PROVINCIAS_ARGENTINA } from '@/lib/types/database.types'
-
-// Cliente sin tipado estricto hasta que el schema exista
-function getSupabase() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  ) as any
-}
+import { getSupabaseClient } from '@/lib/supabase/client'
+import type { Direccion } from '@/lib/types/database.types'
 
 // Provincias de Argentina
 export const ARGENTINA_PROVINCES = [
@@ -41,7 +33,7 @@ export const ARGENTINA_PROVINCES = [
 ]
 
 export async function getUserAddresses(userId: string): Promise<Direccion[]> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   const { data, error } = await supabase
     .from('direcciones')
@@ -55,11 +47,11 @@ export async function getUserAddresses(userId: string): Promise<Direccion[]> {
     return []
   }
 
-  return data as Direccion[]
+  return (data ?? []) as Direccion[]
 }
 
 export async function getAddressById(addressId: string): Promise<Direccion | null> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   const { data, error } = await supabase
     .from('direcciones')
@@ -72,13 +64,13 @@ export async function getAddressById(addressId: string): Promise<Direccion | nul
     return null
   }
 
-  return data as Direccion
+  return data
 }
 
 export async function createAddress(
   address: Omit<Direccion, 'id' | 'fecha_creacion' | 'fecha_actualizacion'>
 ): Promise<Direccion | null> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   // Si es la primera dirección o se marca como default, actualizar las demás
   if (address.es_predeterminada) {
@@ -99,7 +91,7 @@ export async function createAddress(
     return null
   }
 
-  return data as Direccion
+  return data
 }
 
 export async function updateAddress(
@@ -107,7 +99,7 @@ export async function updateAddress(
   userId: string,
   updates: Partial<Omit<Direccion, 'id' | 'usuario_id' | 'fecha_creacion' | 'fecha_actualizacion'>>
 ): Promise<Direccion | null> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   // Si se marca como default, quitar default de las demás
   if (updates.es_predeterminada) {
@@ -130,11 +122,11 @@ export async function updateAddress(
     return null
   }
 
-  return data as Direccion
+  return data
 }
 
 export async function deleteAddress(addressId: string, userId: string): Promise<boolean> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   const { error } = await supabase
     .from('direcciones')
@@ -151,7 +143,7 @@ export async function deleteAddress(addressId: string, userId: string): Promise<
 }
 
 export async function setDefaultAddress(addressId: string, userId: string): Promise<boolean> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   // Quitar default de todas
   await supabase
@@ -174,5 +166,5 @@ export async function setDefaultAddress(addressId: string, userId: string): Prom
   return true
 }
 
-// Alias para compatibilidad
-export { Direccion as Address }
+// Alias para compatibilidad (W2 fix: use `export type` for type-only re-exports)
+export type { Direccion as Address }

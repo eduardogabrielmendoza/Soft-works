@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Payment } from 'mercadopago';
 import { createClient } from '@supabase/supabase-js';
+import crypto from 'crypto';
 import { getMercadoPagoMode, createMPClient } from '@/lib/api/mercadopago-config';
 import { sendPaymentApprovedEmail, sendAdminNewOrderEmail } from '@/lib/email';
 
@@ -12,9 +13,67 @@ function getSupabaseAdmin() {
   );
 }
 
+/**
+ * Verify MercadoPago webhook signature (W6 fix).
+ * If MERCADOPAGO_WEBHOOK_SECRET is not set, logs a warning and allows the request
+ * (graceful degradation for initial setup).
+ *
+ * @see https://www.mercadopago.com.ar/developers/es/docs/your-integrations/notifications/webhooks
+ */
+function verifyWebhookSignature(req: NextRequest, body: Record<string, unknown>): boolean {
+  const secret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
+  if (!secret) {
+    console.warn('[Webhook] MERCADOPAGO_WEBHOOK_SECRET not configured — skipping signature verification. Set this in production!');
+    return true;
+  }
+
+  const xSignature = req.headers.get('x-signature');
+  const xRequestId = req.headers.get('x-request-id');
+
+  if (!xSignature || !xRequestId) {
+    console.error('[Webhook] Missing x-signature or x-request-id headers');
+    return false;
+  }
+
+  // Parse x-signature: "ts=...,v1=..."
+  const parts: Record<string, string> = {};
+  xSignature.split(',').forEach(part => {
+    const [key, ...valueParts] = part.trim().split('=');
+    if (key && valueParts.length) parts[key] = valueParts.join('=');
+  });
+
+  const ts = parts['ts'];
+  const v1 = parts['v1'];
+
+  if (!ts || !v1) {
+    console.error('[Webhook] Invalid x-signature format');
+    return false;
+  }
+
+  // Build manifest string per MercadoPago docs
+  const dataId = (body.data as Record<string, unknown>)?.id;
+  const manifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`;
+
+  // Compute HMAC-SHA256
+  const hmac = crypto.createHmac('sha256', secret).update(manifest).digest('hex');
+
+  if (hmac !== v1) {
+    console.error('[Webhook] Signature mismatch — possible forged request');
+    return false;
+  }
+
+  return true;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+
+    // Verify webhook signature before processing (W6 fix)
+    if (!verifyWebhookSignature(req, body)) {
+      // Return 200 anyway to prevent MercadoPago from retrying a forged request
+      return NextResponse.json({ received: true, error: 'invalid_signature' });
+    }
 
     // MercadoPago sends different notification types
     if (body.type === 'payment' || body.action === 'payment.created' || body.action === 'payment.updated') {
@@ -81,8 +140,6 @@ export async function POST(req: NextRequest) {
       if (error) {
         console.error('Error updating order from webhook:', error);
       } else {
-        console.log(`Order ${orderId} updated to ${newEstado} via webhook (payment ${paymentId})`);
-
         // Send payment success email for approved payments
         if (newEstado === 'pago_aprobado') {
           try {
@@ -99,12 +156,12 @@ export async function POST(req: NextRequest) {
               .eq('pedido_id', orderId);
 
             if (orderData && orderItems) {
-              const mappedItems = orderItems.map((item: any) => ({
-                producto_nombre: item.producto_nombre,
-                producto_imagen: item.producto_imagen,
-                talle: item.talle,
-                cantidad: item.cantidad,
-                producto_precio: item.producto_precio,
+              const mappedItems = orderItems.map((item: Record<string, unknown>) => ({
+                producto_nombre: item.producto_nombre as string,
+                producto_imagen: item.producto_imagen as string | null,
+                talle: item.talle as string,
+                cantidad: item.cantidad as number,
+                producto_precio: item.producto_precio as number,
               }));
 
               await sendPaymentApprovedEmail({
@@ -119,7 +176,6 @@ export async function POST(req: NextRequest) {
                 isGuest: !orderData.usuario_id,
                 items: mappedItems,
               });
-              console.log(`Payment success email sent for order ${orderId}`);
 
               // Notify admin
               await sendAdminNewOrderEmail({
@@ -134,7 +190,7 @@ export async function POST(req: NextRequest) {
                 eventType: 'mp_approved',
                 orderId: orderData.id,
                 items: mappedItems,
-              }).catch((err: any) => console.error('Admin email error (mp):', err));
+              }).catch((err: unknown) => console.error('Admin email error (mp):', err));
             }
           } catch (emailErr) {
             console.error('Error sending payment success email:', emailErr);

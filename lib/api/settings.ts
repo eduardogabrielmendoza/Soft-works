@@ -1,20 +1,12 @@
-import { createBrowserClient } from '@supabase/ssr'
+import { getSupabaseClient } from '@/lib/supabase/client'
 import type { CuentaBancaria, ZonaEnvio, ConfiguracionTienda, Json } from '@/lib/types/database.types'
-
-// Cliente sin tipado estricto hasta que el schema exista
-function getSupabase() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  ) as any
-}
 
 // =============================================
 // Cuentas Bancarias
 // =============================================
 
 export async function getActiveBankAccounts(): Promise<CuentaBancaria[]> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   const { data, error } = await supabase
     .from('cuentas_bancarias')
@@ -27,11 +19,11 @@ export async function getActiveBankAccounts(): Promise<CuentaBancaria[]> {
     return []
   }
 
-  return data as CuentaBancaria[]
+  return (data ?? []) as CuentaBancaria[]
 }
 
 export async function getAllBankAccounts(): Promise<CuentaBancaria[]> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   const { data, error } = await supabase
     .from('cuentas_bancarias')
@@ -43,13 +35,13 @@ export async function getAllBankAccounts(): Promise<CuentaBancaria[]> {
     return []
   }
 
-  return data as CuentaBancaria[]
+  return (data ?? []) as CuentaBancaria[]
 }
 
 export async function createBankAccount(
   account: Omit<CuentaBancaria, 'id' | 'fecha_creacion' | 'fecha_actualizacion'>
 ): Promise<CuentaBancaria | null> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   const { data, error } = await supabase
     .from('cuentas_bancarias')
@@ -62,14 +54,14 @@ export async function createBankAccount(
     return null
   }
 
-  return data as CuentaBancaria
+  return data
 }
 
 export async function updateBankAccount(
   accountId: string,
   updates: Partial<Omit<CuentaBancaria, 'id' | 'fecha_creacion' | 'fecha_actualizacion'>>
 ): Promise<CuentaBancaria | null> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   const { data, error } = await supabase
     .from('cuentas_bancarias')
@@ -83,11 +75,11 @@ export async function updateBankAccount(
     return null
   }
 
-  return data as CuentaBancaria
+  return data
 }
 
 export async function deleteBankAccount(accountId: string): Promise<boolean> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   const { error } = await supabase
     .from('cuentas_bancarias')
@@ -107,7 +99,7 @@ export async function deleteBankAccount(accountId: string): Promise<boolean> {
 // =============================================
 
 export async function getActiveShippingZones(): Promise<ZonaEnvio[]> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   const { data, error } = await supabase
     .from('zonas_envio')
@@ -120,11 +112,11 @@ export async function getActiveShippingZones(): Promise<ZonaEnvio[]> {
     return []
   }
 
-  return data as ZonaEnvio[]
+  return (data ?? []) as ZonaEnvio[]
 }
 
 export async function getAllShippingZones(): Promise<ZonaEnvio[]> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   const { data, error } = await supabase
     .from('zonas_envio')
@@ -136,11 +128,11 @@ export async function getAllShippingZones(): Promise<ZonaEnvio[]> {
     return []
   }
 
-  return data as ZonaEnvio[]
+  return (data ?? []) as ZonaEnvio[]
 }
 
 export async function getShippingZoneByProvince(province: string): Promise<ZonaEnvio | null> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   const { data, error } = await supabase
     .from('zonas_envio')
@@ -155,13 +147,13 @@ export async function getShippingZoneByProvince(province: string): Promise<ZonaE
     return null
   }
 
-  return data as ZonaEnvio
+  return data
 }
 
 export async function createShippingZone(
   zone: Omit<ZonaEnvio, 'id' | 'fecha_creacion'>
 ): Promise<ZonaEnvio | null> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   const { data, error } = await supabase
     .from('zonas_envio')
@@ -174,14 +166,14 @@ export async function createShippingZone(
     return null
   }
 
-  return data as ZonaEnvio
+  return data
 }
 
 export async function updateShippingZone(
   zoneId: string,
   updates: Partial<Omit<ZonaEnvio, 'id' | 'fecha_creacion'>>
 ): Promise<ZonaEnvio | null> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   const { data, error } = await supabase
     .from('zonas_envio')
@@ -195,11 +187,11 @@ export async function updateShippingZone(
     return null
   }
 
-  return data as ZonaEnvio
+  return data
 }
 
 export async function deleteShippingZone(zoneId: string): Promise<boolean> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   const { error } = await supabase
     .from('zonas_envio')
@@ -219,7 +211,7 @@ export async function deleteShippingZone(zoneId: string): Promise<boolean> {
 // =============================================
 
 export async function getStoreSettings(): Promise<Record<string, Json>> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   const { data, error } = await supabase
     .from('configuracion_tienda')
@@ -239,7 +231,7 @@ export async function getStoreSettings(): Promise<Record<string, Json>> {
 }
 
 export async function getStoreSetting(key: string): Promise<Json | null> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   const { data, error } = await supabase
     .from('configuracion_tienda')
@@ -260,7 +252,7 @@ export async function updateStoreSetting(
   value: Json,
   description?: string
 ): Promise<boolean> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   const { data: { user } } = await supabase.auth.getUser()
   
@@ -288,7 +280,7 @@ export async function updateStoreSetting(
 // =============================================
 
 export async function subscribeToNewsletter(email: string): Promise<boolean> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   const { error } = await supabase
     .from('suscriptores_newsletter')
@@ -308,7 +300,7 @@ export async function subscribeToNewsletter(email: string): Promise<boolean> {
 }
 
 export async function unsubscribeFromNewsletter(email: string): Promise<boolean> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   const { error } = await supabase
     .from('suscriptores_newsletter')
@@ -327,7 +319,7 @@ export async function unsubscribeFromNewsletter(email: string): Promise<boolean>
 }
 
 export async function getNewsletterSubscribers(activeOnly: boolean = true): Promise<{ email: string; suscrito_el: string }[]> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   let query = supabase
     .from('suscriptores_newsletter')

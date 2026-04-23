@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendOrderShippedEmail, sendPaymentApprovedEmail } from '@/lib/email';
+import { verifyAdmin } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
+  // Only admins can send arbitrary emails
+  const admin = await verifyAdmin();
+  if (!admin) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+  }
+
   try {
     const body = await request.json();
     const { type, data } = body;

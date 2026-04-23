@@ -1,4 +1,4 @@
-import { createBrowserClient } from '@supabase/ssr'
+import { getSupabaseClient } from '@/lib/supabase/client'
 import type { 
   Pedido, 
   PedidoConItems, 
@@ -9,14 +9,6 @@ import type {
   MetodoPago,
   DireccionEnvioSnapshot
 } from '@/lib/types/database.types'
-
-// Cliente sin tipado estricto hasta que el schema exista
-function getSupabase() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  ) as any
-}
 
 // Tipos para crear orden
 interface CreateOrderData {
@@ -44,7 +36,7 @@ interface CreateOrderData {
 // =============================================
 
 export async function createOrder(orderData: CreateOrderData): Promise<Pedido | null> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
@@ -55,25 +47,12 @@ export async function createOrder(orderData: CreateOrderData): Promise<Pedido | 
     .eq('id', user.id)
     .single()
 
-  // Generar número de pedido profesional: SW-0001582-HC
-  const generateOrderNumber = async (): Promise<string> => {
-    // Obtener el conteo total de pedidos para el número secuencial
-    const { count } = await supabase
-      .from('pedidos')
-      .select('*', { count: 'exact', head: true })
-    
-    const sequentialNumber = ((count || 0) + 1).toString().padStart(7, '0')
-    
-    // Generar sufijo aleatorio de 2 letras
-    const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ' // Sin I, O para evitar confusión
-    const suffix = letters.charAt(Math.floor(Math.random() * letters.length)) + 
-                   letters.charAt(Math.floor(Math.random() * letters.length))
-    
-    return `SW-${sequentialNumber}-${suffix}`
+  // Generate order number atomically via DB function (C6 fix)
+  const { data: numeroPedido, error: rpcError } = await supabase.rpc('generar_numero_pedido')
+  if (rpcError || !numeroPedido) {
+    console.error('Error generating order number:', rpcError)
+    return null
   }
-  
-  const numeroPedido = await generateOrderNumber()
-  console.log('Generated numero_pedido:', numeroPedido)
 
   // Crear orden
   const orderPayload = {
@@ -87,13 +66,10 @@ export async function createOrder(orderData: CreateOrderData): Promise<Pedido | 
     monto_descuento: 0,
     total: orderData.total,
     notas_cliente: orderData.notas_cliente || null,
-    estado: 'pendiente_pago',
-    numero_pedido: numeroPedido,
-    metodo_pago: orderData.metodo_pago || 'transferencia'
+    estado: 'pendiente_pago' as const,
+    numero_pedido: numeroPedido as string,
+    metodo_pago: orderData.metodo_pago || 'transferencia' as MetodoPago
   }
-  
-  console.log('Creating order with payload:', JSON.stringify(orderPayload, null, 2))
-  console.log('User ID:', user.id)
   
   const { data: order, error: orderError } = await supabase
     .from('pedidos')
@@ -103,16 +79,14 @@ export async function createOrder(orderData: CreateOrderData): Promise<Pedido | 
 
   if (orderError) {
     console.error('Error creating order:', orderError)
-    console.error('Error code:', orderError.code)
-    console.error('Error message:', orderError.message)
-    console.error('Error details:', orderError.details)
-    console.error('Error hint:', orderError.hint)
     return null
   }
 
+  if (!order) return null
+
   // Crear items de la orden
   const orderItems = orderData.items.map(item => ({
-    pedido_id: (order as any).id,
+    pedido_id: order.id,
     producto_id: item.producto_id,
     producto_nombre: item.producto_nombre,
     producto_slug: item.producto_slug,
@@ -130,15 +104,15 @@ export async function createOrder(orderData: CreateOrderData): Promise<Pedido | 
   if (itemsError) {
     console.error('Error creating order items:', itemsError)
     // Rollback: eliminar la orden
-    await supabase.from('pedidos').delete().eq('id', (order as any).id)
+    await supabase.from('pedidos').delete().eq('id', order.id)
     return null
   }
 
-  return order as Pedido
+  return order
 }
 
 export async function getOrdersByUser(): Promise<PedidoConItems[]> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return []
@@ -156,7 +130,7 @@ export async function getOrdersByUser(): Promise<PedidoConItems[]> {
 
   // Obtener items para cada pedido
   const ordersWithItems: PedidoConItems[] = await Promise.all(
-    (orders || []).map(async (order: any) => {
+    (orders ?? []).map(async (order) => {
       const { data: items } = await supabase
         .from('items_pedido')
         .select('*')
@@ -173,7 +147,7 @@ export async function getOrdersByUser(): Promise<PedidoConItems[]> {
 }
 
 export async function getOrderById(orderId: string): Promise<PedidoConItems | null> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   const { data: order, error: orderError } = await supabase
     .from('pedidos')
@@ -221,7 +195,7 @@ export async function getOrderById(orderId: string): Promise<PedidoConItems | nu
 }
 
 export async function getOrderByNumber(orderNumber: string): Promise<PedidoConItems | null> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   const { data: order, error: orderError } = await supabase
     .from('pedidos')
@@ -256,14 +230,14 @@ export async function submitPaymentVerification(
     notas_cliente?: string
   }
 ): Promise<VerificacionPago> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   const { data: verification, error: verificationError } = await supabase
     .from('verificaciones_pago')
     .insert({
       pedido_id: orderId,
       ...verificationData,
-      estado: 'pendiente'
+      estado: 'pendiente' as const
     })
     .select()
     .single()
@@ -275,27 +249,22 @@ export async function submitPaymentVerification(
 
   // Intentar actualizar estado del pedido (puede fallar por RLS, el trigger lo hará)
   // Si hay un trigger configurado, esto es redundante pero no daña
-  const { error: updateError } = await supabase
+  await supabase
     .from('pedidos')
-    .update({ estado: 'esperando_verificacion' })
+    .update({ estado: 'esperando_verificacion' as const })
     .eq('id', orderId)
-    .eq('estado', 'pendiente_pago') // Solo si está en pendiente_pago
-
-  if (updateError) {
-    // No es crítico - el trigger debería manejarlo o ya está en otro estado
-    console.log('Nota: No se pudo actualizar estado directamente (puede ser normal si hay trigger)')
-  }
+    .eq('estado', 'pendiente_pago')
 
   return verification as VerificacionPago
 }
 
 export async function cancelOrder(orderId: string, reason?: string): Promise<boolean> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   const { error } = await supabase
     .from('pedidos')
     .update({
-      estado: 'cancelado',
+      estado: 'cancelado' as const,
       cancelado_el: new Date().toISOString(),
       motivo_cancelacion: reason || null
     })
@@ -310,7 +279,7 @@ export async function cancelOrder(orderId: string, reason?: string): Promise<boo
 }
 
 export async function getPaymentVerifications(orderId: string): Promise<VerificacionPago[]> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   const { data, error } = await supabase
     .from('verificaciones_pago')
@@ -323,11 +292,11 @@ export async function getPaymentVerifications(orderId: string): Promise<Verifica
     return []
   }
 
-  return data as VerificacionPago[]
+  return (data ?? []) as VerificacionPago[]
 }
 
 export async function getShippingInfo(orderId: string): Promise<InfoEnvio | null> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   const { data, error } = await supabase
     .from('info_envio')
@@ -340,7 +309,7 @@ export async function getShippingInfo(orderId: string): Promise<InfoEnvio | null
     return null
   }
 
-  return data as InfoEnvio | null
+  return (data ?? null) as InfoEnvio | null
 }
 
 // =============================================
@@ -352,7 +321,7 @@ export async function getAllOrders(filters?: {
   limit?: number
   offset?: number
 }): Promise<Pedido[]> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   let query = supabase
     .from('pedidos')
@@ -363,12 +332,11 @@ export async function getAllOrders(filters?: {
     query = query.eq('estado', filters.status)
   }
 
-  if (filters?.limit) {
-    query = query.limit(filters.limit)
-  }
-
+  const pageSize = filters?.limit || 20
   if (filters?.offset) {
-    query = query.range(filters.offset, filters.offset + (filters.limit || 20) - 1)
+    query = query.range(filters.offset, filters.offset + pageSize - 1)
+  } else if (filters?.limit) {
+    query = query.limit(filters.limit)
   }
 
   const { data, error } = await query
@@ -378,11 +346,11 @@ export async function getAllOrders(filters?: {
     return []
   }
 
-  return data as Pedido[]
+  return (data ?? []) as Pedido[]
 }
 
 export async function getPendingVerifications(): Promise<VerificacionPago[]> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   const { data, error } = await supabase
     .from('verificaciones_pago')
@@ -395,14 +363,14 @@ export async function getPendingVerifications(): Promise<VerificacionPago[]> {
     return []
   }
 
-  return data as VerificacionPago[]
+  return (data ?? []) as VerificacionPago[]
 }
 
 export async function approvePayment(
   verificationId: string,
   adminNotes?: string
 ): Promise<boolean> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
@@ -429,7 +397,7 @@ export async function approvePayment(
   const { error: verificationError } = await supabase
     .from('verificaciones_pago')
     .update({
-      estado: 'aprobado',
+      estado: 'aprobado' as const,
       revisado_por: user.id,
       revisado_el: new Date().toISOString(),
       notas_admin: adminNotes || null
@@ -445,7 +413,7 @@ export async function approvePayment(
   const { error: orderError } = await supabase
     .from('pedidos')
     .update({
-      estado: 'pago_aprobado',
+      estado: 'pago_aprobado' as const,
       pagado_el: new Date().toISOString()
     })
     .eq('id', verification.pedido_id)
@@ -463,7 +431,7 @@ export async function rejectPayment(
   reason: string,
   adminNotes?: string
 ): Promise<boolean> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
@@ -489,7 +457,7 @@ export async function rejectPayment(
   const { error: verificationError } = await supabase
     .from('verificaciones_pago')
     .update({
-      estado: 'rechazado',
+      estado: 'rechazado' as const,
       revisado_por: user.id,
       revisado_el: new Date().toISOString(),
       motivo_rechazo: reason,
@@ -505,7 +473,7 @@ export async function rejectPayment(
   // Actualizar estado del pedido
   const { error: orderError } = await supabase
     .from('pedidos')
-    .update({ estado: 'pago_rechazado' })
+    .update({ estado: 'pago_rechazado' as const })
     .eq('id', verification.pedido_id)
 
   if (orderError) {
@@ -521,9 +489,9 @@ export async function updateOrderStatus(
   status: EstadoPedido,
   notes?: string
 ): Promise<boolean> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
-  const updateData: any = { estado: status }
+  const updateData: Record<string, unknown> = { estado: status }
 
   if (status === 'enviado') {
     updateData.enviado_el = new Date().toISOString()
@@ -575,7 +543,7 @@ export async function addShippingInfo(
     notas?: string
   }
 ): Promise<InfoEnvio | null> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   // Auto-generate tracking URL if not provided
   let finalUrl = shippingData.url_seguimiento;
@@ -589,7 +557,7 @@ export async function addShippingInfo(
   
   const dataToSave = {
     numero_seguimiento: shippingData.numero_seguimiento || null,
-    transportista: shippingData.transportista || 'correo_argentino',
+    transportista: shippingData.transportista || 'correo_argentino' as Transportista,
     nombre_transportista: shippingData.nombre_transportista || null,
     url_seguimiento: finalUrl || null,
     entrega_estimada_min: shippingData.entrega_estimada_min || null,
@@ -597,17 +565,12 @@ export async function addShippingInfo(
     notas: shippingData.notas || null,
   };
   
-  console.log('addShippingInfo - orderId:', orderId);
-  console.log('addShippingInfo - dataToSave:', dataToSave);
-  
   // Verificar si ya existe info de envío
-  const { data: existing, error: checkError } = await supabase
+  const { data: existing } = await supabase
     .from('info_envio')
     .select('id')
     .eq('pedido_id', orderId)
     .maybeSingle()
-  
-  console.log('addShippingInfo - existing check:', { existing, checkError });
 
   if (existing) {
     // Actualizar existente
@@ -623,29 +586,24 @@ export async function addShippingInfo(
 
     if (error) {
       console.error('Error updating shipping info:', error)
-      console.error('Error details:', JSON.stringify(error, null, 2))
       throw new Error(`Error al actualizar información de envío: ${error.message || error.code || 'Error desconocido'}`)
     }
 
     return data as InfoEnvio
   } else {
     // Crear nuevo - Primero actualizar el estado del pedido
-    console.log('addShippingInfo - Updating order status first...');
     const { error: orderError } = await supabase
       .from('pedidos')
       .update({ 
-        estado: 'enviado',
+        estado: 'enviado' as const,
         enviado_el: new Date().toISOString()
       })
       .eq('id', orderId)
     
     if (orderError) {
       console.error('Error updating order status:', orderError)
-      console.error('Order error details:', JSON.stringify(orderError, null, 2))
       throw new Error(`Error al actualizar estado del pedido: ${orderError.message || orderError.code || 'Error desconocido'}`)
     }
-    
-    console.log('addShippingInfo - Order status updated, now creating shipping info...');
     
     // Crear info de envío
     const insertData = {
@@ -653,8 +611,6 @@ export async function addShippingInfo(
       ...dataToSave,
       enviado_el: new Date().toISOString()
     };
-    
-    console.log('addShippingInfo - Insert data:', insertData);
     
     const { data, error } = await supabase
       .from('info_envio')
@@ -664,15 +620,9 @@ export async function addShippingInfo(
 
     if (error) {
       console.error('Error creating shipping info:', error)
-      console.error('Error code:', error.code)
-      console.error('Error message:', error.message)
-      console.error('Error details:', error.details)
-      console.error('Error hint:', error.hint)
-      console.error('Full error:', JSON.stringify(error, null, 2))
       throw new Error(`Error al crear información de envío: ${error.message || error.code || 'Permiso denegado por políticas de seguridad'}`)
     }
 
-    console.log('addShippingInfo - Success! Data:', data);
     return data as InfoEnvio
   }
 }
@@ -681,7 +631,7 @@ export async function updateShippingInfo(
   orderId: string,
   updates: Partial<InfoEnvio>
 ): Promise<boolean> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseClient()
   
   const { error } = await supabase
     .from('info_envio')

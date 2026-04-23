@@ -415,78 +415,106 @@ export interface Database {
     Tables: {
       perfiles: {
         Row: Perfil
-        Insert: Omit<Perfil, 'fecha_creacion' | 'fecha_actualizacion'>
-        Update: Partial<Omit<Perfil, 'id' | 'fecha_creacion'>>
+        Insert: Partial<Perfil> & Pick<Perfil, 'id' | 'email'>
+        Update: Partial<Perfil>
+        Relationships: []
       }
       direcciones: {
         Row: Direccion
-        Insert: Omit<Direccion, 'id' | 'fecha_creacion' | 'fecha_actualizacion'>
-        Update: Partial<Omit<Direccion, 'id' | 'fecha_creacion'>>
+        Insert: Partial<Direccion> & Pick<Direccion, 'usuario_id' | 'nombre_destinatario' | 'calle' | 'numero' | 'ciudad' | 'provincia' | 'codigo_postal' | 'pais'>
+        Update: Partial<Direccion>
+        Relationships: [{ foreignKeyName: 'direcciones_usuario_id_fkey'; columns: ['usuario_id']; referencedRelation: 'perfiles'; referencedColumns: ['id'] }]
       }
       productos: {
         Row: Producto
-        Insert: Omit<Producto, 'id' | 'fecha_creacion' | 'fecha_actualizacion'>
-        Update: Partial<Omit<Producto, 'id' | 'fecha_creacion'>>
+        Insert: Partial<Producto> & Pick<Producto, 'nombre' | 'slug' | 'precio' | 'categoria'>
+        Update: Partial<Producto>
+        Relationships: []
       }
       cuentas_bancarias: {
         Row: CuentaBancaria
-        Insert: Omit<CuentaBancaria, 'id' | 'fecha_creacion' | 'fecha_actualizacion'>
-        Update: Partial<Omit<CuentaBancaria, 'id' | 'fecha_creacion'>>
+        Insert: Partial<CuentaBancaria> & Pick<CuentaBancaria, 'banco' | 'titular' | 'cbu' | 'tipo_cuenta'>
+        Update: Partial<CuentaBancaria>
+        Relationships: []
       }
       zonas_envio: {
         Row: ZonaEnvio
-        Insert: Omit<ZonaEnvio, 'id' | 'fecha_creacion'>
-        Update: Partial<Omit<ZonaEnvio, 'id' | 'fecha_creacion'>>
+        Insert: Partial<ZonaEnvio> & Pick<ZonaEnvio, 'nombre' | 'provincias' | 'precio'>
+        Update: Partial<ZonaEnvio>
+        Relationships: []
       }
       pedidos: {
         Row: Pedido
-        Insert: Omit<Pedido, 'id' | 'numero_pedido' | 'fecha_creacion' | 'fecha_actualizacion'>
-        Update: Partial<Omit<Pedido, 'id' | 'numero_pedido' | 'fecha_creacion'>>
+        Insert: Partial<Pedido> & Pick<Pedido, 'estado' | 'subtotal' | 'total' | 'costo_envio' | 'direccion_envio' | 'metodo_pago'>
+        Update: Partial<Pedido>
+        Relationships: [{ foreignKeyName: 'pedidos_usuario_id_fkey'; columns: ['usuario_id']; referencedRelation: 'perfiles'; referencedColumns: ['id'] }]
       }
       items_pedido: {
         Row: ItemPedido
-        Insert: Omit<ItemPedido, 'id' | 'fecha_creacion'>
-        Update: Partial<Omit<ItemPedido, 'id' | 'fecha_creacion'>>
+        Insert: Partial<ItemPedido> & Pick<ItemPedido, 'pedido_id' | 'producto_nombre' | 'producto_precio' | 'talle' | 'cantidad' | 'total_linea'>
+        Update: Partial<ItemPedido>
+        Relationships: [{ foreignKeyName: 'items_pedido_pedido_id_fkey'; columns: ['pedido_id']; referencedRelation: 'pedidos'; referencedColumns: ['id'] }]
       }
       verificaciones_pago: {
         Row: VerificacionPago
-        Insert: Omit<VerificacionPago, 'id' | 'enviado_el' | 'fecha_actualizacion'>
-        Update: Partial<Omit<VerificacionPago, 'id' | 'enviado_el'>>
+        Insert: Partial<VerificacionPago> & Pick<VerificacionPago, 'pedido_id' | 'comprobante_url' | 'estado'>
+        Update: Partial<VerificacionPago>
+        Relationships: [{ foreignKeyName: 'verificaciones_pago_pedido_id_fkey'; columns: ['pedido_id']; referencedRelation: 'pedidos'; referencedColumns: ['id'] }]
       }
       info_envio: {
         Row: InfoEnvio
-        Insert: Omit<InfoEnvio, 'id' | 'fecha_creacion' | 'fecha_actualizacion'>
-        Update: Partial<Omit<InfoEnvio, 'id' | 'fecha_creacion'>>
+        Insert: Partial<InfoEnvio> & Pick<InfoEnvio, 'pedido_id'>
+        Update: Partial<InfoEnvio>
+        Relationships: [{ foreignKeyName: 'info_envio_pedido_id_fkey'; columns: ['pedido_id']; referencedRelation: 'pedidos'; referencedColumns: ['id'] }]
       }
       sucursales_correo_argentino: {
         Row: SucursalCorreoArgentino
-        Insert: Omit<SucursalCorreoArgentino, 'id' | 'fecha_creacion'>
-        Update: Partial<Omit<SucursalCorreoArgentino, 'id' | 'fecha_creacion'>>
+        Insert: Partial<SucursalCorreoArgentino> & Pick<SucursalCorreoArgentino, 'source_key' | 'nombre' | 'direccion'>
+        Update: Partial<SucursalCorreoArgentino>
+        Relationships: []
       }
       carrito_items: {
         Row: ItemCarrito
-        Insert: Omit<ItemCarrito, 'id' | 'fecha_creacion' | 'fecha_actualizacion'>
-        Update: Partial<Omit<ItemCarrito, 'id' | 'fecha_creacion'>>
+        Insert: Partial<ItemCarrito> & Pick<ItemCarrito, 'usuario_id' | 'producto_id' | 'talle' | 'cantidad'>
+        Update: Partial<ItemCarrito>
+        Relationships: []
       }
       lista_deseos: {
         Row: ItemListaDeseos
-        Insert: Omit<ItemListaDeseos, 'id' | 'fecha_creacion'>
+        Insert: Partial<ItemListaDeseos> & Pick<ItemListaDeseos, 'usuario_id' | 'producto_id'>
         Update: never
+        Relationships: []
       }
       configuracion_tienda: {
         Row: ConfiguracionTienda
-        Insert: Omit<ConfiguracionTienda, 'id' | 'fecha_actualizacion'>
-        Update: Partial<Omit<ConfiguracionTienda, 'id'>>
+        Insert: Partial<ConfiguracionTienda> & Pick<ConfiguracionTienda, 'clave' | 'valor'>
+        Update: Partial<ConfiguracionTienda>
+        Relationships: []
       }
       historial_estados_pedido: {
         Row: HistorialEstadoPedido
-        Insert: Omit<HistorialEstadoPedido, 'id' | 'fecha_creacion'>
+        Insert: Partial<HistorialEstadoPedido> & Pick<HistorialEstadoPedido, 'pedido_id' | 'estado_anterior' | 'estado_nuevo'>
         Update: never
+        Relationships: []
       }
       suscriptores_newsletter: {
         Row: SuscriptorNewsletter
-        Insert: Omit<SuscriptorNewsletter, 'id' | 'suscrito_el'>
-        Update: Partial<Omit<SuscriptorNewsletter, 'id' | 'suscrito_el'>>
+        Insert: Partial<SuscriptorNewsletter> & Pick<SuscriptorNewsletter, 'email'>
+        Update: Partial<SuscriptorNewsletter>
+        Relationships: []
+      }
+      configuracion_sitio: {
+        Row: { id: string; clave: string; valor: Json; fecha_actualizacion: string }
+        Insert: { clave: string; valor: Json }
+        Update: Partial<{ clave: string; valor: Json }>
+        Relationships: []
+      }
+    }
+    Views: Record<string, never>
+    Functions: {
+      generar_numero_pedido: {
+        Args: Record<string, never>
+        Returns: string
       }
     }
     Enums: {
@@ -496,5 +524,8 @@ export interface Database {
       categoria_producto: CategoriaProducto
       transportista: Transportista
     }
+    CompositeTypes: Record<string, never>
   }
 }
+
+

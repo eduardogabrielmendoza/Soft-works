@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { sendAdminNewOrderEmail } from '@/lib/email';
+import { verifyAdmin } from '@/lib/supabase/server';
 
 function getSupabaseAdmin() {
   return createClient(
@@ -10,6 +11,12 @@ function getSupabaseAdmin() {
 }
 
 export async function POST(req: NextRequest) {
+  // Only admins can manually trigger order notifications
+  const admin = await verifyAdmin();
+  if (!admin) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+  }
+
   try {
     const { orderId } = await req.json();
 

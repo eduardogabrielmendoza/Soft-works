@@ -11,7 +11,7 @@ function getSupabaseAdmin() {
   );
 }
 
-async function getAuthUser(req: NextRequest) {
+async function getAuthUser() {
   const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
     // Get authenticated user (null for guests)
     let user = null;
     try {
-      user = await getAuthUser(req);
+      user = await getAuthUser();
     } catch {
       // Guest checkout - no auth cookies available
     }
@@ -106,15 +106,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Generate order number
-    const { count } = await supabase
-      .from('pedidos')
-      .select('*', { count: 'exact', head: true });
-    const sequentialNumber = ((count || 0) + 1).toString().padStart(7, '0');
-    const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
-    const suffix = letters.charAt(Math.floor(Math.random() * letters.length)) +
-                   letters.charAt(Math.floor(Math.random() * letters.length));
-    const numero_pedido = `SW-${sequentialNumber}-${suffix}`;
+    // Generate order number atomically via DB function (W7 fix — eliminates race condition)
+    const { data: numero_pedido, error: rpcError } = await supabase.rpc('generar_numero_pedido');
+    if (rpcError || !numero_pedido) {
+      console.error('Error generating order number via RPC:', rpcError);
+      return NextResponse.json({ error: 'Error al generar número de pedido' }, { status: 500 });
+    }
 
     // Create order (service role bypasses RLS)
     const orderPayload: Record<string, unknown> = {
@@ -145,7 +142,15 @@ export async function POST(req: NextRequest) {
     }
 
     // Create order items
-    const orderItems = items.map((item: any) => ({
+    const orderItems = items.map((item: {
+      producto_id: string | null;
+      producto_nombre: string;
+      producto_slug: string;
+      producto_imagen: string | null;
+      producto_precio: number;
+      talle: string;
+      cantidad: number;
+    }) => ({
       pedido_id: order.id,
       producto_id: item.producto_id,
       producto_nombre: item.producto_nombre,

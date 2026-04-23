@@ -1,27 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, verifyAdmin } from '@/lib/supabase/server';
 import { getMercadoPagoConfig } from '@/lib/api/mercadopago-config';
 import {
   sendEmail,
   sendPaymentApprovedEmail,
   sendOrderShippedEmail,
 } from '@/lib/email';
-
-// Verificar que el usuario es admin
-async function verifyAdmin() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data: profile } = await supabase
-    .from('perfiles')
-    .select('rol')
-    .eq('id', user.id)
-    .single() as { data: { rol: string } | null };
-
-  if (profile?.rol !== 'admin') return null;
-  return user;
-}
 
 function maskToken(token: string | undefined): string {
   if (!token) return 'NO CONFIGURADO';
@@ -35,7 +19,7 @@ export async function GET() {
     return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
   }
 
-  const diagnostics: Record<string, any> = {};
+  const diagnostics: Record<string, unknown> = {};
 
   // 1. Mailjet config
   diagnostics.email = {
@@ -90,10 +74,10 @@ export async function GET() {
       productos: productsCount ?? 0,
       usuarios: usersCount ?? 0,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     diagnostics.database = {
       connected: false,
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Unknown error',
     };
   }
 
@@ -121,7 +105,7 @@ export async function POST(request: NextRequest) {
         .eq('clave', 'mercadopago')
         .single() as { data: { valor: Record<string, unknown> } | null };
 
-      const currentConfig = (existing?.valor && typeof existing.valor === 'object')
+      const currentConfig = (existing?.valor && typeof existing.valor === 'object' && !Array.isArray(existing.valor))
         ? existing.valor
         : {};
 
@@ -132,6 +116,7 @@ export async function POST(request: NextRequest) {
       if (accessTokenSandbox !== undefined) newConfig.access_token_sandbox = accessTokenSandbox;
 
       // Upsert
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase
         .from('configuracion_sitio') as any)
         .upsert({
@@ -225,10 +210,11 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ error: 'Acción no válida' }, { status: 400 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Debug API error:', error);
+    const message = error instanceof Error ? error.message : 'Error interno'
     return NextResponse.json(
-      { error: error.message || 'Error interno' },
+      { error: message },
       { status: 500 }
     );
   }
