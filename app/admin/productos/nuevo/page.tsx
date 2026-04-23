@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
-const SIZES = ['XS', 'S', 'M', 'L', 'XL'];
+const SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
 const CATEGORIES = [
   { value: 'camisetas', label: 'Camisetas' },
   { value: 'hoodies', label: 'Hoodies' },
